@@ -38,6 +38,20 @@ should be "the LXN standard" version of something — check here first. If
 it's not here yet, that's a signal to bring it here, not to re-approximate it
 locally again.
 
+## Component usage gotchas
+
+- **`<Tooltip>` is focusable on purpose (keyboard-accessible reveal, not just
+  hover) — don't nest it inside a `<label>` associated with a different form
+  control.** A focusable element inside such a label competes with the
+  label's native "click anywhere → focus the input" behavior. Hit this for
+  real in `appraisal-customer`'s Phone/Email "i" icons (2026-08-06): the icon
+  was inside the same `<label>` as the input, and clicking it stopped
+  reliably focusing the input. Fix was in the consumer — make `<Tooltip>` a
+  sibling of the `<label>`, not a descendant — not a change to `Tooltip`
+  itself; this is a general "don't nest focusable things in an unrelated
+  label" hazard, not something specific to this component. See the comment
+  above `tabIndex` in `Tooltip.tsx`.
+
 ## Why it's built this way (no registry, no build step)
 
 - **No registry.** LXN doesn't have one yet, and setting one up isn't this
@@ -150,6 +164,42 @@ real, committable, push-able mistake if left in place. Prefer `npm link` for
 this kind of check; if `file:` is used anyway, treat undoing it
 (`npm install`, no args, to restore the real dependency) as a required step
 before any commit, not an optional cleanup.
+
+### Required config on the consumer side while linked (Vite + Vitest)
+
+A `react`/`react-dom` peer dependency reached via a symlink is not resolved
+the same way by every tool in the chain — each of these was a real failure,
+not a precaution, when wiring up `appraisal-offer`/`appraisal-customer`:
+
+- **`vite.config.ts`** needs `resolve.preserveSymlinks: true` and
+  `resolve.dedupe: ["react", "react-dom"]`. Without it, Vite resolves the
+  symlink to its real path and looks for `react` starting from `lxn-ui`'s
+  own `node_modules` — a second React instance, "invalid hook call."
+- **`vitest.config.ts` is a separate config from `vite.config.ts`** — it
+  does not inherit anything from it. It needs the same
+  `preserveSymlinks`/`dedupe`, **plus** two things Vite's dev server
+  doesn't need because `optimizeDeps` handles them implicitly:
+  - `test.server.deps.inline: ["lxn-ui"]` — Vitest externalizes real
+    `node_modules` packages by default (a plain Node `require()`, which
+    ignores `resolve.dedupe`/`preserveSymlinks` entirely, since those are
+    Vite-plugin-level, not real Node behavior). Without inlining, `lxn-ui`
+    resolves its own `react` import against its own `node_modules` no
+    matter what `dedupe` says.
+  - `plugins: [react()]` (the same `@vitejs/plugin-react` `vite.config.ts`
+    already has) — without it, esbuild's automatic-JSX transform is only
+    applied to files inside *this* project's own tsconfig scope. A
+    component reached via the symlink is outside that scope, so it falls
+    back to the classic JSX runtime and throws `React is not defined`
+    (there's no `React` global under the automatic runtime — that's by
+    design, not a missing import to add).
+- If a fix here doesn't seem to take effect, clear `node_modules/.vite`
+  before concluding the config is wrong — Vite/Vitest cache dependency
+  resolution, and rapid config edits can be masked by a stale cache
+  reporting the previous failure.
+
+None of this is needed once a consumer moves off `npm link` onto the real
+tagged dependency — it's purely a symlink-and-Vitest-externalization
+artifact of this in-between state.
 
 To undo a link and restore the real installed dependency: `npm install`
 (no arguments) in the consumer repo.
