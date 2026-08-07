@@ -8,8 +8,11 @@
 //  - portals into the nearest ancestor <dialog> instead of always
 //    document.body, so it isn't rendered behind a top-layer <dialog>
 //    (native top-layer promotion puts a body-level sibling behind it).
-//  - repositions on scroll/resize while visible, instead of positioning
-//    once on show and going stale if the page moves under it.
+//  - repositions on resize while visible, instead of positioning once on
+//    show and going stale if the page moves under it.
+//  - dismisses on scroll instead of repositioning: a tap-triggered tooltip
+//    (mobile has no mouseleave to close it) shouldn't chase the anchor down
+//    the page as the user scrolls past it.
 
 // Keeps the bubble this far from the viewport edge when it slides, and how
 // far the bubble sits from the anchor before flipping sides.
@@ -34,8 +37,10 @@ export class TooltipController {
   private label: HTMLSpanElement | null = null;
   private arrow: HTMLDivElement | null = null;
   private anchor: HTMLElement | null = null;
+  private visible = false;
 
   private readonly reposition = (): void => this.updatePosition();
+  private readonly dismissOnScroll = (): void => this.hide();
 
   private ensure(): void {
     if (this.outer) return;
@@ -113,6 +118,14 @@ export class TooltipController {
   }
 
   show(anchor: HTMLElement, text: string): void {
+    // Mobile Safari synthesizes a mouseenter AND fires real focus from a
+    // single tap on a focusable element with mouse handlers attached (touch
+    // hover-emulation) — without this guard the second show() call cancels
+    // the first call's fade-in mid-flight and restarts it, reading as a
+    // flicker/jitter on tap.
+    if (this.visible && this.anchor === anchor) return;
+    this.visible = true;
+
     this.ensure();
     const outer = this.outer!;
     const bubble = this.bubble!;
@@ -138,7 +151,7 @@ export class TooltipController {
 
     this.updatePosition();
 
-    window.addEventListener('scroll', this.reposition, true);
+    window.addEventListener('scroll', this.dismissOnScroll, true);
     window.addEventListener('resize', this.reposition);
 
     bubble.getAnimations().forEach((a) => a.cancel());
@@ -152,7 +165,8 @@ export class TooltipController {
   }
 
   hide(): void {
-    window.removeEventListener('scroll', this.reposition, true);
+    this.visible = false;
+    window.removeEventListener('scroll', this.dismissOnScroll, true);
     window.removeEventListener('resize', this.reposition);
 
     const bubble = this.bubble;

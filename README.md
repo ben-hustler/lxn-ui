@@ -238,6 +238,17 @@ not a precaution, when wiring up `appraisal-offer`/`appraisal-customer`:
   `resolve.dedupe: ["react", "react-dom"]`. Without it, Vite resolves the
   symlink to its real path and looks for `react` starting from `lxn-ui`'s
   own `node_modules` — a second React instance, "invalid hook call."
+- **`vite.config.ts`** also needs `optimizeDeps.exclude: ["lxn-ui"]`.
+  Without it, Vite pre-bundles `lxn-ui` into
+  `node_modules/.vite/deps/lxn-ui.js` and the browser caches that response
+  with an immutable `Cache-Control` header. The cache-busting `?v=` on that
+  URL is keyed off the lockfile hash, not the linked package's actual
+  source, so editing `lxn-ui` through the symlink changes nothing the
+  browser thinks it needs to refetch — a real edit silently doesn't show up
+  even after restarting the dev server and deleting `node_modules/.vite`.
+  If this bites you anyway (e.g. the exclude was added after the browser
+  already cached a pre-linked bundle), a hard reload
+  (Ctrl+Shift+R / DevTools → Network → "Disable cache") clears it.
 - **`vitest.config.ts` is a separate config from `vite.config.ts`** — it
   does not inherit anything from it. It needs the same
   `preserveSymlinks`/`dedupe`, **plus** two things Vite's dev server
@@ -270,6 +281,10 @@ some of this stops being needed — don't strip all of it reflexively:
   dependency, so a real `npm install github:...#vX.Y.Z` never creates
   `node_modules/lxn-ui/node_modules` at all — the duplicate-React path this
   guarded against can't happen anymore.
+- `optimizeDeps.exclude: ["lxn-ui"]` in `vite.config.ts` — safe to remove.
+  It only guarded against the symlink's content changing without the
+  lockfile changing. A real install bumps the lockfile on every version
+  change, which busts the browser's cache correctly on its own.
 - `plugins: [react()]` and `test.server.deps.inline: ["lxn-ui"]` in
   `vitest.config.ts` — **keep, permanently.** These solve a different,
   unrelated problem: `lxn-ui` ships raw, uncompiled `.tsx` source with no
