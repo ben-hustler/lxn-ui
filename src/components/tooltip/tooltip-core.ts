@@ -17,6 +17,17 @@ const EDGE_MARGIN = 8;
 const ANCHOR_GAP = 10;
 const ARROW_HALF_WIDTH = 8;
 
+// Math.round() alone snaps to whole CSS pixels, but a whole CSS pixel isn't
+// a whole device pixel once devicePixelRatio != 1 (125%/150% Windows scaling
+// is the common case) — the compositor then anti-aliases the bubble (and
+// its text) at a fractional physical pixel, reading as blur. Snap to the
+// nearest device pixel instead so translate3d lands on a pixel boundary the
+// GPU can actually composite crisply.
+function snapToDevicePixel(px: number): number {
+  const dpr = window.devicePixelRatio || 1;
+  return Math.round(px * dpr) / dpr;
+}
+
 export class TooltipController {
   private outer: HTMLDivElement | null = null;
   private bubble: HTMLDivElement | null = null;
@@ -191,7 +202,7 @@ export class TooltipController {
       Math.max(anchorCenterX - left, ARROW_HALF_WIDTH),
       outer.offsetWidth - ARROW_HALF_WIDTH,
     );
-    this.arrow.style.left = `${Math.round(arrowX)}px`;
+    this.arrow.style.left = `${snapToDevicePixel(arrowX)}px`;
 
     // Positioned via transform (compositor-only, no layout/reflow — this
     // runs on every scroll event, so that matters), but with a pixel value
@@ -199,6 +210,6 @@ export class TooltipController {
     // fractional rendered width hands the browser a sub-pixel offset it
     // applies as-is; translate3d(Xpx, Ypx, 0) with a pre-rounded X/Y gets
     // the same GPU-compositor positioning without that risk.
-    outer.style.transform = `translate3d(${Math.round(left)}px, ${Math.round(top)}px, 0)`;
+    outer.style.transform = `translate3d(${snapToDevicePixel(left)}px, ${snapToDevicePixel(top)}px, 0)`;
   }
 }
