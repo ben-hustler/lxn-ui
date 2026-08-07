@@ -144,11 +144,22 @@ intentional and is not a bug to "fix":
   a fresh install with no review step — the whole point of pinning an exact
   tag is that nothing changes until someone deliberately repeats the install
   command below with a new tag name.
-- **Do not** run `npm update lxn-ui` expecting it to fetch a newer tag. It
-  is a no-op against an exact git-tag pin — there is no range for it to
-  re-resolve within. (If you're ever asked to make `npm update` work
-  generically for this package, that's the `#semver:` switch above — flag
-  the version-drift tradeoff above before doing it.)
+- **Do not** run `npm update lxn-ui` (or a bare `npm update`) assuming it's
+  inert against an exact git-tag pin — it isn't. Unlike `npm install`/`npm
+  ci`, which trust the SHA already recorded in `package-lock.json` and never
+  contact the remote, `npm update` actively re-resolves git dependencies
+  against the remote on every run (verified directly: it took ~3s of real
+  network time against this repo, not an instant no-op). A tag name is a
+  mutable ref as far as npm is concerned — if `v0.2.0` (or any tag) were
+  ever force-moved to a different commit, `npm update lxn-ui` would silently
+  follow it and rewrite the lockfile's resolved SHA, with no new tag name
+  and no review step. It only *looks* like a no-op today because no
+  published tag has ever been force-moved. The actual safeguard is
+  discipline, not tooling: **never force-move a published tag** — cut a new
+  one for any change, per "Releasing a new version" below. Pinning to a raw
+  commit SHA instead of a tag name (`#<full-sha>`) would close this gap
+  completely, at the cost of a human-unreadable dependency spec; not done
+  here, but worth knowing as the harder-guarantee option.
 
 ## Releasing a new version (do this in `lxn-ui`)
 
