@@ -14,9 +14,11 @@ before assuming standard npm-package conventions apply.
 ```
 src/
   components/     Lit/React-agnostic-where-possible UI pieces (e.g. tooltip)
-  tokens/         Shared design tokens (colors, spacing, type scale) — CSS
-                  custom properties, not JS. Empty right now (.gitkeep only)
-                  — nothing has been ported in here yet.
+  tokens/         Shared design tokens — CSS custom properties, not JS.
+                  tokens.css: colors, type scale, spacing, radii, shadows,
+                  motion, layout, plus the .lxn-* semantic classes (see
+                  "Using the design tokens" below). fonts/: the Roboto .ttf
+                  files tokens.css's @font-face rules point at.
   index.ts        Barrel file — the ONLY things exported from here are
                   public API. If it's not re-exported from index.ts, treat
                   it as private, even if nothing technically stops an
@@ -51,6 +53,56 @@ locally again.
   itself; this is a general "don't nest focusable things in an unrelated
   label" hazard, not something specific to this component. See the comment
   above `tabIndex` in `Tooltip.tsx`.
+
+## Using the design tokens
+
+`src/tokens/tokens.css` is the canonical source for LXN's colors, type scale,
+spacing, radii, shadows, motion, and layout values, plus the `Roboto`
+`@font-face` declarations and physical `.ttf` files. A consumer pulls in the
+whole thing with one import, early in its entry point (before any component
+CSS that relies on these variables):
+
+```ts
+import "lxn-ui/src/tokens/tokens.css";
+```
+
+**Look here first — before writing a color, a radius, a shadow, a font size,
+or a heading/label style by hand.** This file also ships ready-to-use
+semantic classes (`.lxn-h1`...`.lxn-h6`, `.lxn-b1`...`.lxn-b3`,
+`.lxn-l1`...`.lxn-l4`, `.lxn-body`, `.lxn-label`, `.lxn-eyebrow`, `.lxn-mono`,
+`.lxn-n1`...`.lxn-n5`, `.lxn-root`) that already combine the right
+font/weight/line-height/color for a given piece of UI. **If you're a
+developer or an agent about to hand-compose a `font:`/`color:` declaration
+from raw custom properties, check whether one of these classes already is
+the thing you're building first** — using it (instead of re-deriving the
+same combination locally, slightly differently, in yet another component)
+is the entire point of tokens living here instead of in each webcomp.
+Reach for a raw `var(--token)` only when no semantic class fits (e.g. a
+one-off border color, a background on a non-text element).
+
+**Canonical names only — no legacy aliases.** `lxn-ui` starts fresh with no
+consumers of its own yet, so unlike the original LXN Design System export
+this was ported from, back-compat aliases were deliberately dropped rather
+than carried forward. If you're migrating code that still references one of
+these, here's where it landed:
+
+| Dropped (legacy) | Use instead |
+|---|---|
+| `--lxn-ink-*` (900...100, 50) | `--lxn-neutral-*` (900...100, 50) — same numbering, `--lxn-white` still exists as its own canonical token |
+| `--lxn-ink-150` | `--lxn-neutral-150` |
+| `--lxn-teal-900/800/700/600/400/10` | `--lxn-accent-deep-teal` / `-blue-teal` / `-teal` / `-muted-teal` / `-light-teal` / `-tint` |
+| `--lxn-primary-600/500/400/300/50` | `--lxn-primary-800` / `-800` / `-700` / `-200` / `-100` (the 5-stop scale: 900/800/700/200/100) |
+| `--radius-xs` / `-lg` / `-xl` | `--radius-sm` / `--radius-md` / `--radius-md` |
+| `--font-family-mono` / `-condensed` | `--font-family-sans` (Roboto is the only face) |
+| `--font-size-body` / `-label` | `--font-size-b2` / `--font-size-l3` |
+| `--color-danger` / `-danger-bg` | `--color-negative` / `--color-negative-bg` |
+| `--color-data-violet/indigo/blue/teal/green` | `--color-data-customer/disclosures/inspection/appraisal/offer` |
+| `--color-status-expired-border` | removed, unused (previous "expired" was outlined; current design isn't) |
+
+One deliberate value change from the original export: `--color-status-open-fg`
+is white (`--lxn-neutral-10`), not black. The export had switched it to black
+or better contrast on the mustard background, but white is what matches the
+live Bubble app — treat white as correct here.
 
 ## Why it's built this way (no registry, no build step)
 
@@ -197,9 +249,24 @@ not a precaution, when wiring up `appraisal-offer`/`appraisal-customer`:
   resolution, and rapid config edits can be masked by a stale cache
   reporting the previous failure.
 
-None of this is needed once a consumer moves off `npm link` onto the real
-tagged dependency — it's purely a symlink-and-Vitest-externalization
-artifact of this in-between state.
+Once a consumer moves off `npm link` onto the real tagged dependency, only
+some of this stops being needed — don't strip all of it reflexively:
+
+- `resolve.preserveSymlinks` / `resolve.dedupe` in **both** configs — safe
+  to remove. These existed purely because the symlink pulled in `lxn-ui`'s
+  own `node_modules` (its sandbox's `react` copy, a `devDependency`).
+  `devDependencies` never get installed for a package consumed *as* a
+  dependency, so a real `npm install github:...#vX.Y.Z` never creates
+  `node_modules/lxn-ui/node_modules` at all — the duplicate-React path this
+  guarded against can't happen anymore.
+- `plugins: [react()]` and `test.server.deps.inline: ["lxn-ui"]` in
+  `vitest.config.ts` — **keep, permanently.** These solve a different,
+  unrelated problem: `lxn-ui` ships raw, uncompiled `.tsx` source with no
+  build step, by design (see "Why it's built this way" above) — true
+  whether it arrived via a symlink or a real git install. Vitest still
+  needs telling not to externalize it (raw TS/JSX can't survive a plain
+  Node `require()`), and esbuild still needs the plugin to apply
+  automatic-JSX outside this project's own tsconfig scope.
 
 To undo a link and restore the real installed dependency: `npm install`
 (no arguments) in the consumer repo.
