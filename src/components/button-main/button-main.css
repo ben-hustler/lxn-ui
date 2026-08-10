@@ -30,6 +30,15 @@
   font-size: var(--font-size-b3);
   line-height: 1;
 }
+/* wide = large's padding/font, plus a min-width so a short label (e.g.
+   "Accept") still reads as a roomy CTA instead of hugging its own text. Not
+   a fixed/max width — it can still grow past 300px in a wider container. */
+.lxn-btn-main--wide:not(.lxn-btn-main--icon-only) {
+  padding: 14px var(--space-6);
+  font-size: 17px;
+  line-height: 1;
+  min-width: 300px;
+}
 
 /* ---- Sizes: icon-only shape (square — equal padding on all sides) ---- */
 .lxn-btn-main--large.lxn-btn-main--icon-only {
@@ -37,6 +46,9 @@
 }
 .lxn-btn-main--small.lxn-btn-main--icon-only {
   padding: 10px;
+}
+.lxn-btn-main--wide.lxn-btn-main--icon-only {
+  padding: 14px;
 }
 
 .lxn-btn-main--full-width {

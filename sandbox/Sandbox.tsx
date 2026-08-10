@@ -28,6 +28,13 @@ function ButtonMainDemo() {
         <ButtonMain label="Tertiary" variant="tertiary" size="small" />
       </div>
       <ButtonMain label="Full width" variant="primary" fullWidth />
+      {/* wide + fullWidth pairing (appraisal-offer's Accept/View Offer): a
+          stretch column so the short-labeled `wide` button sets the shared
+          width and the sibling below fills it exactly. */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+        <ButtonMain label="Accept" variant="primary" size="wide" />
+        <ButtonMain label="View Offer" variant="secondary" fullWidth />
+      </div>
       <div style={{ display: 'flex', gap: 12 }}>
         <ButtonMain icon={<PrintGlyph />} aria-label="Print" variant="tertiary" size="large" />
         <ButtonMain icon={<PrintGlyph />} aria-label="Print" variant="tertiary" size="small" />

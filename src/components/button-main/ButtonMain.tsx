@@ -2,11 +2,13 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import './button-main.css';
 
 type Variant = 'primary' | 'secondary' | 'tertiary';
-type Size = 'large' | 'small';
+type Size = 'large' | 'small' | 'wide';
 
 type BaseProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled'> & {
   variant?: Variant;
-  /** large = offer's CTA feel (~48px), small = customer's feel (~38-40px). Padding-driven, no explicit height. */
+  /** large = offer's CTA feel (~48px), small = customer's feel (~38-40px), wide = large's
+   * padding/font plus a 300px min-width, for a button whose own text is short but should
+   * still read as a prominent, roomy CTA (e.g. Accept). Padding-driven, no explicit height. */
   size?: Size;
   fullWidth?: boolean;
   /** Disables the button and swaps in `loadingLabel` (if given) for the duration. No spinner. */
