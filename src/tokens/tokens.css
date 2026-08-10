@@ -95,6 +95,14 @@
   --color-action-primary-press:    var(--lxn-primary-700);
   --color-action-primary-disabled: var(--lxn-neutral-200);
 
+  /* Icon-button hover tint (e.g. modal close button) — promoted 2026-08-10
+     from a value appraisal-offer/appraisal-customer had each hand-copied
+     identically as a local `--d-hover-blue` token. No existing token in the
+     scale above was an exact match (closest was --lxn-accent-tint at
+     #EFFCFF), so this keeps the already-shipped color exactly rather than
+     shifting it to an approximate neighbor. */
+  --color-hover-accent-bg: #D9F0F7;
+
   /* ---------- Status / Tags ----------
      Pair: background + readable foreground for each status chip. */
   --color-status-open-bg:       #E0A10E;   /* mustard */

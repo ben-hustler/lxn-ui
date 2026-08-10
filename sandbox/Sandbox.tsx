@@ -1,4 +1,38 @@
-import { Tooltip } from '../src/index';
+import { useEffect, useRef, useState } from 'react';
+import { Tooltip, CloseButton, useFocusTrap } from '../src/index';
+
+// Minimal exercise of CloseButton + useFocusTrap together — real consumers
+// (appraisal-offer's OfferModal, appraisal-customer's PopupShell) add their
+// own portal/fade/scrim mechanics around this same pair; none of that is
+// lxn-ui's concern, so it's left out here on purpose. Confirms Escape,
+// Tab-trapping, and the ✕ click all still call onClose.
+function CloseButtonDemo() {
+  const [open, setOpen] = useState(false);
+  const dialogRef = useFocusTrap<HTMLDialogElement>(() => setOpen(false));
+
+  useEffect(() => {
+    const node = dialogRef.current;
+    if (!node) return;
+    if (open && !node.open) node.showModal();
+    if (!open && node.open) node.close();
+  }, [open, dialogRef]);
+
+  return (
+    <div>
+      <button type="button" onClick={() => setOpen(true)}>
+        Open dialog
+      </button>
+      <dialog ref={dialogRef} onCancel={(e) => e.preventDefault()} style={{ position: 'relative', padding: 32 }}>
+        <CloseButton
+          onClick={() => setOpen(false)}
+          style={{ position: 'absolute', top: 12, right: 12 }}
+        />
+        <p style={{ marginTop: 0 }}>Tab/Shift+Tab cycles within this dialog; Escape and the ✕ both close it.</p>
+        <input placeholder="focusable field" />
+      </dialog>
+    </div>
+  );
+}
 
 // Nothing here ships — this just mounts real components against sample
 // content so we can iterate on them live (npm run dev) without needing a
@@ -13,6 +47,8 @@ export function Sandbox() {
         gap: 32,
       }}
     >
+      <CloseButtonDemo />
+
       <Tooltip text="Short tip">
         <span
           style={{
