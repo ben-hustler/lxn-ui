@@ -1,0 +1,60 @@
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import './button-main.css';
+
+type Variant = 'primary' | 'secondary' | 'tertiary';
+type Size = 'large' | 'small';
+
+type BaseProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled'> & {
+  variant?: Variant;
+  /** large = offer's CTA feel (~48px), small = customer's feel (~38-40px). Padding-driven, no explicit height. */
+  size?: Size;
+  fullWidth?: boolean;
+  /** Disables the button and swaps in `loadingLabel` (if given) for the duration. No spinner. */
+  loading?: boolean;
+  loadingLabel?: string;
+  disabled?: boolean;
+};
+
+// Shape (text button vs. icon-only square) is derived from whether `label`
+// is given, not a separate prop — an icon-only button needs `aria-label`
+// since it has no visible text for a screen reader to fall back on.
+type ButtonMainProps =
+  | (BaseProps & { label: string; icon?: ReactNode })
+  | (BaseProps & { label?: undefined; icon: ReactNode; 'aria-label': string });
+
+export function ButtonMain(props: ButtonMainProps) {
+  const {
+    variant = 'primary',
+    size = 'large',
+    fullWidth = false,
+    loading = false,
+    loadingLabel,
+    disabled = false,
+    label,
+    icon,
+    className,
+    type = 'button',
+    ...rest
+  } = props;
+
+  const iconOnly = !label;
+  const text = label ? (loading ? loadingLabel ?? label : label) : undefined;
+
+  const classes = [
+    'lxn-btn-main',
+    `lxn-btn-main--${variant}`,
+    `lxn-btn-main--${size}`,
+    iconOnly ? 'lxn-btn-main--icon-only' : '',
+    fullWidth ? 'lxn-btn-main--full-width' : '',
+    className || '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return (
+    <button type={type} className={classes} disabled={disabled || loading} {...rest}>
+      {text ? <span className="lxn-btn-main-label">{text}</span> : null}
+      {icon ? <span className="lxn-btn-main-icon">{icon}</span> : null}
+    </button>
+  );
+}

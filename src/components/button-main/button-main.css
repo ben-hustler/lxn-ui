@@ -1,0 +1,79 @@
+/* Relies on tokens.css already being imported by the consumer. Height is
+   deliberately never set explicitly — both sizes are padding + font driven,
+   so nothing here fights with content-driven sizing across browsers. */
+.lxn-btn-main {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: var(--font-family-sans);
+  font-weight: var(--font-weight-medium);
+  transition: background-color 120ms var(--ease-standard), border-color 120ms var(--ease-standard),
+    color 120ms var(--ease-standard);
+}
+.lxn-btn-main:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* ---- Sizes: text shape ---- */
+.lxn-btn-main--large:not(.lxn-btn-main--icon-only) {
+  padding: 14px var(--space-6);
+  font-size: 17px;
+  line-height: 1;
+}
+.lxn-btn-main--small:not(.lxn-btn-main--icon-only) {
+  padding: 10px var(--space-5);
+  font-size: var(--font-size-b3);
+  line-height: 1;
+}
+
+/* ---- Sizes: icon-only shape (square — equal padding on all sides) ---- */
+.lxn-btn-main--large.lxn-btn-main--icon-only {
+  padding: 14px;
+}
+.lxn-btn-main--small.lxn-btn-main--icon-only {
+  padding: 10px;
+}
+
+.lxn-btn-main--full-width {
+  width: 100%;
+}
+
+/* ---- Variants ---- */
+.lxn-btn-main--primary {
+  background: var(--color-action-primary);
+  color: var(--lxn-white);
+}
+.lxn-btn-main--primary:hover:not(:disabled) {
+  background: var(--color-action-primary-hover);
+}
+
+.lxn-btn-main--secondary {
+  background: var(--lxn-accent-teal);
+  color: var(--lxn-white);
+}
+.lxn-btn-main--secondary:hover:not(:disabled) {
+  background: var(--lxn-accent-deep-teal);
+}
+
+.lxn-btn-main--tertiary {
+  background: var(--lxn-neutral-10);
+  color: var(--lxn-neutral-500);
+  border: 1px solid var(--lxn-neutral-300);
+}
+.lxn-btn-main--tertiary:hover:not(:disabled) {
+  background: var(--lxn-neutral-50);
+  border-color: var(--lxn-neutral-400);
+  color: var(--color-fg-primary);
+}
+
+.lxn-btn-main-label {
+  white-space: nowrap;
+}
+.lxn-btn-main-icon {
+  display: inline-flex;
+}

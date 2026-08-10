@@ -1,5 +1,51 @@
 import { useEffect, useRef, useState } from 'react';
-import { Tooltip, CloseButton, useFocusTrap } from '../src/index';
+import { Tooltip, CloseButton, useFocusTrap, ButtonMain } from '../src/index';
+
+function PrintGlyph() {
+  return (
+    <svg width={18} height={18} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M19 8H5a3 3 0 0 0-3 3v6h4v4h12v-4h4v-6a3 3 0 0 0-3-3zM16 19H8v-5h8v5zm3-7a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM7 3h10v3H7z" />
+    </svg>
+  );
+}
+
+// Exercises every ButtonMain combination (variant x size x shape) plus
+// fullWidth and loading, so a look here is enough to sanity-check the whole
+// component without needing a consumer repo checked out.
+function ButtonMainDemo() {
+  const [loading, setLoading] = useState(false);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: 320 }}>
+      <div style={{ display: 'flex', gap: 12 }}>
+        <ButtonMain label="Primary" variant="primary" size="large" />
+        <ButtonMain label="Secondary" variant="secondary" size="large" />
+        <ButtonMain label="Tertiary" variant="tertiary" size="large" />
+      </div>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <ButtonMain label="Primary" variant="primary" size="small" />
+        <ButtonMain label="Secondary" variant="secondary" size="small" />
+        <ButtonMain label="Tertiary" variant="tertiary" size="small" />
+      </div>
+      <ButtonMain label="Full width" variant="primary" fullWidth />
+      <div style={{ display: 'flex', gap: 12 }}>
+        <ButtonMain icon={<PrintGlyph />} aria-label="Print" variant="tertiary" size="large" />
+        <ButtonMain icon={<PrintGlyph />} aria-label="Print" variant="tertiary" size="small" />
+      </div>
+      <ButtonMain
+        label="Generate Offer"
+        loadingLabel="Generating…"
+        loading={loading}
+        variant="primary"
+        onClick={() => {
+          setLoading(true);
+          setTimeout(() => setLoading(false), 1500);
+        }}
+      />
+      <ButtonMain label="Disabled" variant="primary" disabled />
+    </div>
+  );
+}
 
 // Minimal exercise of CloseButton + useFocusTrap together — real consumers
 // (appraisal-offer's OfferModal, appraisal-customer's PopupShell) add their
@@ -48,6 +94,8 @@ export function Sandbox() {
       }}
     >
       <CloseButtonDemo />
+
+      <ButtonMainDemo />
 
       <Tooltip text="Short tip">
         <span
