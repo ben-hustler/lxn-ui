@@ -1,0 +1,264 @@
+/* ============================================================
+   LXN Design Tokens — mobile-inspired branch.
+
+   Self-contained per the lxn-ui branch model (see README.md) — this file
+   is a full duplicate of bubble-inspired's tokens.css, not a shared import.
+   Colors, type ramp, spacing, shadows, and motion are IDENTICAL to
+   bubble-inspired on purpose (LXN's brand teal/status-pill colors don't
+   change between flavors — confirmed against the mobile mockup's own
+   screenshots, which use the same values). The only intentional fork is
+   the RADII scale below, informed by (not pixel-matched to) the mobile
+   mockup's bigger-radius, pill-shaped direction — see the Radii section.
+
+   Token NAMES are identical to bubble-inspired's tokens.css. A component
+   written against --radius-sm works unmodified on either branch; only the
+   resolved value differs. This is what makes "same public interface,
+   different look" work at the CSS layer.
+   ============================================================ */
+
+/* Brand sans = Roboto. Ships as local .ttf files in ./fonts. No other faces. */
+@font-face {
+  font-family: "Roboto";
+  src: url("fonts/Roboto-Regular.ttf") format("truetype");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Roboto";
+  src: url("fonts/Roboto-Medium.ttf") format("truetype");
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Roboto";
+  src: url("fonts/Roboto-SemiBold.ttf") format("truetype");
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "Roboto";
+  src: url("fonts/Roboto-Bold.ttf") format("truetype");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+
+:root {
+  /* ---------- Brand / Primary (teal-green action) ---------- */
+  --lxn-primary-900: #00A17B;   /* press */
+  --lxn-primary-800: #219C88;   /* default action */
+  --lxn-primary-700: #35BA9B;   /* hover (lighter) */
+  --lxn-primary-200: #C4DED8;   /* soft tint / hover-on-dark */
+  --lxn-primary-100: #F7FFFD;   /* tint background */
+
+  /* ---------- Accent Teal ----------
+     For SECONDARY teal usage: vehicle names, links, supporting highlights,
+     some chart accents. Never replaces Primary for main CTAs. */
+  --lxn-accent-deep-teal:  #006073;
+  --lxn-accent-blue-teal:  #4083A9;
+  --lxn-accent-teal:       #0F8F8F;
+  --lxn-accent-muted-teal: #398190;
+  --lxn-accent-light-teal: #7FB8C3;
+  --lxn-accent-tint:       #EFFCFF;
+
+  /* ---------- Neutral / Greys (canvas + ink) ---------- */
+  --lxn-neutral-900: #000000;   /* pure black */
+  --lxn-neutral-800: #191919;   /* side panel / nav background */
+  --lxn-neutral-700: #292929;
+  --lxn-neutral-600: #373737;
+  --lxn-neutral-500: #515D5F;   /* secondary text */
+  --lxn-neutral-400: #949C9C;   /* placeholder / disabled label */
+  --lxn-neutral-300: #C7CFCF;   /* hairlines, disabled state */
+  --lxn-neutral-200: #D4D8DB;   /* borders */
+  --lxn-neutral-150: #E2E5E5;   /* between 200 and 100 — hover / subtle-divider */
+  --lxn-neutral-100: #EEEEEE;   /* app background */
+  --lxn-neutral-50:  #F6F7F7;   /* between 100 and 10 — hover / subtle-divider */
+  --lxn-neutral-10:  #FFFFFF;
+  --lxn-white:       var(--lxn-neutral-10);
+
+  /* ---------- Semantic tokens ---------- */
+  --color-bg-app:        var(--lxn-neutral-100);
+  --color-bg-surface:    var(--lxn-white);
+  --color-bg-sunken:     var(--lxn-neutral-50);
+  --color-bg-inverse:    var(--lxn-neutral-800);  /* dark side panel */
+  --color-bg-overlay:    rgba(17,19,21,0.40);
+
+  --color-fg-primary:    var(--lxn-neutral-900);
+  --color-fg-secondary:  var(--lxn-neutral-500);
+  --color-fg-tertiary:   var(--lxn-neutral-400);
+  --color-fg-disabled:   var(--lxn-neutral-300);
+  --color-fg-on-primary: var(--lxn-white);
+  --color-fg-on-inverse: var(--lxn-white);
+  --color-fg-link:       var(--lxn-accent-teal);
+  --color-fg-accent:     var(--lxn-accent-teal);
+
+  --color-border-strong: var(--lxn-neutral-300);
+  --color-border:        var(--lxn-neutral-200);
+  --color-border-subtle: var(--lxn-neutral-150);
+
+  --color-action-primary:          var(--lxn-primary-900);
+  --color-action-primary-hover:    var(--lxn-primary-700);
+  --color-action-primary-press:    var(--lxn-primary-700);
+  --color-action-primary-disabled: var(--lxn-neutral-200);
+
+  /* Icon-button hover tint (e.g. modal close button). */
+  --color-hover-accent-bg: #D9F0F7;
+
+  /* ---------- Status / Tags ----------
+     Pair: background + readable foreground for each status chip. */
+  --color-status-open-bg:       #E0A10E;   /* mustard */
+  --color-status-open-fg:       var(--lxn-neutral-10);
+  --color-status-accepted-bg:   #35BA9B;
+  --color-status-accepted-fg:   var(--lxn-neutral-10);
+  --color-status-expired-bg:    #515D5F;
+  --color-status-expired-fg:    var(--lxn-neutral-10);
+  --color-status-locked-bg:     #810909;
+  --color-status-locked-fg:     var(--lxn-neutral-10);
+
+  /* ---------- Semantic / Feedback ---------- */
+  --color-success:    #00A17B;   /* completed, accepted, positive */
+  --color-success-bg: #D6F2E7;
+  --color-warning:    #FDB712;   /* caution, pending */
+  --color-warning-bg: #FBE9C8;
+  --color-negative:   #BA0730;   /* negative numeric values (loss, ↓ profit) */
+  --color-negative-bg:#FBE0E0;
+  --color-error:      #FF2E5E;   /* form validation, missing required */
+  --color-error-bg:   #FFE0E8;
+  --color-info:       #3D7BD9;
+  --color-info-bg:    #DCE7F7;
+
+  /* ---------- Data Visualization ----------
+     Use ONLY for charts, graph indicators, progress, analytics. Do not
+     replace semantic colors with chart colors outside of those contexts. */
+  --color-data-customer:    #A86DE0;   /* Customer & Total */
+  --color-data-disclosures: #7D7BE9;
+  --color-data-inspection:  #558DE2;
+  --color-data-appraisal:   #46B7C8;   /* Appraisal & Open */
+  --color-data-offer:       #42BCA8;
+  --color-data-won:         #35BA9B;
+  --color-data-lost:        #BA0730;
+  --color-data-unknown:     #398190;
+
+  /* ---------- Type ---------- */
+  --font-family-sans: "Roboto", "Helvetica Neue", Arial, system-ui, sans-serif;
+
+  --font-weight-regular:   400;
+  --font-weight-medium:    500;
+  --font-weight-semibold:  600;
+  --font-weight-bold:      700;
+
+  /* Type ramp — same as bubble-inspired. Density/shape is what mobile-inspired
+     changes, not typography. */
+  --font-size-h1:       30px;
+  --font-size-h2:       24px;
+  --font-size-h3:       20px;
+  --font-size-h4:       18px;
+  --font-size-h5:       18px;
+  --font-size-h6:       16px;
+
+  --font-size-b1:       16px;
+  --font-size-b2:       14px;
+  --font-size-b3:       14px;
+
+  --font-size-l1:       16px;
+  --font-size-l2:       13px;
+  --font-size-l3:       12px;
+  --font-size-l4:       12px;
+
+  --font-size-body-sm:  13px;
+  --font-size-eyebrow:  11px;
+  --font-size-mono:     13px;
+
+  --line-height-tight:   1.2;
+  --line-height-snug:    1.35;
+  --line-height-normal:  1.5;
+  --line-height-relaxed: 1.65;
+
+  --letter-spacing-tight:   -0.01em;
+  --letter-spacing-normal:   0;
+  --letter-spacing-wide:     0.04em;
+  --letter-spacing-wider:    0.08em;
+
+  /* ---------- Spacing scale (4px grid) — same as bubble-inspired ---------- */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ---------- Radii ----------
+     THE fork. bubble-inspired: 5/10/pill (crisp, dense, disc-precedent).
+     mobile-inspired: 12/20/999, informed by the mockup's bigger-radius,
+     pill-heavy direction (its cards run 12-24px, icon buttons are full
+     circles) but chosen as a coherent 3-step scale rather than copying the
+     mockup's inconsistent per-screen values verbatim. */
+  --radius-sm:   12px;          /* default for inputs, chips, buttons, cards */
+  --radius-md:   20px;          /* large surfaces, tile launchers */
+  --radius-pill: 999px;         /* pill / circular icon buttons */
+
+  /* ---------- Elevation ---------- */
+  --shadow-xs: 0 1px 0 rgba(17,19,21,0.04);
+  --shadow-sm: 0 1px 2px rgba(17,19,21,0.06), 0 1px 1px rgba(17,19,21,0.04);
+  --shadow-md: 0 2px 6px rgba(17,19,21,0.08), 0 1px 2px rgba(17,19,21,0.04);
+  --shadow-lg: 0 8px 24px rgba(17,19,21,0.10), 0 2px 6px rgba(17,19,21,0.06);
+  --shadow-xl: 0 20px 40px rgba(17,19,21,0.16), 0 4px 10px rgba(17,19,21,0.08);
+  --shadow-focus: 0 0 0 3px rgba(0,168,120,0.30);
+
+  /* ---------- Motion ---------- */
+  --motion-quick: 120ms;
+  --motion-base:  180ms;
+  --motion-slow:  260ms;
+  --ease-standard:   cubic-bezier(0.2, 0, 0.1, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0.7, 0, 1);
+
+  /* ---------- Layout ---------- */
+  --layout-topnav-height:    56px;
+  --layout-sidepanel-width: 320px;
+  --layout-content-max:    1440px;
+}
+
+/* ============================================================
+   Semantic element styles — reach for these FIRST. If you're about to
+   hand-compose font/color custom properties for headings, body copy,
+   labels, or numerics, one of these almost certainly already matches
+   what LXN intends — using it (rather than re-deriving the combination)
+   is how the product stays visually consistent across webcomps.
+   ============================================================ */
+
+.lxn-h1      { font: var(--font-weight-bold) var(--font-size-h1)/var(--line-height-tight) var(--font-family-sans); letter-spacing: var(--letter-spacing-tight); color: var(--color-fg-primary); }
+.lxn-h2      { font: var(--font-weight-medium) var(--font-size-h2)/var(--line-height-snug) var(--font-family-sans); color: var(--color-fg-primary); }
+.lxn-h3      { font: var(--font-weight-medium) var(--font-size-h3)/var(--line-height-snug) var(--font-family-sans); color: var(--color-fg-primary); }
+.lxn-h4      { font: var(--font-weight-medium) var(--font-size-h4)/var(--line-height-snug) var(--font-family-sans); color: var(--color-fg-primary); }
+.lxn-h5      { font: var(--font-weight-regular) var(--font-size-h5)/var(--line-height-snug) var(--font-family-sans); color: var(--color-fg-primary); }
+.lxn-h6      { font: var(--font-weight-medium) var(--font-size-h6)/var(--line-height-snug) var(--font-family-sans); color: var(--color-fg-primary); }
+.lxn-b1      { font: var(--font-weight-regular) var(--font-size-b1)/var(--line-height-normal) var(--font-family-sans); color: var(--color-fg-primary); }
+.lxn-b2      { font: var(--font-weight-regular) var(--font-size-b2)/var(--line-height-normal) var(--font-family-sans); color: var(--color-fg-primary); }
+.lxn-b3      { font: var(--font-weight-medium)  var(--font-size-b3)/var(--line-height-normal) var(--font-family-sans); color: var(--color-fg-primary); }
+.lxn-l1      { font: var(--font-weight-regular) var(--font-size-l1)/var(--line-height-snug) var(--font-family-sans); color: var(--color-fg-primary); }
+.lxn-l2      { font: var(--font-weight-regular) var(--font-size-l2)/var(--line-height-snug) var(--font-family-sans); color: var(--color-fg-secondary); }
+.lxn-l3      { font: var(--font-weight-medium)  var(--font-size-l3)/var(--line-height-snug) var(--font-family-sans); color: var(--color-fg-secondary); }
+.lxn-l4      { font: var(--font-weight-regular) var(--font-size-l4)/var(--line-height-snug) var(--font-family-sans); color: var(--color-fg-tertiary); }
+.lxn-body    { font: var(--font-weight-regular) var(--font-size-b2)/var(--line-height-normal) var(--font-family-sans); color: var(--color-fg-primary); }
+.lxn-body-sm { font: var(--font-weight-regular) var(--font-size-body-sm)/var(--line-height-normal) var(--font-family-sans); color: var(--color-fg-secondary); }
+.lxn-label   { font: var(--font-weight-medium) var(--font-size-l3)/var(--line-height-snug) var(--font-family-sans); color: var(--color-fg-secondary); }
+.lxn-eyebrow { font: var(--font-weight-medium) var(--font-size-eyebrow)/var(--line-height-tight) var(--font-family-sans); letter-spacing: var(--letter-spacing-wide); text-transform: uppercase; color: var(--color-fg-secondary); }
+.lxn-mono    { font: var(--font-weight-regular) var(--font-size-mono)/var(--line-height-normal) var(--font-family-sans); color: var(--color-fg-primary); font-variant-numeric: tabular-nums; }
+.lxn-num     { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+/* Numerics — tabular Roboto, hero KPIs → compact metrics */
+.lxn-n1 { font: var(--font-weight-semibold) 28px/var(--line-height-tight) var(--font-family-sans); font-variant-numeric: tabular-nums; letter-spacing: var(--letter-spacing-tight); color: var(--color-fg-primary); }
+.lxn-n2 { font: var(--font-weight-semibold) 24px/var(--line-height-tight) var(--font-family-sans); font-variant-numeric: tabular-nums; letter-spacing: var(--letter-spacing-tight); color: var(--color-fg-primary); }
+.lxn-n3 { font: var(--font-weight-semibold) 20px/var(--line-height-tight) var(--font-family-sans); font-variant-numeric: tabular-nums; color: var(--color-fg-primary); }
+.lxn-n4 { font: var(--font-weight-medium)   18px/var(--line-height-snug)  var(--font-family-sans); font-variant-numeric: tabular-nums; color: var(--color-fg-primary); }
+.lxn-n5 { font: var(--font-weight-regular)  16px/var(--line-height-snug)  var(--font-family-sans); font-variant-numeric: tabular-nums; color: var(--color-fg-primary); }
+
+/* Base reset for cards using this system. */
+.lxn-root, .lxn-root * { box-sizing: border-box; }
+.lxn-root {
+  font-family: var(--font-family-sans);
+  color: var(--color-fg-primary);
+  background: var(--color-bg-app);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

@@ -1,0 +1,100 @@
+/* Relies on tokens.css already being imported by the consumer. Height is
+   deliberately never set explicitly — both sizes are padding + font driven,
+   so nothing here fights with content-driven sizing across browsers.
+
+   mobile-inspired shape fork: text buttons use --radius-sm (12px here,
+   vs. bubble-inspired's 5px) with roomier padding; icon-only buttons go
+   fully circular (--radius-pill) instead of square — mirrors the mockup's
+   circular icon-button affordances (app.css's 44px `border-radius: 999px`
+   icon buttons) without copying its exact numbers. */
+.lxn-btn-main {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: var(--font-family-sans);
+  font-weight: var(--font-weight-medium);
+  transition: background-color 120ms var(--ease-standard), border-color 120ms var(--ease-standard),
+    color 120ms var(--ease-standard);
+}
+.lxn-btn-main:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* ---- Sizes: text shape ---- */
+.lxn-btn-main--large:not(.lxn-btn-main--icon-only) {
+  padding: 16px var(--space-8);
+  font-size: 17px;
+  line-height: 1;
+}
+.lxn-btn-main--small:not(.lxn-btn-main--icon-only) {
+  padding: 12px var(--space-6);
+  font-size: var(--font-size-b3);
+  line-height: 1;
+}
+/* wide = large's padding/font, plus a min-width so a short label (e.g.
+   "Accept") still reads as a roomy CTA instead of hugging its own text. */
+.lxn-btn-main--wide:not(.lxn-btn-main--icon-only) {
+  padding: 16px var(--space-8);
+  font-size: 17px;
+  line-height: 1;
+  min-width: 300px;
+}
+
+/* ---- Sizes: icon-only shape (circular — equal padding on all sides,
+   border-radius overridden to a full pill regardless of --radius-sm) ---- */
+.lxn-btn-main--large.lxn-btn-main--icon-only {
+  padding: 16px;
+  border-radius: var(--radius-pill);
+}
+.lxn-btn-main--small.lxn-btn-main--icon-only {
+  padding: 12px;
+  border-radius: var(--radius-pill);
+}
+.lxn-btn-main--wide.lxn-btn-main--icon-only {
+  padding: 16px;
+  border-radius: var(--radius-pill);
+}
+
+.lxn-btn-main--full-width {
+  width: 100%;
+}
+
+/* ---- Variants ---- */
+.lxn-btn-main--primary {
+  background: var(--color-action-primary);
+  color: var(--lxn-white);
+}
+.lxn-btn-main--primary:hover:not(:disabled) {
+  background: var(--color-action-primary-hover);
+}
+
+.lxn-btn-main--secondary {
+  background: var(--lxn-accent-teal);
+  color: var(--lxn-white);
+}
+.lxn-btn-main--secondary:hover:not(:disabled) {
+  background: var(--lxn-accent-deep-teal);
+}
+
+.lxn-btn-main--tertiary {
+  background: var(--lxn-neutral-10);
+  color: var(--lxn-neutral-500);
+  border: 1px solid var(--lxn-neutral-300);
+}
+.lxn-btn-main--tertiary:hover:not(:disabled) {
+  background: var(--lxn-neutral-50);
+  border-color: var(--lxn-neutral-400);
+  color: var(--color-fg-primary);
+}
+
+.lxn-btn-main-label {
+  white-space: nowrap;
+}
+.lxn-btn-main-icon {
+  display: inline-flex;
+}

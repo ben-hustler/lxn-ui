@@ -1,0 +1,27 @@
+/* Chrome only — no position/inset here. Consumers place this via their own
+   className (fixed/top/right + responsive tiers are layout-specific, see
+   CloseButton.tsx's own comment). Relies on tokens.css already being
+   imported by the consumer for --radius-pill/--shadow-sm/--ease-standard/
+   --color-fg-secondary/--color-hover-accent-bg/--lxn-accent-muted-teal.
+
+   mobile-inspired shape fork: 44px circular (--radius-pill) instead of
+   bubble-inspired's 36px square — mirrors the mockup's 44px circular icon
+   buttons (app.css:216). Same props, same hover/click behavior. */
+.lxn-close-btn {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: #fff;
+  color: var(--color-fg-secondary);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: background 120ms var(--ease-standard), color 120ms var(--ease-standard);
+}
+.lxn-close-btn:hover {
+  background: var(--color-hover-accent-bg);
+  color: var(--lxn-accent-muted-teal);
+}
