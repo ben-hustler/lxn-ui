@@ -97,6 +97,8 @@ export function Sandbox() {
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         padding: 64,
         display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'flex-start',
         gap: 32,
       }}
     >
@@ -122,9 +124,9 @@ export function Sandbox() {
         </span>
       </Tooltip>
 
-      <Tooltip text="A much longer tooltip message, long enough to check that width-measuring and wrapping behave correctly across multiple lines">
+      <Tooltip text="A much longer tooltip message, if imbalanced, it'll leave an orphan right -> here <-">
         <span style={{ cursor: 'default', textDecoration: 'underline dotted' }}>
-          Hover for a long tooltip
+          Hover for an (imbalanced?) tooltip
         </span>
       </Tooltip>
 

@@ -69,6 +69,7 @@ export class TooltipController {
       padding: '8px',
       maxWidth: '240px',
       opacity: '0',
+      textWrap: 'balance'
     });
 
     const label = document.createElement('span');
