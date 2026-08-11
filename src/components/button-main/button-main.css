@@ -2,11 +2,17 @@
    deliberately never set explicitly — both sizes are padding + font driven,
    so nothing here fights with content-driven sizing across browsers.
 
-   mobile-inspired shape fork: text buttons use --radius-sm (12px here,
-   vs. bubble-inspired's 5px) with roomier padding; icon-only buttons go
-   fully circular (--radius-pill) instead of square — mirrors the mockup's
-   circular icon-button affordances (app.css's 44px `border-radius: 999px`
-   icon buttons) without copying its exact numbers. */
+   Padding stays roomier than bubble-inspired's (16px/12px vertical vs.
+   14px/10px) — that wasn't part of the 2026-08-11 radii reversion below,
+   just the corner rounding. Icon-only shape, however, is no longer forked:
+   it used to go fully circular (--radius-pill) regardless of size,
+   mirroring the mobile mockup's circular icon buttons; reverted once it
+   became clear this flavor's actual consumer (appraisal-customer) is
+   desktop-embedded-in-Bubble, not a mobile surface, so — same as
+   tokens.css's radii scale — icon-only buttons just inherit the base rule's
+   --radius-sm now, square-cornered like bubble-inspired's. A consumer that
+   still wants a specific button fully round (e.g. a "+" affordance) does so
+   itself via `className`, same as any other one-off chrome exception. */
 .lxn-btn-main {
   display: inline-flex;
   align-items: center;
@@ -45,19 +51,16 @@
   min-width: 300px;
 }
 
-/* ---- Sizes: icon-only shape (circular — equal padding on all sides,
-   border-radius overridden to a full pill regardless of --radius-sm) ---- */
+/* ---- Sizes: icon-only shape (square — equal padding on all sides,
+   border-radius inherited from the base rule's --radius-sm) ---- */
 .lxn-btn-main--large.lxn-btn-main--icon-only {
   padding: 16px;
-  border-radius: var(--radius-pill);
 }
 .lxn-btn-main--small.lxn-btn-main--icon-only {
   padding: 12px;
-  border-radius: var(--radius-pill);
 }
 .lxn-btn-main--wide.lxn-btn-main--icon-only {
   padding: 16px;
-  border-radius: var(--radius-pill);
 }
 
 .lxn-btn-main--full-width {

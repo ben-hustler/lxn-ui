@@ -188,14 +188,18 @@
   --space-16: 64px;
 
   /* ---------- Radii ----------
-     THE fork. bubble-inspired: 5/10/pill (crisp, dense, disc-precedent).
-     mobile-inspired: 12/20/999, informed by the mockup's bigger-radius,
-     pill-heavy direction (its cards run 12-24px, icon buttons are full
-     circles) but chosen as a coherent 3-step scale rather than copying the
-     mockup's inconsistent per-screen values verbatim. */
-  --radius-sm:   12px;          /* default for inputs, chips, buttons, cards */
-  --radius-md:   20px;          /* large surfaces, tile launchers */
-  --radius-pill: 999px;         /* pill / circular icon buttons */
+     No longer forked (2026-08-11) — identical to bubble-inspired's 5/10/100.
+     This branch briefly ran a bigger, mockup-informed 12/20/999 scale, but
+     that was reverted once it became clear the mobile mockup's big-radius/
+     pill-heavy direction is a mobile-only aesthetic that doesn't apply to
+     this flavor's actual consumer (appraisal-customer), which is desktop-
+     embedded-in-Bubble like everything else lxn-ui serves today. Values
+     kept here (not deleted) so a component written against --radius-sm
+     still works unmodified if this branch ever does gain a real mobile
+     consumer and forks again. */
+  --radius-sm:   5px;           /* default for inputs, chips, buttons, cards */
+  --radius-md:   10px;          /* large surfaces, tile launchers */
+  --radius-pill: 100px;         /* pill / brand pill / circular tokens */
 
   /* ---------- Elevation ---------- */
   --shadow-xs: 0 1px 0 rgba(17,19,21,0.04);
