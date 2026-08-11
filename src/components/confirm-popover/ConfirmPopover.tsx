@@ -121,6 +121,16 @@ export function ConfirmPopover({
       };
     }
 
+    // Guarded rather than assumed: this project's jsdom test environment
+    // doesn't implement the Web Animations API (`Element.animate`/
+    // `getAnimations` are both undefined there, unlike every evergreen
+    // browser) — an unguarded call throws and crashes the whole component,
+    // same fail-open convention as this codebase's ResizeObserver checks
+    // elsewhere. Skipping the animation under jsdom changes nothing a test
+    // would assert on — `rendered`/`open` still drive the DOM correctly,
+    // there's just no transition to wait out.
+    if (typeof inner.animate !== 'function') return cleanupListeners;
+
     inner.getAnimations().forEach((a) => a.cancel());
     inner.animate(
       open
