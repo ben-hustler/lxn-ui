@@ -1,6 +1,10 @@
 /* ============================================================
-   LXN Design Tokens — canonical source, ported from the LXN
-   Design System v2 export (colors_and_type.css).
+   LXN Design Tokens — bubble-inspired branch (self-contained per the
+   lxn-ui branch model, see README.md — mobile-inspired has its own copy
+   of this file, forking only the Radii scale below).
+
+   Canonical source, ported from the LXN Design System v2 export
+   (colors_and_type.css).
 
    This is a fresh start for lxn-ui: legacy/back-compat aliases from
    the original export (numeric --lxn-teal-*, --lxn-ink-*, --radius-xs/lg/xl,

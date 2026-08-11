@@ -6,9 +6,11 @@ type Size = 'large' | 'small' | 'wide';
 
 type BaseProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled'> & {
   variant?: Variant;
-  /** large = offer's CTA feel (~48px), small = customer's feel (~38-40px), wide = large's
+  /** large = primary CTA emphasis, small = secondary/inline emphasis, wide = large's
    * padding/font plus a 300px min-width, for a button whose own text is short but should
-   * still read as a prominent, roomy CTA (e.g. Accept). Padding-driven, no explicit height. */
+   * still read as a prominent, roomy CTA (e.g. Accept). Padding-driven, no explicit height —
+   * actual px per size is a branch-specific CSS concern (button-main.css), not part of this
+   * component's contract. */
   size?: Size;
   fullWidth?: boolean;
   /** Disables the button and swaps in `loadingLabel` (if given) for the duration. No spinner. */
@@ -17,9 +19,11 @@ type BaseProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled'> & {
   disabled?: boolean;
 };
 
-// Shape (text button vs. icon-only square) is derived from whether `label`
-// is given, not a separate prop — an icon-only button needs `aria-label`
-// since it has no visible text for a screen reader to fall back on.
+// Shape (text button vs. icon-only) is derived from whether `label` is
+// given, not a separate prop — an icon-only button needs `aria-label` since
+// it has no visible text for a screen reader to fall back on. Icon-only
+// buttons render square on this branch (button-main.css), circular on
+// mobile-inspired — the API doesn't know or care which.
 type ButtonMainProps =
   | (BaseProps & { label: string; icon?: ReactNode })
   | (BaseProps & { label?: undefined; icon: ReactNode; 'aria-label': string });
