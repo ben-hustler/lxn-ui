@@ -92,6 +92,16 @@
   color: var(--color-fg-primary);
 }
 
+/* Destructive actions (Remove/Delete) — no separate hover token exists for
+   --color-negative, so hover just brightens it rather than inventing one. */
+.lxn-btn-main--danger {
+  background: var(--color-negative);
+  color: var(--lxn-white);
+}
+.lxn-btn-main--danger:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
 .lxn-btn-main-label {
   white-space: nowrap;
 }
