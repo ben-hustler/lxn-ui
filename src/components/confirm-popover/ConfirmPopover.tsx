@@ -17,6 +17,20 @@ const ARROW_HALF_WIDTH = 8;
 const ENTER_MS = 160;
 const EXIT_MS = 120;
 
+// Same technique as Tooltip's own snapToDevicePixel (tooltip-core.ts) —
+// Math.round() alone snaps to whole CSS pixels, but a whole CSS pixel isn't
+// a whole DEVICE pixel once devicePixelRatio != 1 (125%/150% Windows
+// scaling is the common case), so the compositor anti-aliases the popover
+// at a fractional physical pixel, reading as blur. Snap to the nearest
+// device pixel instead so translate3d lands on a pixel boundary the GPU
+// can actually composite crisply. (2026-08-11 — this component's own
+// position math was rounding to whole CSS pixels only, unlike Tooltip's;
+// reported as "the popover is blurry.")
+function snapToDevicePixel(px: number): number {
+  const dpr = window.devicePixelRatio || 1;
+  return Math.round(px * dpr) / dpr;
+}
+
 interface ConfirmPopoverProps {
   open: boolean;
   /** The element this popover is anchored to — also the click target that's
@@ -104,8 +118,8 @@ export function ConfirmPopover({
       const left = Math.min(Math.max(anchorCenterX - outer.offsetWidth / 2, EDGE_MARGIN), maxLeft);
       const arrowX = Math.min(Math.max(anchorCenterX - left, ARROW_HALF_WIDTH), outer.offsetWidth - ARROW_HALF_WIDTH);
 
-      outer.style.transform = `translate3d(${Math.round(left)}px, ${Math.round(top)}px, 0)`;
-      outer.style.setProperty('--lxn-confirm-popover-arrow-x', `${Math.round(arrowX)}px`);
+      outer.style.transform = `translate3d(${snapToDevicePixel(left)}px, ${snapToDevicePixel(top)}px, 0)`;
+      outer.style.setProperty('--lxn-confirm-popover-arrow-x', `${snapToDevicePixel(arrowX)}px`);
     };
 
     let cleanupListeners = () => {};
@@ -184,8 +198,8 @@ export function ConfirmPopover({
           <span className="lxn-confirm-popover-message">{message}</span>
         </div>
         <div className="lxn-confirm-popover-actions">
-          <ButtonMain size="small" variant="tertiary" label={cancelLabel} onClick={onClose} />
-          <ButtonMain size="small" variant={destructive ? 'danger' : 'primary'} label={confirmLabel} onClick={onConfirm} />
+          <ButtonMain size="small" variant="tertiary" label={cancelLabel} fullWidth onClick={onClose} />
+          <ButtonMain size="small" variant={destructive ? 'danger' : 'primary'} label={confirmLabel} fullWidth onClick={onConfirm} />
         </div>
       </div>
     </div>,

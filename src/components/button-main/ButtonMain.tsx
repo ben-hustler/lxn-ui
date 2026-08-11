@@ -60,8 +60,10 @@ export function ButtonMain(props: ButtonMainProps) {
 
   return (
     <button type={type} className={classes} disabled={disabled || loading} {...rest}>
-      {text ? <span className="lxn-btn-main-label">{text}</span> : null}
+      {/* Icon before label (2026-08-11, was the other way round) — matches
+       * every reference usage ("<icon> History", "<icon> Remove", etc.). */}
       {icon ? <span className="lxn-btn-main-icon">{icon}</span> : null}
+      {text ? <span className="lxn-btn-main-label">{text}</span> : null}
     </button>
   );
 }
