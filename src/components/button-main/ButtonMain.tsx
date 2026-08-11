@@ -22,8 +22,9 @@ type BaseProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled'> & {
 // Shape (text button vs. icon-only) is derived from whether `label` is
 // given, not a separate prop — an icon-only button needs `aria-label` since
 // it has no visible text for a screen reader to fall back on. Icon-only
-// buttons render square on both branches (button-main.css) — mobile-
-// inspired briefly forked this circular, reverted 2026-08-11.
+// buttons render square on both branches (button-main.css) — the mobile-
+// inspired circular fork was reverted 2026-08-11; see that file's own
+// comment.
 type ButtonMainProps =
   | (BaseProps & { label: string; icon?: ReactNode })
   | (BaseProps & { label?: undefined; icon: ReactNode; 'aria-label': string });
@@ -59,8 +60,10 @@ export function ButtonMain(props: ButtonMainProps) {
 
   return (
     <button type={type} className={classes} disabled={disabled || loading} {...rest}>
-      {text ? <span className="lxn-btn-main-label">{text}</span> : null}
+      {/* Icon before label (2026-08-11, was the other way round) — matches
+       * every reference usage ("<icon> History", "<icon> Remove", etc.). */}
       {icon ? <span className="lxn-btn-main-icon">{icon}</span> : null}
+      {text ? <span className="lxn-btn-main-label">{text}</span> : null}
     </button>
   );
 }

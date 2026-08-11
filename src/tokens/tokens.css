@@ -94,9 +94,16 @@
   --color-border:        var(--lxn-neutral-200);
   --color-border-subtle: var(--lxn-neutral-150);
 
-  --color-action-primary:          var(--lxn-primary-900);
+  /* Fixed 2026-08-11 — this was wired to -900 ("press", the darkest shade,
+     per this file's own --lxn-primary-* comments) as the RESTING color,
+     with press and hover both pointing at -700. That's backwards: resting
+     should be -800 ("default action"), hover should lighten to -700, and
+     press should darken to -900 — confirmed against a real screenshot
+     (button green noticeably darker/muted than it should be, compared
+     against the same brand green elsewhere in the live product). */
+  --color-action-primary:          var(--lxn-primary-800);
   --color-action-primary-hover:    var(--lxn-primary-700);
-  --color-action-primary-press:    var(--lxn-primary-700);
+  --color-action-primary-press:    var(--lxn-primary-900);
   --color-action-primary-disabled: var(--lxn-neutral-200);
 
   /* Icon-button hover tint (e.g. modal close button) — promoted 2026-08-10
