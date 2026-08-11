@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import './button-main.css';
 
-type Variant = 'primary' | 'secondary' | 'tertiary';
+type Variant = 'primary' | 'secondary' | 'tertiary' | 'danger';
 type Size = 'large' | 'small' | 'wide';
 
 type BaseProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled'> & {

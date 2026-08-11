@@ -1,0 +1,63 @@
+/* Anchored confirm popover — icon + message + Cancel/Confirm actions,
+   positioned relative to its anchor (see ConfirmPopover.tsx for the
+   above/below flip + horizontal clamp math, and --lxn-confirm-popover-arrow-x
+   for how the arrow stays centered on the anchor as the popover itself
+   slides to stay clear of the viewport edge). */
+.lxn-confirm-popover {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 2147483647;
+  width: 260px;
+  max-width: calc(100vw - 16px);
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-4);
+  font-family: var(--font-family-sans);
+}
+
+.lxn-confirm-popover-arrow {
+  position: absolute;
+  left: var(--lxn-confirm-popover-arrow-x, 20px);
+  width: 0;
+  height: 0;
+  border-style: solid;
+  transform: translateX(-50%);
+}
+/* 'above'/'below' = where the popover sits relative to its anchor — set as
+   ConfirmPopover.tsx's own data-placement, same convention as Tooltip's
+   arrow orientation. */
+.lxn-confirm-popover[data-placement='above'] .lxn-confirm-popover-arrow {
+  top: 100%;
+  border-width: 8px 8px 0;
+  border-color: var(--color-bg-surface) transparent transparent transparent;
+}
+.lxn-confirm-popover[data-placement='below'] .lxn-confirm-popover-arrow {
+  bottom: 100%;
+  border-width: 0 8px 8px;
+  border-color: transparent transparent var(--color-bg-surface) transparent;
+}
+
+.lxn-confirm-popover-body {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+.lxn-confirm-popover-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  color: var(--color-fg-secondary);
+}
+.lxn-confirm-popover-message {
+  font-size: var(--font-size-b2);
+  line-height: var(--line-height-normal);
+  color: var(--color-fg-primary);
+}
+
+.lxn-confirm-popover-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}

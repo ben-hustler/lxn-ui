@@ -1,5 +1,48 @@
 import { useEffect, useRef, useState } from 'react';
-import { Tooltip, CloseButton, useFocusTrap, ButtonMain } from '../src/index';
+import { Tooltip, CloseButton, useFocusTrap, ButtonMain, ConfirmPopover } from '../src/index';
+
+function TrashGlyph() {
+  return (
+    <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M6 7h12v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7zm3-3h6l1 2h4v2H4V6h4l1-2z" />
+    </svg>
+  );
+}
+
+// Exercises the flip/slide math against a real anchor button (not a
+// synthetic rect) plus outside-click/Escape/scroll dismissal.
+function ConfirmPopoverDemo() {
+  const [open, setOpen] = useState(false);
+  // ButtonMain doesn't forward refs, so the anchor is this wrapping span
+  // (hugs the button's box via inline-block) rather than the button itself —
+  // same workaround a consumer needs today; see appraisal-customer's
+  // IconButton for the alternative (a plain <button> can take a ref directly).
+  const anchorRef = useRef<HTMLSpanElement>(null);
+
+  return (
+    <div>
+      <span ref={anchorRef} style={{ display: 'inline-block' }}>
+        <ButtonMain
+          icon={<TrashGlyph />}
+          aria-label="Remove"
+          variant="tertiary"
+          size="small"
+          onClick={() => setOpen((v) => !v)}
+        />
+      </span>
+      <ConfirmPopover
+        open={open}
+        anchorRef={anchorRef}
+        onClose={() => setOpen(false)}
+        onConfirm={() => setOpen(false)}
+        icon={<TrashGlyph />}
+        message="Remove John Doe from this appraisal? You can re-add them later."
+        confirmLabel="Remove"
+        destructive
+      />
+    </div>
+  );
+}
 
 function PrintGlyph() {
   return (
@@ -105,6 +148,8 @@ export function Sandbox() {
       <CloseButtonDemo />
 
       <ButtonMainDemo />
+
+      <ConfirmPopoverDemo />
 
       <Tooltip text="Short tip">
         <span
