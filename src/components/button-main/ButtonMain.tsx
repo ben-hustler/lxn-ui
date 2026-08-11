@@ -22,8 +22,8 @@ type BaseProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled'> & {
 // Shape (text button vs. icon-only) is derived from whether `label` is
 // given, not a separate prop — an icon-only button needs `aria-label` since
 // it has no visible text for a screen reader to fall back on. Icon-only
-// buttons render square on this branch (button-main.css), circular on
-// mobile-inspired — the API doesn't know or care which.
+// buttons render square on both branches (button-main.css) — mobile-
+// inspired briefly forked this circular, reverted 2026-08-11.
 type ButtonMainProps =
   | (BaseProps & { label: string; icon?: ReactNode })
   | (BaseProps & { label?: undefined; icon: ReactNode; 'aria-label': string });

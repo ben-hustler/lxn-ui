@@ -2,12 +2,22 @@
    positioned relative to its anchor (see ConfirmPopover.tsx for the
    above/below flip + horizontal clamp math, and --lxn-confirm-popover-arrow-x
    for how the arrow stays centered on the anchor as the popover itself
-   slides to stay clear of the viewport edge). */
+   slides to stay clear of the viewport edge).
+
+   Split into an outer positioning wrapper (`transform: translate3d(...)`,
+   set imperatively) and this inner element (background/padding/shadow +
+   the enter/exit fade, animated via the Web Animations API) — same split
+   Tooltip uses between its own `outer`/`bubble`, since one element can't
+   own a position transform AND an animated transform without the two
+   fighting each other. */
 .lxn-confirm-popover {
   position: fixed;
   top: 0;
   left: 0;
   z-index: 2147483647;
+}
+
+.lxn-confirm-popover-inner {
   width: 260px;
   max-width: calc(100vw - 16px);
   background: var(--color-bg-surface);
@@ -26,8 +36,8 @@
   transform: translateX(-50%);
 }
 /* 'above'/'below' = where the popover sits relative to its anchor — set as
-   ConfirmPopover.tsx's own data-placement, same convention as Tooltip's
-   arrow orientation. */
+   ConfirmPopover.tsx's own data-placement (on the outer wrapper), same
+   convention as Tooltip's arrow orientation. */
 .lxn-confirm-popover[data-placement='above'] .lxn-confirm-popover-arrow {
   top: 100%;
   border-width: 8px 8px 0;
