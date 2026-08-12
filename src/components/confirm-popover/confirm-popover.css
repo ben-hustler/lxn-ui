@@ -64,6 +64,7 @@
   font-size: var(--font-size-b2);
   line-height: var(--line-height-normal);
   color: var(--color-fg-primary);
+  text-wrap: balance;
 }
 
 /* Cancel/Confirm span the row equally (2026-08-11) — `fullWidth` on each
