@@ -1,0 +1,21 @@
+/* Color pairing only — sizing/shape comes from button-main.css's shared
+   `.lxn-btn-main`/`.lxn-btn-main--{size}` classes (see ButtonCard.tsx).
+   Values match the mockup's own `.btn-secondary` (neutral-100 bg + the
+   default fg-primary text) and its Remove button's inline override
+   (negative-bg + negative text) exactly — both already existed as tokens,
+   nothing new invented here. */
+.lxn-btn-card--primary {
+  background: var(--lxn-neutral-100);
+  color: var(--color-fg-primary);
+}
+.lxn-btn-card--primary:hover:not(:disabled) {
+  background: var(--lxn-neutral-150);
+}
+
+.lxn-btn-card--danger {
+  background: var(--color-negative-bg);
+  color: var(--color-negative);
+}
+.lxn-btn-card--danger:hover:not(:disabled) {
+  filter: brightness(0.97);
+}

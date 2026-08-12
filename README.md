@@ -35,7 +35,8 @@ here.
 src/
   components/
     focus-trap/      useFocusTrap
-    button-main/      ButtonMain
+    button-main/      ButtonMain — main CTA button (primary/secondary/tertiary/danger)
+    button-card/     ButtonCard — compact in-card row button (primary/danger only)
     close-button/    CloseButton
     confirm-popover/ ConfirmPopover
     tooltip/         Tooltip + TooltipController

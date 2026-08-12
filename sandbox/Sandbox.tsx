@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Tooltip, CloseButton, useFocusTrap, ButtonMain, ConfirmPopover } from '../src/index';
+import { Tooltip, CloseButton, useFocusTrap, ButtonMain, ButtonCard, ConfirmPopover } from '../src/index';
 
 function TrashGlyph() {
   return (
@@ -97,6 +97,21 @@ function ButtonMainDemo() {
   );
 }
 
+// ButtonCard — the compact, in-card-row sibling to ButtonMain (History/Edit/
+// Remove on a customer/detail card), not a main CTA. Only two variants exist
+// on purpose.
+function ButtonCardDemo() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: 320 }}>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <ButtonCard label="History" icon={<PrintGlyph />} variant="primary" fullWidth />
+        <ButtonCard label="Edit" icon={<PrintGlyph />} variant="primary" fullWidth />
+        <ButtonCard label="Remove" icon={<PrintGlyph />} variant="danger" fullWidth />
+      </div>
+    </div>
+  );
+}
+
 // Minimal exercise of CloseButton + useFocusTrap together — real consumers
 // (appraisal-offer's OfferModal, appraisal-customer's PopupShell) add their
 // own portal/fade/scrim mechanics around this same pair; none of that is
@@ -148,6 +163,8 @@ export function Sandbox() {
       <CloseButtonDemo />
 
       <ButtonMainDemo />
+
+      <ButtonCardDemo />
 
       <ConfirmPopoverDemo />
 
