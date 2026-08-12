@@ -1,13 +1,17 @@
 // Shared icon set — Lucide (ISC licensed), stroke-only, verbatim path data.
 // One file, all icons, same convention appraisal-offer/appraisal-customer
-// each already use locally for their own icons.tsx — this is that same idea
-// promoted to lxn-ui once a glyph is needed by more than one consumer (the
-// same reasoning Tooltip was promoted for, see README's "What this is for").
+// each used to keep locally in their own icons.tsx — fully centralized here
+// as of 2026-08-12 (see lxn-ui/src/components/icons/ICONS.md for the full
+// name → source-glyph → license table and notes on what changed visually).
 //
 // Default stroke is 1.7, not Lucide's own default of 2 — matches the
 // "Appraisal Mobile" mockup's own Icon wrapper exactly (its components.jsx:
 // "Lucide-style outline, 24x24, 1.7px stroke"), which is the reference this
 // set is being built against.
+//
+// Every glyph below is named for what it's used FOR (matching the existing
+// List/Pencil/Trash/Check convention), not for its literal Lucide name —
+// ICONS.md is the map from one to the other.
 
 import type { ReactNode, SVGProps } from 'react';
 
@@ -43,9 +47,12 @@ export function ListIcon(props: IconProps) {
   );
 }
 
-/** Edit — Lucide's `edit` glyph: an outlined box with a pencil overlapping
-   its corner. (Lucide's newer `square-pen` variant has slightly different
-   coordinates for the same idea — this is the classic `edit` path.) */
+/** Edit — Lucide's classic `edit` glyph: an outlined page with a pencil
+   overlapping its corner. Lucide has since renamed/replaced this with
+   `square-pen` (a different pictograph — just a corner pen, no page), but
+   this path is the real, widely-shipped pre-rename `edit` glyph, not an
+   invented one — kept because it reads more clearly as "edit this record"
+   at the sizes this app uses it at than the newer corner-pen glyph does. */
 export function PencilIcon(props: IconProps) {
   return (
     <Icon {...props}>
@@ -65,14 +72,154 @@ export function TrashIcon(props: IconProps) {
   );
 }
 
-/** Plain checkmark — Lucide's `check` glyph, no circle around it. For
-   StatusBadge's "Selected" use (2026-08-11, explicit request) — distinct
-   from a filled check-in-a-circle glyph, which is a different icon for a
-   different purpose (e.g. HistoryCard's CURRENT tag). */
+/** Plain checkmark — Lucide's `check` glyph, no circle around it. Used for
+   StatusBadge's "Selected" state and for HistoryCard's inline "CURRENT" tag
+   (that tag's own chip supplies any background/color — see 4a mock's
+   `barIsSelected` branch — so the icon itself just needs to be a checkmark,
+   not a second nested circle-plus-check; a separate `SelectedCheckIcon` with
+   its own filled circle used to exist for this and was retired 2026-08-12
+   as a duplicate of this glyph). */
 export function CheckIcon(props: IconProps) {
   return (
     <Icon {...props}>
       <path d="M20 6 9 17l-5-5" />
     </Icon>
+  );
+}
+
+/** Search field's magnifying glass — Lucide's `search` glyph, verbatim. */
+export function SearchIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.34-4.34" />
+    </Icon>
+  );
+}
+
+/** Inline info/tooltip trigger — Lucide's `info` glyph, verbatim. Previously
+   two near-duplicate filled circle+"i" glyphs existed (one per project,
+   identical path data) that weren't sourced from any real icon set; both
+   retired 2026-08-12 in favor of this one shared stroke version. */
+export function InfoIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 16v-4" />
+      <path d="M12 8h.01" />
+    </Icon>
+  );
+}
+
+/** HistoryCard's "opens a different appraisal entirely" row glyph — Lucide's
+   `arrow-up-right` glyph, verbatim. */
+export function ExternalArrowIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M7 7h10v10" />
+      <path d="M7 17 17 7" />
+    </Icon>
+  );
+}
+
+/** "View Offer" button's external-link glyph — Lucide's `external-link`
+   glyph, verbatim. */
+export function ViewOfferIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M15 3h6v6" />
+      <path d="M10 14 21 3" />
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    </Icon>
+  );
+}
+
+/** History/Edit view's "Back" link — Lucide's `chevron-left` glyph,
+   verbatim. */
+export function BackArrowIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m15 18-6-6 6-6" />
+    </Icon>
+  );
+}
+
+/** Dropdown/pill chevron — Lucide's `chevron-down` glyph, verbatim. */
+export function ChevronDownIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m6 9 6 6 6-6" />
+    </Icon>
+  );
+}
+
+/** Full-mode card's circle "+" icon — Google Material Icons' filled
+   `add_circle` glyph, verbatim (kept as filled Material rather than
+   migrated to Lucide's stroke `circle-plus` — explicit call 2026-08-12 to
+   leave this one as it was). */
+export function AddCircleIcon(props: SVGProps<SVGSVGElement> & { size?: number }) {
+  const { size = 24, ...rest } = props;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" {...rest}>
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z" />
+    </svg>
+  );
+}
+
+/** Bare "+" (no circle of its own) — Google Material Icons' filled `add`
+   glyph, verbatim. Find's "New Customer" row badge draws its own round
+   background, so this can't be AddCircleIcon above without doubling up two
+   circles. Kept as filled Material rather than migrated to Lucide's stroke
+   `plus` — same explicit call as AddCircleIcon above. */
+export function PlusIcon(props: SVGProps<SVGSVGElement> & { size?: number }) {
+  const { size = 24, ...rest } = props;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" {...rest}>
+      <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+    </svg>
+  );
+}
+
+/** Reset (amount pill) and Undo (tentative bubble) — same glyph for both,
+   per v1's Offer Modal Prototype. Lucide's `rotate-ccw` glyph, verbatim —
+   the counter-clockwise direction is what reads as "undo/reset" rather than
+   "refresh" (Lucide's clockwise `rotate-cw`), matching what this glyph
+   means in both of its uses here. */
+export function ResetIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+      <path d="M3 3v5h5" />
+    </Icon>
+  );
+}
+
+/** StepIncompleteNotice's leading glyph — Lucide's `circle-alert` glyph,
+   verbatim (outlined circle + exclamation mark, matching the production
+   banner's real icon in spirit — a grey outlined circle with "!", not a
+   filled warning triangle). */
+export function WarningIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </Icon>
+  );
+}
+
+/** Dismiss glyph for anything that isn't CloseButton's own chrome (e.g.
+   ErrorBanner's inline dismiss, which owns its own small transparent button
+   and just needs the bare glyph) — Google Material Design's "close" glyph,
+   filled, verbatim. Picked 2026-08-10 (see CloseButton.tsx) as canonical
+   over a stroked-two-line X that had silently drifted from it despite a
+   comment claiming the two matched exactly; CloseButton imports this same
+   export rather than keeping its own copy. */
+export function CloseIcon(props: SVGProps<SVGSVGElement> & { size?: number }) {
+  const { size = 24, ...rest } = props;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...rest}>
+      <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+    </svg>
   );
 }

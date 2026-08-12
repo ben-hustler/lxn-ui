@@ -25,9 +25,11 @@ type BaseProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled'> & {
 // buttons render square on both branches (button-main.css) — the mobile-
 // inspired circular fork was reverted 2026-08-11; see that file's own
 // comment.
+type IconPosition = 'leading' | 'trailing';
+
 type ButtonMainProps =
-  | (BaseProps & { label: string; icon?: ReactNode })
-  | (BaseProps & { label?: undefined; icon: ReactNode; 'aria-label': string });
+  | (BaseProps & { label: string; icon?: ReactNode; iconPosition?: IconPosition })
+  | (BaseProps & { label?: undefined; icon: ReactNode; iconPosition?: IconPosition; 'aria-label': string });
 
 export function ButtonMain(props: ButtonMainProps) {
   const {
@@ -39,6 +41,7 @@ export function ButtonMain(props: ButtonMainProps) {
     disabled = false,
     label,
     icon,
+    iconPosition = 'leading',
     className,
     type = 'button',
     ...rest
@@ -58,12 +61,26 @@ export function ButtonMain(props: ButtonMainProps) {
     .filter(Boolean)
     .join(' ');
 
+  const iconEl = icon ? <span className="lxn-btn-main-icon">{icon}</span> : null;
+  const textEl = text ? <span className="lxn-btn-main-label">{text}</span> : null;
+
   return (
     <button type={type} className={classes} disabled={disabled || loading} {...rest}>
-      {/* Icon before label (2026-08-11, was the other way round) — matches
-       * every reference usage ("<icon> History", "<icon> Remove", etc.). */}
-      {icon ? <span className="lxn-btn-main-icon">{icon}</span> : null}
-      {text ? <span className="lxn-btn-main-label">{text}</span> : null}
+      {/* Default leading (icon before label) — matches ButtonCard's fixed
+       * order ("<icon> History", "<icon> Remove", etc.). Pass
+       * iconPosition="trailing" for the text-then-icon reading (e.g. "View
+       * Offer <icon>"). No-op when there's no icon or no label. */}
+      {iconPosition === 'trailing' ? (
+        <>
+          {textEl}
+          {iconEl}
+        </>
+      ) : (
+        <>
+          {iconEl}
+          {textEl}
+        </>
+      )}
     </button>
   );
 }

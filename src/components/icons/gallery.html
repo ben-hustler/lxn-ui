@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>lxn-ui — icon gallery</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1a1a1a;
+    --muted: #6b7280;
+    --card-bg: #f7f7f8;
+    --card-border: #e5e7eb;
+    --accent: #0f766e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181d;
+      --fg: #e8e8ea;
+      --muted: #9aa0aa;
+      --card-bg: #1f2229;
+      --card-border: #2c3038;
+      --accent: #5eead4;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 40px 32px 80px;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+  p.subtitle {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0 0 32px;
+    max-width: 640px;
+    line-height: 1.5;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
+    max-width: 1100px;
+  }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 18px 14px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+  }
+  .card svg { color: var(--accent); flex-shrink: 0; }
+  .card .name {
+    font-size: 13px;
+    font-weight: 600;
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  }
+  .card .source {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.4;
+  }
+  .card .source code {
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+    font-size: 11px;
+  }
+  footer {
+    margin-top: 40px;
+    font-size: 12px;
+    color: var(--muted);
+    max-width: 640px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+  <h1>lxn-ui icons</h1>
+  <p class="subtitle">
+    Every icon exported from <code>lxn-ui</code>, rendered at its default size (24px, 1.7px stroke
+    except the filled <code>CloseIcon</code>). See <code>ICONS.md</code> in this same folder for the
+    full name → real-source-glyph → license table. This file is static — no build step, just open it
+    in a browser.
+  </p>
+
+  <div class="grid">
+
+    <div class="card">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+      </svg>
+      <div class="name">ListIcon</div>
+      <div class="source">Lucide <code>list</code></div>
+    </div>
+
+    <div class="card">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+        <path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+      </svg>
+      <div class="name">PencilIcon</div>
+      <div class="source">Lucide <code>edit</code> (classic, pre-rename)</div>
+    </div>
+
+    <div class="card">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      </svg>
+      <div class="name">TrashIcon</div>
+      <div class="source">Lucide <code>trash</code></div>
+    </div>
+
+    <div class="card">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 6 9 17l-5-5" />
+      </svg>
+      <div class="name">CheckIcon</div>
+      <div class="source">Lucide <code>check</code></div>
+    </div>
+
+    <div class="card">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8" />
+        <path d="m21 21-4.34-4.34" />
+      </svg>
+      <div class="name">SearchIcon</div>
+      <div class="source">Lucide <code>search</code></div>
+    </div>
+
+    <div class="card">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 16v-4" />
+        <path d="M12 8h.01" />
+      </svg>
+      <div class="name">InfoIcon</div>
+      <div class="source">Lucide <code>info</code></div>
+    </div>
+
+    <div class="card">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7 7h10v10" />
+        <path d="M7 17 17 7" />
+      </svg>
+      <div class="name">ExternalArrowIcon</div>
+      <div class="source">Lucide <code>arrow-up-right</code></div>
+    </div>
+
+    <div class="card">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 3h6v6" />
+        <path d="M10 14 21 3" />
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      </svg>
+      <div class="name">ViewOfferIcon</div>
+      <div class="source">Lucide <code>external-link</code></div>
+    </div>
+
+    <div class="card">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m15 18-6-6 6-6" />
+      </svg>
+      <div class="name">BackArrowIcon</div>
+      <div class="source">Lucide <code>chevron-left</code></div>
+    </div>
+
+    <div class="card">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m6 9 6 6 6-6" />
+      </svg>
+      <div class="name">ChevronDownIcon</div>
+      <div class="source">Lucide <code>chevron-down</code></div>
+    </div>
+
+    <div class="card">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z" />
+      </svg>
+      <div class="name">AddCircleIcon</div>
+      <div class="source">Material Design <code>add_circle</code> (filled)</div>
+    </div>
+
+    <div class="card">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+      </svg>
+      <div class="name">PlusIcon</div>
+      <div class="source">Material Design <code>add</code> (filled)</div>
+    </div>
+
+    <div class="card">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+        <path d="M3 3v5h5" />
+      </svg>
+      <div class="name">ResetIcon</div>
+      <div class="source">Lucide <code>rotate-ccw</code></div>
+    </div>
+
+    <div class="card">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <line x1="12" y1="16" x2="12.01" y2="16" />
+      </svg>
+      <div class="name">WarningIcon</div>
+      <div class="source">Lucide <code>circle-alert</code></div>
+    </div>
+
+    <div class="card">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+      </svg>
+      <div class="name">CloseIcon</div>
+      <div class="source">Material Design <code>close</code> (filled)</div>
+    </div>
+
+  </div>
+
+  <footer>
+    Source of truth is <code>icons.tsx</code> in this folder — this page's markup is a manual copy of
+    those paths for quick visual review, not generated from the component. If you edit an icon in
+    <code>icons.tsx</code>, update the matching <code>&lt;svg&gt;</code> here too.
+  </footer>
+</body>
+</html>
