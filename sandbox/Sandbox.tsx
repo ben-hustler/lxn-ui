@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Tooltip, CloseButton, useFocusTrap, ButtonMain, ButtonCard, ConfirmPopover } from '../src/index';
+import { Tooltip, CloseButton, useFocusTrap, ButtonMain, ButtonCard, ConfirmPopover, ListIcon, PencilIcon, TrashIcon } from '../src/index';
 
 function TrashGlyph() {
   return (
@@ -104,9 +104,9 @@ function ButtonCardDemo() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: 320 }}>
       <div style={{ display: 'flex', gap: 8 }}>
-        <ButtonCard label="History" icon={<PrintGlyph />} variant="primary" fullWidth />
-        <ButtonCard label="Edit" icon={<PrintGlyph />} variant="primary" fullWidth />
-        <ButtonCard label="Remove" icon={<PrintGlyph />} variant="danger" fullWidth />
+        <ButtonCard label="History" icon={<ListIcon size={18} />} variant="primary" fullWidth />
+        <ButtonCard label="Edit" icon={<PencilIcon size={18} />} variant="primary" fullWidth />
+        <ButtonCard label="Remove" icon={<TrashIcon size={18} />} variant="danger" fullWidth />
       </div>
     </div>
   );

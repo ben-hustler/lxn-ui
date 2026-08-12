@@ -39,6 +39,8 @@ src/
     button-card/     ButtonCard — compact in-card row button (primary/danger only)
     close-button/    CloseButton
     confirm-popover/ ConfirmPopover
+    icons/           ListIcon, PencilIcon, TrashIcon — Lucide, stroke-only,
+                      1.7px default (matches the mockup's own Icon wrapper)
     tooltip/         Tooltip + TooltipController
   tokens/            tokens.css + fonts/
   index.ts           Barrel file — the ONLY things exported from here are

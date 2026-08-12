@@ -5,3 +5,5 @@ export { CloseButton } from './components/close-button/CloseButton';
 export { ButtonMain } from './components/button-main/ButtonMain';
 export { ButtonCard } from './components/button-card/ButtonCard';
 export { ConfirmPopover } from './components/confirm-popover/ConfirmPopover';
+export { ListIcon, PencilIcon, TrashIcon } from './components/icons/icons';
+export type { IconProps } from './components/icons/icons';
