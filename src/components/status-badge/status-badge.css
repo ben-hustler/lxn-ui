@@ -1,0 +1,30 @@
+/* Relies on tokens.css already being imported by the consumer. Padding/
+   radius/type values match appraisal-customer's own .cust-status-pill
+   exactly — that component's comment already documented itself as
+   reproducing "the design system's real exported LxnStatusPill component"
+   from tokens, so it's the more authoritative of the two pre-existing
+   implementations (appraisal-offer's .ofr-status-tag used slightly
+   different padding/radius with no such backing). */
+.lxn-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  font: var(--font-weight-medium) var(--font-size-eyebrow) / 1 var(--font-family-sans);
+  letter-spacing: var(--letter-spacing-wide);
+  text-transform: uppercase;
+  color: var(--lxn-white);
+  white-space: nowrap;
+}
+.lxn-status-badge--icon-only {
+  padding: 5px;
+}
+.lxn-status-badge-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.lxn-status-badge-label {
+  display: inline-flex;
+}

@@ -64,3 +64,15 @@ export function TrashIcon(props: IconProps) {
     </Icon>
   );
 }
+
+/** Plain checkmark — Lucide's `check` glyph, no circle around it. For
+   StatusBadge's "Selected" use (2026-08-11, explicit request) — distinct
+   from a filled check-in-a-circle glyph, which is a different icon for a
+   different purpose (e.g. HistoryCard's CURRENT tag). */
+export function CheckIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M20 6 9 17l-5-5" />
+    </Icon>
+  );
+}

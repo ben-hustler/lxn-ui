@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Tooltip, CloseButton, useFocusTrap, ButtonMain, ButtonCard, ConfirmPopover, ListIcon, PencilIcon, TrashIcon } from '../src/index';
+import { Tooltip, CloseButton, useFocusTrap, ButtonMain, ButtonCard, ConfirmPopover, ListIcon, PencilIcon, TrashIcon, CheckIcon, StatusBadge } from '../src/index';
 
 function TrashGlyph() {
   return (
@@ -112,6 +112,21 @@ function ButtonCardDemo() {
   );
 }
 
+// StatusBadge — background is always handed in by the consumer (lxn-ui
+// doesn't own any status vocabulary); these five just exercise real
+// consumer colors so the shape/type treatment is visible.
+function StatusBadgeDemo() {
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, width: 320 }}>
+      <StatusBadge label="Selected" icon={<CheckIcon size={12} />} background="var(--color-status-accepted-bg)" />
+      <StatusBadge label="Open" icon={<CheckIcon size={12} />} background="var(--color-status-open-bg)" />
+      <StatusBadge label="Expired" icon={<CheckIcon size={12} />} background="var(--color-status-expired-bg)" />
+      <StatusBadge label="Locked" icon={<CheckIcon size={12} />} background="var(--color-status-locked-bg)" />
+      <StatusBadge icon={<CheckIcon size={12} />} aria-label="Selected" background="var(--color-status-accepted-bg)" />
+    </div>
+  );
+}
+
 // Minimal exercise of CloseButton + useFocusTrap together — real consumers
 // (appraisal-offer's OfferModal, appraisal-customer's PopupShell) add their
 // own portal/fade/scrim mechanics around this same pair; none of that is
@@ -165,6 +180,8 @@ export function Sandbox() {
       <ButtonMainDemo />
 
       <ButtonCardDemo />
+
+      <StatusBadgeDemo />
 
       <ConfirmPopoverDemo />
 

@@ -39,8 +39,13 @@ src/
     button-card/     ButtonCard — compact in-card row button (primary/danger only)
     close-button/    CloseButton
     confirm-popover/ ConfirmPopover
-    icons/           ListIcon, PencilIcon, TrashIcon — Lucide, stroke-only,
-                      1.7px default (matches the mockup's own Icon wrapper)
+    icons/           ListIcon, PencilIcon, TrashIcon, CheckIcon — Lucide,
+                      stroke-only, 1.7px default (matches the mockup's own
+                      Icon wrapper)
+    status-badge/    StatusBadge — icon or icon+label chip, all-caps/white-
+                      on-color; consumer supplies background (no built-in
+                      status vocabulary) and icon; wrap with Tooltip for a
+                      hover description, don't merge classes onto it
     tooltip/         Tooltip + TooltipController
   tokens/            tokens.css + fonts/
   index.ts           Barrel file — the ONLY things exported from here are
