@@ -1,0 +1,265 @@
+/* Local dev-harness chrome only — nothing here ships. Built entirely from
+   tokens.css's semantic classes/variables (see Sandbox.tsx's Section/
+   Swatch helpers) so the harness models correct token usage by example,
+   not just the components it demos. */
+
+.lxn-sandbox {
+  min-height: 100vh;
+  background: var(--color-bg-app);
+}
+
+.lxn-sandbox-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: var(--space-2);
+  column-gap: var(--space-10);
+  /* Extra top padding (vs. the plain --space-3 on every other side) reserves
+     a blank strip above the nav links themselves — the Tooltip section's
+     viewport-edge test dots sit fixed at the real top:8px viewport edge
+     (z-index above this nav, see Sandbox.tsx's EDGE_CASES), so without this
+     they'd render directly on top of whichever nav link happens to fall at
+     that x position. */
+  padding: 36px var(--space-8) var(--space-3);
+  background: var(--color-bg-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+.lxn-sandbox-nav-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  row-gap: var(--space-1);
+  column-gap: var(--space-4);
+}
+.lxn-sandbox-nav-group-label {
+  margin-right: var(--space-1);
+  color: var(--color-fg-tertiary);
+}
+.lxn-sandbox-nav a {
+  color: var(--color-fg-secondary);
+  text-decoration: none;
+}
+.lxn-sandbox-nav a:hover {
+  color: var(--color-fg-accent);
+}
+
+.lxn-sandbox-content {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 var(--space-8) var(--space-16);
+}
+
+.lxn-sandbox-section {
+  scroll-margin-top: var(--space-12);
+  padding: var(--space-10) 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.lxn-sandbox-section:last-child {
+  border-bottom: none;
+}
+.lxn-sandbox-section-header {
+  margin-bottom: var(--space-6);
+}
+.lxn-sandbox-section-header p {
+  margin: var(--space-1) 0 0;
+  max-width: 640px;
+}
+
+.lxn-sandbox-subsection + .lxn-sandbox-subsection {
+  margin-top: var(--space-8);
+}
+.lxn-sandbox-subsection-title {
+  margin: 0 0 var(--space-3);
+}
+
+/* Component demos render on a real card surface, not the bare app canvas —
+   matches how these components actually get consumed (a card/panel, not
+   --color-bg-app directly), and avoids near-invisible cases like
+   ButtonCard's primary variant (--lxn-neutral-100) sitting on a page
+   background that resolves to almost the same gray. */
+.lxn-demo-surface {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-6);
+}
+
+.lxn-sandbox-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+}
+.lxn-sandbox-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  max-width: 360px;
+}
+
+/* ---- Swatches (color / radius / shadow) ---- */
+.lxn-swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: var(--space-4);
+}
+.lxn-swatch {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface);
+  overflow: hidden;
+}
+.lxn-swatch-chip {
+  height: 56px;
+  display: flex;
+  align-items: flex-end;
+  padding: var(--space-2);
+}
+.lxn-swatch-chip-text {
+  font: var(--font-weight-medium) var(--font-size-b3) / 1 var(--font-family-sans);
+}
+.lxn-swatch-meta {
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  border-top: 1px solid var(--color-border-subtle);
+}
+.lxn-swatch-token {
+  display: block;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 11px;
+  color: var(--color-fg-primary);
+  word-break: break-all;
+}
+.lxn-swatch-hint {
+  display: block;
+  margin-top: 2px;
+}
+
+/* ---- Typography ramp ---- */
+.lxn-type-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+.lxn-type-row:last-child {
+  border-bottom: none;
+}
+.lxn-type-row-label {
+  flex: 0 0 132px;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 11px;
+  color: var(--color-fg-secondary);
+}
+.lxn-type-row-sample {
+  min-width: 0;
+}
+
+/* ---- Spacing scale ---- */
+.lxn-space-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-1) 0;
+}
+.lxn-space-row-label {
+  flex: 0 0 168px;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 11px;
+  color: var(--color-fg-secondary);
+}
+.lxn-space-bar {
+  height: 14px;
+  min-width: 2px;
+  background: var(--color-action-primary);
+  border-radius: var(--radius-sm);
+}
+
+/* ---- Radii ---- */
+.lxn-radius-swatch {
+  width: 72px;
+  height: 72px;
+  background: var(--color-action-primary);
+}
+
+/* ---- Shadows ---- */
+.lxn-shadow-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  padding: var(--space-6);
+  background: var(--color-bg-sunken);
+  border-radius: var(--radius-md);
+}
+.lxn-shadow-card {
+  width: 128px;
+  height: 76px;
+  background: var(--color-bg-surface);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---- Motion ---- */
+.lxn-motion-track {
+  position: relative;
+  height: 32px;
+  background: var(--color-bg-sunken);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.lxn-motion-dot {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-action-primary);
+}
+.lxn-motion-track--quick .lxn-motion-dot {
+  transition: transform var(--motion-quick) var(--ease-standard);
+}
+.lxn-motion-track--base .lxn-motion-dot {
+  transition: transform var(--motion-base) var(--ease-standard);
+}
+.lxn-motion-track--slow .lxn-motion-dot {
+  transition: transform var(--motion-slow) var(--ease-emphasized);
+}
+.lxn-motion-track.is-active .lxn-motion-dot {
+  transform: translateX(240px);
+}
+.lxn-motion-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.lxn-motion-row-label {
+  flex: 0 0 168px;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 11px;
+  color: var(--color-fg-secondary);
+}
+.lxn-motion-row-track {
+  flex: 1 1 auto;
+  max-width: 280px;
+}
+
+/* ---- Misc demo affordances ---- */
+.lxn-sandbox-demo-label {
+  display: block;
+  margin-top: var(--space-2);
+}
+.lxn-icon-swatch {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
