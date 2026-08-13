@@ -46,6 +46,19 @@ describe('<SearchSelect>', () => {
     expect(onSearch).toHaveBeenCalledWith('sam');
   });
 
+  it("calls onSearch('') on every open, so a caller sharing one search endpoint across several instances refreshes to the full list instead of showing a stale filtered one", () => {
+    const onSearch = vi.fn();
+    render(<SearchSelect value="" options={OPTIONS} onSelect={vi.fn()} onSearch={onSearch} />);
+
+    fireEvent.click(screen.getByRole('button'));
+    expect(onSearch).toHaveBeenCalledWith('');
+
+    onSearch.mockClear();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    fireEvent.click(screen.getByRole('button'));
+    expect(onSearch).toHaveBeenCalledWith('');
+  });
+
   it('clicking an option calls onSelect and closes the panel', () => {
     const onSelect = vi.fn();
     render(<SearchSelect value="" options={OPTIONS} onSelect={onSelect} />);
