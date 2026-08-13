@@ -127,7 +127,13 @@ export function SearchSelect({
   );
 
   return (
-    <div ref={rootRef} className={['lxn-search-select', className].filter(Boolean).join(' ')}>
+    // stopPropagation at the root: every click inside this component
+    // (trigger, search input, an option) is this widget's own business, not
+    // something an ancestor's own click handler should also see — e.g. a
+    // host embedding this inside an otherwise-clickable card/row (appraisal-
+    // users' UsersCard) needs picking a value to open only the picker, not
+    // also fire the card's own onClick.
+    <div ref={rootRef} className={['lxn-search-select', className].filter(Boolean).join(' ')} onClick={(e) => e.stopPropagation()}>
       {trigger}
       {open && (
         <div className="lxn-search-select-panel">
