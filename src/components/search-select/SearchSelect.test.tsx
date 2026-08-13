@@ -93,6 +93,46 @@ describe('<SearchSelect>', () => {
     expect(screen.queryByText('Frodo Baggins')).toBeFalsy();
   });
 
+  it('portals the panel into the enclosing <dialog>, not document.body, so it stays inside that dialog\'s top-layer promotion instead of rendering behind it', () => {
+    const dialog = document.createElement('dialog');
+    // A closed <dialog> (no `open` attribute) is display:none per the UA
+    // stylesheet — its content wouldn't be in the accessibility tree at all.
+    dialog.setAttribute('open', '');
+    document.body.appendChild(dialog);
+    const { unmount } = render(<SearchSelect value="" options={OPTIONS} onSelect={vi.fn()} />, { container: dialog });
+
+    fireEvent.click(screen.getByRole('button'));
+
+    expect(dialog.querySelector('.lxn-search-select-panel')).toBeTruthy();
+    // Not a direct child of document.body outside the dialog — proves the
+    // portal target really is the dialog, not the document.body fallback.
+    expect(Array.from(document.body.children)).not.toContain(document.querySelector('.lxn-search-select-panel'));
+
+    unmount();
+    dialog.remove();
+  });
+
+  it('falls back to document.body when there is no enclosing <dialog>', () => {
+    render(<SearchSelect value="" options={OPTIONS} onSelect={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button'));
+
+    const panel = document.querySelector('.lxn-search-select-panel');
+    expect(panel).toBeTruthy();
+    expect(panel!.closest('dialog')).toBeFalsy();
+  });
+
+  it('scrolling the panel\'s own option list does not close it, but scrolling elsewhere does', () => {
+    render(<SearchSelect value="" options={OPTIONS} onSelect={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button'));
+    const list = document.querySelector('.lxn-search-select-list')!;
+
+    fireEvent.scroll(list);
+    expect(screen.getByText('Frodo Baggins')).toBeTruthy();
+
+    fireEvent.scroll(window);
+    expect(screen.queryByText('Frodo Baggins')).toBeFalsy();
+  });
+
   it('renderTrigger fully replaces the default trigger markup, wiring only onClick', () => {
     const onSelect = vi.fn();
     render(

@@ -1,8 +1,10 @@
 /* Default (no renderTrigger) box — a plain bordered value box, matching the
    look every current consumer's own mockup used before wiring a custom
-   trigger. A host passing renderTrigger never sees any of this. */
+   trigger. A host passing renderTrigger never sees any of this. No longer
+   `position: relative` (2026-08-13) — the panel is portalled and positioned
+   via `getBoundingClientRect()` + `position: fixed` now (SearchSelect.tsx),
+   not anchored to this box via `position: absolute`. */
 .lxn-search-select {
-  position: relative;
   display: block;
   width: 100%;
 }
@@ -35,21 +37,23 @@
   color: var(--lxn-neutral-400);
 }
 
-/* ---- Panel — opens below the trigger, whatever the trigger's own markup
-   is (default or renderTrigger-supplied); positioned relative to this
-   component's own root, not portalled, since every current consumer sits in
-   a plain, non-scroll-clipping container. ---- */
+/* ---- Panel — portalled (to the enclosing <dialog> if there is one,
+   document.body otherwise — SearchSelect.tsx) and positioned via an inline
+   `transform: translate3d(...)` computed from the trigger's live rect, same
+   technique as ConfirmPopover's own outer wrapper. `top`/`left` stay 0 as
+   the base the transform offsets from; `width` is also set inline per-open
+   (floor MIN_PANEL_WIDTH in SearchSelect.tsx), not here. This is what lets
+   the panel escape a scrolling/overflow-clipped ancestor (e.g. appraisal-
+   users' `.users-modal { overflow-y: auto }`) instead of being cut off. */
 .lxn-search-select-panel {
-  position: absolute;
-  top: calc(100% + 6px);
+  position: fixed;
+  top: 0;
   left: 0;
-  right: 0;
-  min-width: 240px;
   background: var(--lxn-white);
   border: 1px solid var(--lxn-neutral-200);
   border-radius: 8px;
   box-shadow: var(--shadow-lg);
-  z-index: 200;
+  z-index: 1200;
   overflow: hidden;
 }
 .lxn-search-select-search {
