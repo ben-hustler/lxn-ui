@@ -8,18 +8,24 @@ reasoning isn't lost, not as a queued task.
 
 ## Shared CDN-hosted webfont (Roboto), instead of each consumer embedding its own copy
 
-**Status: deferred (2026-08-12).** Current behavior stays as-is for now.
+**Status: partially done.** The local ttf→woff2 conversion (this file's step 1, minus
+the CDN hosting) landed 2026-08-13 — `lxn-ui` now ships `.woff2` instead of `.ttf` and
+`tokens.css` points at the local files, still repo-relative. The CDN-hosting +
+absolute-URL piece (the part that actually dedups bytes across consumers on the same
+page) remains deferred, scope/timing unchanged from below.
 
 ### The problem this would solve
 
 Every consumer that wants real Roboto (not a fallback system font) currently has to
-either import `tokens.css` normally (letting Vite base64-inline the four `.ttf`
+either import `tokens.css` normally (letting Vite base64-inline the four woff2
 weights into its own build) or do something bespoke:
 
 - `appraisal-offer` / `appraisal-customer`: import `tokens.css` un-raw, so Vite
-  base64-inlines all four Roboto `.ttf` weights into a separate `dist/style.css`.
-  Measured: **874KB raw / 461KB gzip / 318KB brotli**, per consumer, with zero sharing
-  between them. A Bubble page embedding both pays that twice.
+  base64-inlines all four Roboto weights into a separate `dist/style.css`.
+  Pre-woff2 (ttf), this measured **874KB raw / 461KB gzip / 318KB brotli** per
+  consumer. Post-woff2 (2026-08-13, verified via a throwaway `appraisal-offer`
+  rebuild against the converted files): **398.59KB raw / 288.01KB gzip** — with zero
+  sharing between consumers either way. A Bubble page embedding both pays that twice.
 - `lxn-doc-viewer`: imports `tokens.css` with `?raw` (required — Lit needs the CSS as a
   literal string for its shadow-DOM `static styles`, and `?raw` skips Vite's pipeline
   so the huge `?raw`-then-normal-inline path doesn't happen by accident). But `?raw`
@@ -35,14 +41,15 @@ component, redundantly, for the identical font files.
 
 ### The route
 
-1. **Host woff2, not ttf, on the existing `webcomp.lexen.io` CloudFront + S3 setup**
+1. **Host woff2 on the existing `webcomp.lexen.io` CloudFront + S3 setup**
    (`lxn-gh/lexen-bubble-web-comp`) — it already serves `lxn-doc-viewer.js` and friends,
    and already has wide-open CORS (`Access-Control-Allow-Origin: *`) on its default
    behavior, which cross-origin `@font-face` loading needs.
-   - Converted the four weights `lxn-ui` currently ships (Regular/Medium/SemiBold/Bold)
-     from the Google Fonts `Roboto.zip` source: **638KB ttf → 285KB woff2 total**
-     (Regular 69,936B, Medium 71,856B, SemiBold 71,624B, Bold 71,988B). woff2 is
-     already brotli-compressed internally — gzip gains nothing further on top.
+   - The four weights `lxn-ui` ships (Regular/Medium/SemiBold/Bold), converted from the
+     Google Fonts `Roboto.zip` source: **638KB ttf → ~275KB woff2 total** (Regular
+     69,044B, Medium 70,688B, SemiBold 70,636B, Bold 70,916B — this is the conversion
+     that already landed locally in `lxn-ui`, see Status above). woff2 is already
+     brotli-compressed internally — gzip gains nothing further on top.
    - Path: something like `fonts/roboto/v1/Roboto-{Regular,Medium,SemiBold,Bold}.woff2`.
      The `v1/` matters because of the next point.
    - **Gotcha:** that distribution's current `ResponseHeadersPolicy` forces
@@ -53,7 +60,7 @@ component, redundantly, for the identical font files.
      `lexen-bubble-web-comp-stack.ts` (CDK) + `config/apis.yaml`.
 
 2. **Point `lxn-ui/src/tokens/tokens.css`'s `@font-face src` at the CDN, absolute URL**
-   instead of the current repo-relative `url("fonts/Roboto-Regular.ttf")`. This is the
+   instead of the current repo-relative `url("fonts/Roboto-Regular.woff2")`. This is the
    move that fixes every consumer at once, for free, with no other code changes:
    - Vite's normal CSS pipeline (offer/customer's path) only rewrites *relative*
      asset URLs it can resolve on disk — an absolute `https://` URL passes through
@@ -69,7 +76,7 @@ component, redundantly, for the identical font files.
      the whole page. Combined with the immutable cache header: once per browser,
      effectively forever, ~285KB total instead of ~874KB × N consumers.
 
-3. Cut this as a new `lxn-ui` tag once it's real (e.g. `v1.4.0`), bump each consumer's
+3. Cut this as a new `lxn-ui` tag once it's real, bump each consumer's
    pinned tag, rebuild, confirm `style.css`/bundle sizes actually shrink.
 
 ### Interim state (2026-08-12) — don't propagate this pattern

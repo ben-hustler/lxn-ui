@@ -19,25 +19,25 @@
    was a mistake, white is what matches the original Bubble app.
    ============================================================ */
 
-/* Brand sans = Roboto. Ships as local .ttf files in ./fonts. No other faces. */
+/* Brand sans = Roboto. Ships as local .woff2 files in ./fonts. No other faces. */
 @font-face {
   font-family: "Roboto";
-  src: url("fonts/Roboto-Regular.ttf") format("truetype");
+  src: url("fonts/Roboto-Regular.woff2") format("woff2");
   font-weight: 400; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: "Roboto";
-  src: url("fonts/Roboto-Medium.ttf") format("truetype");
+  src: url("fonts/Roboto-Medium.woff2") format("woff2");
   font-weight: 500; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: "Roboto";
-  src: url("fonts/Roboto-SemiBold.ttf") format("truetype");
+  src: url("fonts/Roboto-SemiBold.woff2") format("woff2");
   font-weight: 600; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: "Roboto";
-  src: url("fonts/Roboto-Bold.ttf") format("truetype");
+  src: url("fonts/Roboto-Bold.woff2") format("woff2");
   font-weight: 700; font-style: normal; font-display: swap;
 }
 

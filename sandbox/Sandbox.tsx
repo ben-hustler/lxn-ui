@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Tooltip, CloseButton, useFocusTrap, ButtonMain, ButtonCard, ConfirmPopover, ListIcon, PencilIcon, TrashIcon, CheckIcon, StatusBadge } from '../src/index';
+import { Tooltip, CloseButton, useFocusTrap, ButtonMain, ButtonCard, ConfirmPopover, ListIcon, PencilIcon, TrashIcon, CheckIcon, StatusBadge, PulseDots } from '../src/index';
 
 function TrashGlyph() {
   return (
@@ -127,6 +127,17 @@ function StatusBadgeDemo() {
   );
 }
 
+// PulseDots — the indicator only; the "Generating preview…" copy stays with
+// the consumer (lxn-pdf-generator's offer-sheet, where this came from).
+function PulseDotsDemo() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', width: 320 }}>
+      <PulseDots aria-label="Generating preview" />
+      <span style={{ fontSize: 13, color: '#667085' }}>Generating preview…</span>
+    </div>
+  );
+}
+
 // Minimal exercise of CloseButton + useFocusTrap together — real consumers
 // (appraisal-offer's OfferModal, appraisal-customer's PopupShell) add their
 // own portal/fade/scrim mechanics around this same pair; none of that is
@@ -182,6 +193,8 @@ export function Sandbox() {
       <ButtonCardDemo />
 
       <StatusBadgeDemo />
+
+      <PulseDotsDemo />
 
       <ConfirmPopoverDemo />
 

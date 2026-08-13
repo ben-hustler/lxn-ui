@@ -46,6 +46,9 @@ src/
                       on-color; consumer supplies background (no built-in
                       status vocabulary) and icon; wrap with Tooltip for a
                       hover description, don't merge classes onto it
+    pulse-dots/      PulseDots — three-dot loading pulse (no built-in
+                      loading copy — pair it with your own text, e.g.
+                      "Generating preview…")
     tooltip/         Tooltip + TooltipController
   tokens/            tokens.css + fonts/
   index.ts           Barrel file — the ONLY things exported from here are
