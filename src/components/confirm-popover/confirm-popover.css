@@ -1,4 +1,4 @@
-/* Anchored confirm popover — icon + message + Cancel/Confirm actions,
+/* Anchored confirm popover — message + Cancel/Confirm actions,
    positioned relative to its anchor (see ConfirmPopover.tsx for the
    above/below flip + horizontal clamp math, and --lxn-confirm-popover-arrow-x
    for how the arrow stays centered on the anchor as the popover itself
@@ -50,15 +50,7 @@
 }
 
 .lxn-confirm-popover-body {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
   margin-bottom: var(--space-4);
-}
-.lxn-confirm-popover-icon {
-  flex-shrink: 0;
-  display: inline-flex;
-  color: var(--color-fg-secondary);
 }
 .lxn-confirm-popover-message {
   font-size: var(--font-size-b2);

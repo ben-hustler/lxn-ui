@@ -41,7 +41,6 @@ interface ConfirmPopoverProps {
   onClose: () => void;
   onConfirm: () => void;
   message: ReactNode;
-  icon?: ReactNode;
   confirmLabel: string;
   cancelLabel?: string;
   /** Styles the confirm action as a destructive (red) ButtonMain instead of
@@ -49,9 +48,10 @@ interface ConfirmPopoverProps {
   destructive?: boolean;
 }
 
-/** Small anchored popover for a confirm-before-you-act prompt (icon + message
- * + Cancel/Confirm) that doesn't warrant a full modal — e.g. "Remove this
- * customer?" hanging off the Remove button itself. Positions above the
+/** Small anchored popover for a confirm-before-you-act prompt (message +
+ * Cancel/Confirm) that doesn't warrant a full modal — e.g. "Remove this
+ * customer?" hanging off the Remove button itself. No icon, ever (explicit
+ * call) — the anchor button already carries one. Positions above the
  * anchor by default, flipping below when there isn't room, and slides
  * horizontally to stay clear of the viewport edge without moving its arrow
  * off the anchor's center. Fades/slides in and out (see ENTER_MS/EXIT_MS
@@ -69,7 +69,6 @@ export function ConfirmPopover({
   onClose,
   onConfirm,
   message,
-  icon,
   confirmLabel,
   cancelLabel = 'Cancel',
   destructive = false,
@@ -194,7 +193,6 @@ export function ConfirmPopover({
       <div ref={innerRef} className="lxn-confirm-popover-inner">
         <div className="lxn-confirm-popover-arrow" />
         <div className="lxn-confirm-popover-body">
-          {icon && <span className="lxn-confirm-popover-icon">{icon}</span>}
           <span className="lxn-confirm-popover-message">{message}</span>
         </div>
         <div className="lxn-confirm-popover-actions">
