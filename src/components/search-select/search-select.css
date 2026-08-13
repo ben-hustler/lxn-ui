@@ -1,0 +1,117 @@
+/* Default (no renderTrigger) box — a plain bordered value box, matching the
+   look every current consumer's own mockup used before wiring a custom
+   trigger. A host passing renderTrigger never sees any of this. */
+.lxn-search-select {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+.lxn-search-select-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 5px 7px;
+  background: var(--lxn-white);
+  border: 1px solid var(--lxn-neutral-150);
+  border-radius: 5px;
+  font: 400 13px var(--font-family-sans);
+  color: var(--lxn-neutral-900);
+  cursor: pointer;
+  transition: background 100ms var(--ease-standard), border-color 100ms var(--ease-standard);
+}
+.lxn-search-select-trigger:hover {
+  background: var(--lxn-neutral-50);
+  border-color: var(--lxn-neutral-300);
+}
+.lxn-search-select-trigger-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lxn-search-select-chevron {
+  flex: none;
+  color: var(--lxn-neutral-400);
+}
+
+/* ---- Panel — opens below the trigger, whatever the trigger's own markup
+   is (default or renderTrigger-supplied); positioned relative to this
+   component's own root, not portalled, since every current consumer sits in
+   a plain, non-scroll-clipping container. ---- */
+.lxn-search-select-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  min-width: 240px;
+  background: var(--lxn-white);
+  border: 1px solid var(--lxn-neutral-200);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: 200;
+  overflow: hidden;
+}
+.lxn-search-select-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: 1px solid var(--lxn-neutral-150);
+}
+.lxn-search-select-search-icon {
+  flex: none;
+  color: var(--lxn-neutral-400);
+}
+.lxn-search-select-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: 400 13px var(--font-family-sans);
+  color: var(--lxn-neutral-900);
+  padding: 0;
+}
+.lxn-search-select-list {
+  max-height: 220px;
+  overflow-y: auto;
+}
+.lxn-search-select-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.lxn-search-select-option:hover,
+.lxn-search-select-option:focus-visible {
+  background: var(--lxn-accent-tint);
+  outline: none;
+}
+.lxn-search-select-option-icon {
+  flex: none;
+  display: inline-flex;
+  color: var(--lxn-neutral-500);
+}
+.lxn-search-select-option-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.lxn-search-select-option-label {
+  font: 500 14px var(--font-family-sans);
+  color: var(--lxn-neutral-900);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lxn-search-select-option-subheader {
+  font: 400 12px var(--font-family-sans);
+  color: var(--lxn-neutral-500);
+}
+.lxn-search-select-empty {
+  padding: 12px;
+  font: 400 13px var(--font-family-sans);
+  color: var(--lxn-neutral-400);
+}
