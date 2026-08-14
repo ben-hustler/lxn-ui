@@ -94,10 +94,6 @@ export function SearchSelect({
   const triggerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  // Keeps the open-effect below from needing onSearch in its dependency
-  // array (a caller-supplied inline arrow changes identity every render).
-  const onSearchRef = useRef(onSearch);
-  onSearchRef.current = onSearch;
 
   const selected = options.find((o) => o.id === value);
 
@@ -126,14 +122,12 @@ export function SearchSelect({
 
   useEffect(() => {
     if (!open) return;
+    // Clears any leftover typed text so reopening shows an empty search box
+    // — but does NOT call onSearch. A caller fetches its own full list once
+    // up front (e.g. on mount) and hands it in via `options`; onSearch is
+    // reserved for an actual typed query (handleQueryChange, below), not an
+    // open/close cycle re-requesting the same unfiltered list.
     setQuery('');
-    // Refreshes to the full list on every open, not just the first —
-    // without this, a caller backing several independent SearchSelects with
-    // the same search endpoint (e.g. one per role field, all querying the
-    // same location's roster) would show whatever query the LAST-open one
-    // left behind instead of the current full list. Harmless extra network
-    // call for a caller with only one instance.
-    onSearchRef.current?.('');
     // A frame after the panel actually mounts, not the same tick — focusing
     // synchronously during the click that opened it can lose to the browser's
     // own post-click focus handling in some environments.

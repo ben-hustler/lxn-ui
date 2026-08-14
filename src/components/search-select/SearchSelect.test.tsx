@@ -46,17 +46,30 @@ describe('<SearchSelect>', () => {
     expect(onSearch).toHaveBeenCalledWith('sam');
   });
 
-  it("calls onSearch('') on every open, so a caller sharing one search endpoint across several instances refreshes to the full list instead of showing a stale filtered one", () => {
+  it('does not call onSearch just from opening (or reopening) the panel — the caller supplies its full list up front via `options`, onSearch is only for an actual typed query', () => {
     const onSearch = vi.fn();
     render(<SearchSelect value="" options={OPTIONS} onSelect={vi.fn()} onSearch={onSearch} />);
 
     fireEvent.click(screen.getByRole('button'));
-    expect(onSearch).toHaveBeenCalledWith('');
+    expect(onSearch).not.toHaveBeenCalled();
 
-    onSearch.mockClear();
     fireEvent.keyDown(document, { key: 'Escape' });
     fireEvent.click(screen.getByRole('button'));
-    expect(onSearch).toHaveBeenCalledWith('');
+    expect(onSearch).not.toHaveBeenCalled();
+  });
+
+  it('reopening the panel clears any leftover typed text, showing the full list again without calling onSearch', () => {
+    const onSearch = vi.fn();
+    render(<SearchSelect value="" options={OPTIONS} onSelect={vi.fn()} onSearch={onSearch} />);
+    fireEvent.click(screen.getByRole('button'));
+    fireEvent.change(screen.getByPlaceholderText('Search'), { target: { value: 'sam' } });
+    onSearch.mockClear();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    fireEvent.click(screen.getByRole('button'));
+
+    expect(screen.getByPlaceholderText('Search')).toHaveProperty('value', '');
+    expect(onSearch).not.toHaveBeenCalled();
   });
 
   it('clicking an option calls onSelect and closes the panel', () => {
