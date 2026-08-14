@@ -134,7 +134,7 @@ describe('<SearchSelect>', () => {
     expect(panel!.closest('dialog')).toBeFalsy();
   });
 
-  it('scrolling the panel\'s own option list does not close it, but scrolling elsewhere does', () => {
+  it('scrolling the panel\'s own option list, or the page, never closes it — it chases the anchor instead of dismissing', () => {
     render(<SearchSelect value="" options={OPTIONS} onSelect={vi.fn()} />);
     fireEvent.click(screen.getByRole('button'));
     const list = document.querySelector('.lxn-search-select-list')!;
@@ -143,7 +143,7 @@ describe('<SearchSelect>', () => {
     expect(screen.getByText('Frodo Baggins')).toBeTruthy();
 
     fireEvent.scroll(window);
-    expect(screen.queryByText('Frodo Baggins')).toBeFalsy();
+    expect(screen.getByText('Frodo Baggins')).toBeTruthy();
   });
 
   it('renderTrigger fully replaces the default trigger markup, wiring only onClick', () => {

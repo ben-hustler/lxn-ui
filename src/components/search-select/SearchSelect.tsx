@@ -165,19 +165,20 @@ export function SearchSelect({
     reposition();
     window.addEventListener('resize', reposition);
 
-    // Dismiss on scroll rather than chase the anchor (Tooltip/ConfirmPopover's
-    // own convention) — EXCEPT when the scroll originated from inside the
+    // Chase the anchor on scroll rather than dismiss — closing on any page
+    // scroll (e.g. a host embedding the trigger inside a scrollable page)
+    // was too eager. EXCEPT when the scroll originated from inside the
     // panel's own option list (`.lxn-search-select-list` is independently
-    // scrollable); the panel's own position doesn't change when a user just
-    // scrolls through the options, so closing there would make a long list
-    // unusable.
+    // scrollable); the panel's own position on screen doesn't move just
+    // because a user scrolled through the options, so reposition() there
+    // would be a no-op anyway.
     const onScroll = (e: Event) => {
       // e.target is `window` itself for a page-level scroll (not a Node —
       // `instanceof Node` guards that case, since `.contains()` throws on a
       // non-Node argument rather than just returning false).
       const target = e.target;
       if (target instanceof Node && panel.contains(target)) return;
-      setOpen(false);
+      reposition();
     };
     window.addEventListener('scroll', onScroll, true);
 
