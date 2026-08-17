@@ -26,6 +26,7 @@ independently-drawn glyphs; those files are now gone, migrated below.
 | `ResetIcon`        | Lucide `rotate-ccw`                            | ISC          | Used for both "Reset" (amount pill) and "Undo" (tentative bubble) — same glyph, per v1's Offer Modal Prototype. Counter-clockwise picked over Lucide's `rotate-cw` because it reads as "undo/reset," not "refresh." |
 | `WarningIcon`      | Lucide `circle-alert`                          | ISC          | |
 | `CloseIcon`        | Google Material Design `close` (filled)        | Apache-2.0   | Picked 2026-08-10 as canonical over a stroked-two-line X that had silently drifted from it. Used directly by `CloseButton`, and standalone anywhere that needs a bare dismiss glyph without `CloseButton`'s own chrome (e.g. `ErrorBanner`'s inline dismiss). |
+| `AutoFixHighIcon`  | Google Material Icons `auto_fix_high` (filled) | Apache-2.0   | "Auto-assigned" indicator glyph — sits beside a value the server picked automatically rather than a person selecting it (first use: `appraisal-users`' Salesperson/Appraiser/Sales Manager rows). |
 
 ## Verifying a glyph
 
