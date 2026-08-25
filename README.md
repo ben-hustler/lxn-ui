@@ -70,6 +70,18 @@ should be "the LXN standard" version of something — check `main` here
 first. If it's not there yet, that's a signal to bring it there, not to
 re-approximate it locally again.
 
+**Semantic tokens, not raw ones, in consumer CSS.** `tokens.css` has two
+layers: raw scales (`--lxn-primary-*`, `--lxn-accent-*`, `--lxn-neutral-*`)
+and, aliased from them, semantic tokens (`--color-bg-*`, `--color-fg-*`,
+`--color-border-*`, `--color-action-*`, `--color-status-*`, etc.). A webcomp
+should reach for the semantic name, not the raw scale — e.g.
+`var(--color-bg-surface)`, not `var(--lxn-white)`; `var(--color-border-subtle)`,
+not `var(--lxn-neutral-150)`. If no semantic token fits, that's a signal to
+add one to `tokens.css` (and tag a release), not to drop the raw scale value
+into your own CSS. Same idea for type: reach for the `.lxn-h1`/`.lxn-body`/
+etc. classes before hand-composing `--font-size-*`/`--font-weight-*`
+yourself.
+
 ## Why it's built this way (no registry, no build step)
 
 - **No registry.** LXN doesn't have one yet, and setting one up isn't this
