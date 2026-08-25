@@ -10,10 +10,22 @@ import {
   PencilIcon,
   TrashIcon,
   CheckIcon,
+  SearchIcon,
+  InfoIcon,
+  ExternalArrowIcon,
+  ViewOfferIcon,
+  BackArrowIcon,
+  ChevronDownIcon,
+  AddCircleIcon,
+  PlusIcon,
+  ResetIcon,
+  WarningIcon,
+  CloseIcon,
   StatusBadge,
   PulseDots,
   SearchSelect,
   type SearchSelectOption,
+  type IconProps,
 } from '../src/index';
 import './sandbox.css';
 
@@ -76,6 +88,7 @@ const NAV_GROUPS = [
       ['tokens-spacing', 'Spacing'],
       ['tokens-radii-shadows', 'Radii & shadows'],
       ['tokens-motion', 'Motion'],
+      ['tokens-icons', 'Icons'],
     ],
   },
   {
@@ -298,14 +311,37 @@ const TYPE_ROWS: { cls: string; sample: string }[] = [
   { cls: 'lxn-n5', sample: '2019 Accord' },
 ];
 
+function TypeRow({ cls, sample }: { cls: string; sample: string }) {
+  const sampleRef = useRef<HTMLSpanElement>(null);
+  const [computed, setComputed] = useState('');
+
+  useEffect(() => {
+    const el = sampleRef.current;
+    if (!el) return;
+    const style = getComputedStyle(el);
+    const family = style.fontFamily.split(',')[0].replace(/["']/g, '');
+    setComputed(
+      `${style.fontWeight} · ${style.fontSize}/${style.lineHeight} · ${family}` +
+        (style.letterSpacing !== 'normal' && style.letterSpacing !== '0px' ? ` · ${style.letterSpacing}` : ''),
+    );
+  }, []);
+
+  return (
+    <div className="lxn-type-row" key={cls}>
+      <code className="lxn-type-row-label">.{cls}</code>
+      <span className={`${cls} lxn-type-row-sample`} ref={sampleRef}>
+        {sample}
+      </span>
+      <code className="lxn-type-row-computed">{computed}</code>
+    </div>
+  );
+}
+
 function TokensTypographySection() {
   return (
     <Section id="tokens-typography" title="Typography" description="Reach for these classes before hand-composing font/color custom properties — see tokens.css's own header comment.">
       {TYPE_ROWS.map(({ cls, sample }) => (
-        <div className="lxn-type-row" key={cls}>
-          <code className="lxn-type-row-label">.{cls}</code>
-          <span className={`${cls} lxn-type-row-sample`}>{sample}</span>
-        </div>
+        <TypeRow cls={cls} sample={sample} key={cls} />
       ))}
     </Section>
   );
@@ -416,6 +452,50 @@ function TokensMotionSection() {
           <ButtonMain label="Replay" variant="tertiary" size="small" onClick={replay} />
         </div>
       </DemoSurface>
+    </Section>
+  );
+}
+
+/* ============================================================
+   Tokens — Icons
+   ============================================================ */
+
+const ICONS: { Icon: (props: IconProps) => ReactNode; name: string; source: string }[] = [
+  { Icon: ListIcon, name: 'ListIcon', source: 'Lucide list' },
+  { Icon: PencilIcon, name: 'PencilIcon', source: 'Lucide edit (classic, pre-rename)' },
+  { Icon: TrashIcon, name: 'TrashIcon', source: 'Lucide trash' },
+  { Icon: CheckIcon, name: 'CheckIcon', source: 'Lucide check' },
+  { Icon: SearchIcon, name: 'SearchIcon', source: 'Lucide search' },
+  { Icon: InfoIcon, name: 'InfoIcon', source: 'Lucide info' },
+  { Icon: ExternalArrowIcon, name: 'ExternalArrowIcon', source: 'Lucide arrow-up-right' },
+  { Icon: ViewOfferIcon, name: 'ViewOfferIcon', source: 'Lucide external-link' },
+  { Icon: BackArrowIcon, name: 'BackArrowIcon', source: 'Lucide chevron-left' },
+  { Icon: ChevronDownIcon, name: 'ChevronDownIcon', source: 'Lucide chevron-down' },
+  { Icon: AddCircleIcon, name: 'AddCircleIcon', source: 'Material add_circle (filled)' },
+  { Icon: PlusIcon, name: 'PlusIcon', source: 'Material add (filled)' },
+  { Icon: ResetIcon, name: 'ResetIcon', source: 'Lucide rotate-ccw' },
+  { Icon: WarningIcon, name: 'WarningIcon', source: 'Lucide circle-alert' },
+  { Icon: CloseIcon, name: 'CloseIcon', source: 'Material close (filled)' },
+];
+
+function TokensIconsSection() {
+  return (
+    <Section
+      id="tokens-icons"
+      title="Icons"
+      description="Every icon lxn-ui exports — a verbatim copy of a real, published glyph (Lucide/ISC or Material/Apache-2.0), never hand-drawn. Full provenance table: src/components/icons/ICONS.md."
+    >
+      <div className="lxn-swatch-grid">
+        {ICONS.map(({ Icon, name, source }) => (
+          <div className="lxn-icon-card" key={name}>
+            <span className="lxn-icon-card-glyph">
+              <Icon size={24} />
+            </span>
+            <code className="lxn-swatch-token">{name}</code>
+            <span className="lxn-l4">{source}</span>
+          </div>
+        ))}
+      </div>
     </Section>
   );
 }
@@ -579,6 +659,13 @@ function CloseButtonSection() {
       title="CloseButton"
       description="Icon-only dismiss button for modal/popup shells, paired here with useFocusTrap. Escape, the ✕, and Tab/Shift+Tab cycling all work inside the dialog."
     >
+      <div style={{ marginBottom: 12 }}>
+        <StatusBadge label="Deprecated" icon={<WarningIcon size={12} />} background="var(--color-warning)" />
+        <p className="lxn-body-sm" style={{ marginTop: 6, maxWidth: 480 }}>
+          Every consumer moved the ✕ inside the modal card itself instead of floating it fixed to a viewport
+          corner — see each app's own <code>*-close-icon-btn</code>. Left here for reference, not for new work.
+        </p>
+      </div>
       <DemoSurface>
         <ButtonMain label="Open dialog" variant="secondary" size="small" onClick={() => setOpen(true)} />
       </DemoSurface>
@@ -788,6 +875,7 @@ export function Sandbox() {
         <TokensSpacingSection />
         <TokensRadiiShadowsSection />
         <TokensMotionSection />
+        <TokensIconsSection />
 
         <ButtonMainSection />
         <ButtonCardSection />
