@@ -83,7 +83,7 @@
      here (and tag a new lxn-ui release), not to drop a raw --lxn-neutral-NNN
      (or a bare hex) into consumer code. Same principle applies to type —
      see "Semantic element styles" below (.lxn-h1, .lxn-body, etc.): reach
-     for those before hand-composing from raw --font-size-*/--font-weight-*. */
+     for those before hand-composing from raw --font-size-*//*--font-weight-*. */
   --color-bg-app:        var(--lxn-neutral-100);
   --color-bg-surface:    var(--lxn-white);
   --color-bg-sunken:     var(--lxn-neutral-50);
