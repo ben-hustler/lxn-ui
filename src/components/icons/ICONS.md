@@ -21,6 +21,7 @@ independently-drawn glyphs; those files are now gone, migrated below.
 | `ViewOfferIcon`    | Lucide `external-link`                         | ISC          | appraisal-offer's "View Offer" button glyph. |
 | `BackArrowIcon`    | Lucide `chevron-left`                          | ISC          | Path was already an exact match pre-migration. |
 | `ChevronDownIcon`  | Lucide `chevron-down`                          | ISC          | Path was already an exact match pre-migration. |
+| `ChevronsDownIcon` | Google Material Icons `keyboard_double_arrow_down` (filled) | Apache-2.0 | Named for the glyph (Lucide's own equivalent is `chevrons-down`) even though sourced from Material this time — explicit ask 2026-08-28 for `appraisal-customer-page`'s Expand-all/Collapse-all toggle. |
 | `AddCircleIcon`    | Google Material Icons `add_circle` (filled)    | Apache-2.0   | Kept as filled Material rather than migrated to Lucide's stroke `circle-plus` — explicit call 2026-08-12 to leave this one as it was, even though it's the one filled icon next to stroke ListIcon/PencilIcon in the same button row. |
 | `PlusIcon`         | Google Material Icons `add` (filled)           | Apache-2.0   | Kept as filled Material for the same reason as `AddCircleIcon`. |
 | `ResetIcon`        | Lucide `rotate-ccw`                            | ISC          | Used for both "Reset" (amount pill) and "Undo" (tentative bubble) — same glyph, per v1's Offer Modal Prototype. Counter-clockwise picked over Lucide's `rotate-cw` because it reads as "undo/reset," not "refresh." |

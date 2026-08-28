@@ -16,6 +16,7 @@ export {
   ViewOfferIcon,
   BackArrowIcon,
   ChevronDownIcon,
+  ChevronsDownIcon,
   AddCircleIcon,
   PlusIcon,
   ResetIcon,

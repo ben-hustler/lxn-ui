@@ -153,6 +153,21 @@ export function ChevronDownIcon(props: IconProps) {
   );
 }
 
+/** Expand-all/collapse-all toggle (appraisal-customer-page) — Google
+   Material Icons' filled `keyboard_double_arrow_down` glyph, verbatim.
+   Named for the glyph, not the use (matching ChevronDownIcon's own
+   convention) — Material rather than Lucide because that's what was asked
+   for verbatim (2026-08-28); Lucide's own equivalent is `chevrons-down`. */
+export function ChevronsDownIcon(props: SVGProps<SVGSVGElement> & { size?: number }) {
+  const { size = 24, ...rest } = props;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...rest}>
+      <polygon points="18,6.41 16.59,5 12,9.58 7.41,5 6,6.41 12,12.41" />
+      <polygon points="18,13 16.59,11.59 12,16.17 7.41,11.59 6,13 12,19" />
+    </svg>
+  );
+}
+
 /** Full-mode card's circle "+" icon — Google Material Icons' filled
    `add_circle` glyph, verbatim (kept as filled Material rather than
    migrated to Lucide's stroke `circle-plus` — explicit call 2026-08-12 to
