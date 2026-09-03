@@ -1,0 +1,215 @@
+/* Default (no renderTrigger) box — same structure as multi-select.css's own
+   default trigger. Semantic tokens throughout (CLAUDE.md), not raw scale. */
+.lxn-single-select {
+  display: block;
+  width: 100%;
+}
+.lxn-single-select-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 5px 7px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  /* Buttons center-align text by default in the UA stylesheet — override so
+     the label/value always reads left-aligned, matching the Bubble reference. */
+  text-align: left;
+  transition: background var(--motion-quick) var(--ease-standard), border-color var(--motion-quick) var(--ease-standard);
+}
+.lxn-single-select-trigger:hover {
+  background: var(--color-bg-sunken);
+  border-color: var(--color-border-strong);
+}
+.lxn-single-select-trigger:focus-visible {
+  outline: 2px solid var(--color-fg-accent);
+  outline-offset: 1px;
+}
+.lxn-single-select-trigger-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lxn-single-select-trigger-value.is-placeholder {
+  color: var(--color-fg-tertiary);
+}
+/* OPEN state — a single input fills the box in place of the value display.
+   Unlike MultiSelect there's never a trailing suffix to push rightward: the
+   currently selected label lives in the input's own `placeholder` (set in
+   SingleSelect.tsx), so it already reads grey via the ::placeholder rule
+   below and disappears the instant a keystroke lands — plain browser
+   placeholder behavior, not a custom fade. */
+.lxn-single-select-trigger-value--editing {
+  display: block;
+  min-width: 0;
+}
+.lxn-single-select-trigger-input {
+  display: block;
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0;
+  color: var(--color-fg-primary);
+}
+.lxn-single-select-trigger-input::placeholder {
+  color: var(--color-fg-tertiary);
+}
+.lxn-single-select-chevron {
+  flex: none;
+  color: var(--color-fg-tertiary);
+}
+
+/* Clear red X — only rendered (by the .tsx) while the panel is open AND a
+   value is selected, REPLACING the chevron in its own slot rather than
+   sitting alongside it (the element carries both `lxn-single-select-chevron`
+   and this class, so it inherits the chevron's own flex/absolute
+   positioning for free). Same convention as MultiSelect's own
+   lxn-multi-select-clear — see that file's comment. */
+.lxn-single-select-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-negative);
+  cursor: pointer;
+  transition: background var(--motion-quick) var(--ease-standard);
+}
+.lxn-single-select-clear:hover {
+  background: var(--color-negative-bg);
+}
+.lxn-single-select-clear:focus-visible {
+  outline: 2px solid var(--color-fg-accent);
+  outline-offset: 1px;
+}
+
+/* Read-only, can't be opened — visually recedes into the page (bg-app, the
+   same token .intc-root/other consumers use for their own page background)
+   rather than sitting on bg-surface like an active control, plus fg-disabled
+   text/chevron and no hover feedback. */
+.lxn-single-select-trigger--disabled {
+  cursor: not-allowed;
+  background: var(--color-bg-app);
+  color: var(--color-fg-disabled);
+}
+.lxn-single-select-trigger--disabled:hover {
+  background: var(--color-bg-app);
+  border-color: var(--color-border);
+}
+.lxn-single-select-trigger--disabled .lxn-single-select-trigger-value,
+.lxn-single-select-trigger--disabled .lxn-single-select-trigger-field-label,
+.lxn-single-select-trigger--disabled .lxn-single-select-chevron {
+  color: var(--color-fg-disabled);
+}
+
+/* Bubble reference style — field name inside the box, above the value,
+   chevron centered on the full (now taller) box height. */
+.lxn-single-select-trigger--labeled {
+  position: relative;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 34px 7px 10px;
+  min-height: 52px;
+}
+.lxn-single-select-trigger-field-label {
+  pointer-events: none;
+}
+.lxn-single-select-trigger--labeled .lxn-single-select-trigger-value {
+  width: 100%;
+}
+.lxn-single-select-trigger--labeled .lxn-single-select-chevron {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* ---- Panel — portalled and positioned via an inline transform computed
+   from the trigger's live rect, same technique as MultiSelect/SearchSelect's
+   own panel. */
+.lxn-single-select-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  /* Matches the trigger box's own --radius-sm, not --radius-md — a rounder
+     panel than its own trigger read as mismatched. */
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  z-index: 1200;
+  overflow: hidden;
+}
+.lxn-single-select-list {
+  max-height: 240px;
+  overflow-y: auto;
+}
+.lxn-single-select-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.lxn-single-select-option:hover,
+.lxn-single-select-option:focus-visible,
+.lxn-single-select-option.is-highlighted {
+  background: var(--color-hover-accent-bg);
+  outline: none;
+}
+/* Checkmark CIRCLE, not MultiSelect's checkbox square — the visual cue that
+   this is a "pick one" control, not a "pick any" one. Empty ring by default,
+   filled + check once this row is the current value. */
+.lxn-single-select-option-check {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-fg-on-primary);
+  background: var(--color-bg-surface);
+  transition: background var(--motion-quick) var(--ease-standard), border-color var(--motion-quick) var(--ease-standard);
+}
+.lxn-single-select-option[aria-selected='true'] .lxn-single-select-option-check {
+  background: var(--color-action-primary);
+  border-color: var(--color-action-primary);
+}
+.lxn-single-select-option-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.lxn-single-select-option-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lxn-single-select-empty {
+  padding: 12px;
+}
+
+/* 'compact' size (2026-09-03) — the option label is lxn-l1 (16px) by
+   default, same as the trigger's own closed-state value; when the trigger
+   goes compact (SelectTriggerChrome's own --compact, 13px) the panel needs
+   to follow it, or the list reads as oddly oversized under its own shrunk
+   trigger. Row padding trimmed to match (8px -> 6px vertical) rather than
+   leaving compact text floating in unchanged whitespace. */
+.lxn-single-select-panel--compact .lxn-single-select-option {
+  padding: 6px 12px;
+}
+.lxn-single-select-panel--compact .lxn-single-select-option-label {
+  font-size: var(--font-size-l2);
+  line-height: var(--line-height-snug);
+}

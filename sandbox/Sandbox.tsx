@@ -21,10 +21,18 @@ import {
   ResetIcon,
   WarningIcon,
   CloseIcon,
+  CalendarIcon,
   StatusBadge,
   PulseDots,
   SearchSelect,
   type SearchSelectOption,
+  MultiSelect,
+  type MultiSelectOption,
+  SingleSelect,
+  type SingleSelectOption,
+  DateRangePicker,
+  type DateRangeValue,
+  formatDateRangeLabel,
   type IconProps,
 } from '../src/index';
 import './sandbox.css';
@@ -101,6 +109,9 @@ const NAV_GROUPS = [
       ['comp-close-button', 'CloseButton'],
       ['comp-confirm-popover', 'ConfirmPopover'],
       ['comp-search-select', 'SearchSelect'],
+      ['comp-multi-select', 'MultiSelect'],
+      ['comp-single-select', 'SingleSelect'],
+      ['comp-date-range-picker', 'DateRangePicker'],
       ['comp-tooltip', 'Tooltip'],
     ],
   },
@@ -476,6 +487,7 @@ const ICONS: { Icon: (props: IconProps) => ReactNode; name: string; source: stri
   { Icon: ResetIcon, name: 'ResetIcon', source: 'Lucide rotate-ccw' },
   { Icon: WarningIcon, name: 'WarningIcon', source: 'Lucide circle-alert' },
   { Icon: CloseIcon, name: 'CloseIcon', source: 'Material close (filled)' },
+  { Icon: CalendarIcon, name: 'CalendarIcon', source: 'Lucide calendar' },
 ];
 
 function TokensIconsSection() {
@@ -754,6 +766,13 @@ function SearchSelectSection() {
       title="SearchSelect"
       description="Generic searchable/typeahead select — usable immediately without typing; filtering is always the caller's job via onSearch, this component only renders whatever options it's handed."
     >
+      <div style={{ marginBottom: 12 }}>
+        <StatusBadge label="Deprecated" icon={<WarningIcon size={12} />} background="var(--color-warning)" />
+        <p className="lxn-body-sm" style={{ marginTop: 6, maxWidth: 480 }}>
+          Superseded by SingleSelect, which moves the typeahead inside the trigger box instead of a separate
+          pinned search bar — the same move MultiSelect already made. Left here for reference, not for new work.
+        </p>
+      </div>
       <DemoSurface>
         <Subsection title="Interactive (simulated async search)">
           <div style={{ width: 280 }}>
@@ -788,6 +807,397 @@ function SearchSelectSection() {
             </div>
             <div style={{ width: 240 }}>
               <SearchSelect value="" options={[]} onSelect={() => {}} emptyLabel="No matches" placeholderLabel="Assign…" />
+            </div>
+          </div>
+        </Subsection>
+      </DemoSurface>
+    </Section>
+  );
+}
+
+/* ============================================================
+   Components — MultiSelect
+   ============================================================ */
+
+// Modeled on lexen-bubble-web-comp's internals filter editor (the reason
+// this component exists) — Make cascades Model's own option list, same
+// shape that filter editor's real dimension-value queries will produce.
+const MAKE_OPTIONS: MultiSelectOption[] = [
+  { id: 'toyota', label: 'Toyota' },
+  { id: 'honda', label: 'Honda' },
+  { id: 'ford', label: 'Ford' },
+  { id: 'chevrolet', label: 'Chevrolet' },
+  { id: 'nissan', label: 'Nissan' },
+];
+
+const MODEL_OPTIONS_BY_MAKE: Record<string, MultiSelectOption[]> = {
+  toyota: [
+    { id: 'rav4', label: 'RAV4' },
+    { id: 'camry', label: 'Camry' },
+    { id: 'corolla', label: 'Corolla' },
+  ],
+  honda: [
+    { id: 'civic', label: 'Civic' },
+    { id: 'crv', label: 'CR-V' },
+  ],
+  ford: [
+    { id: 'f150', label: 'F-150' },
+    { id: 'escape', label: 'Escape' },
+  ],
+  chevrolet: [
+    { id: 'silverado', label: 'Silverado' },
+    { id: 'equinox', label: 'Equinox' },
+  ],
+  nissan: [
+    { id: 'rogue', label: 'Rogue' },
+    { id: 'altima', label: 'Altima' },
+  ],
+};
+
+const YEAR_OPTIONS: MultiSelectOption[] = [
+  { id: '2024', label: '2024' },
+  { id: '2025', label: '2025' },
+  { id: '2026', label: '2026' },
+];
+
+const TRANSMISSION_OPTIONS: MultiSelectOption[] = [
+  { id: 'automatic', label: 'Automatic', subheader: '1,204 records' },
+  { id: 'manual', label: 'Manual', subheader: '86 records' },
+  { id: 'cvt', label: 'CVT', subheader: '412 records' },
+];
+
+// Demonstrates the harder case discussed alongside MultiSelect's own
+// `selected` doc comment: a search that RE-RANKS results (not just filters),
+// e.g. typing "re" ranks "Red" (starts with "re") ahead of "Green" (merely
+// contains it) and drops "Gold"/"Silver"/"Blue" out of the visible dropdown
+// entirely. MultiSelect itself already keeps the box's own preview stable
+// against that (ordered by `value`, not by `options`'s current order) — this
+// demo's job is the OTHER half, which is the caller's responsibility by
+// design: without the cache-merge below, selecting Gold and then typing "re"
+// would silently drop Gold from both the preview AND the checkable dropdown
+// rows, because Gold no longer matches "re" at all.
+const COLOR_OPTIONS: MultiSelectOption[] = [
+  { id: 'red', label: 'Red', subheader: '812 records' },
+  { id: 'green', label: 'Green', subheader: '203 records' },
+  { id: 'gold', label: 'Gold', subheader: '96 records' },
+  { id: 'silver', label: 'Silver', subheader: '640 records' },
+  { id: 'blue', label: 'Blue', subheader: '355 records' },
+];
+
+function MultiSelectSection() {
+  const [makes, setMakes] = useState<string[]>([]);
+  const [models, setModels] = useState<string[]>([]);
+  const [years, setYears] = useState<string[]>(['2026']);
+
+  // Live typeahead filtering for Make/Model/Year — plain substring filters,
+  // synchronous (no simulated network delay like the Transmission/Color
+  // demos below, since this is local static data either way; a real
+  // Cube.js-backed field would debounce this the same way those two do).
+  // No merge-back-in needed for any of the three: MultiSelect's own
+  // knownOptionsRef already keeps a selected item resolvable in the trigger
+  // preview once its row drops out of a filtered list.
+  const [makeQuery, setMakeQuery] = useState('');
+  const [modelQuery, setModelQuery] = useState('');
+  const [yearQuery, setYearQuery] = useState('');
+  const filterByLabel = (opts: MultiSelectOption[], query: string) => {
+    const q = query.trim().toLowerCase();
+    return q ? opts.filter((o) => o.label.toLowerCase().includes(q)) : opts;
+  };
+  const filteredMakeOptions = filterByLabel(MAKE_OPTIONS, makeQuery);
+  const filteredYearOptions = filterByLabel(YEAR_OPTIONS, yearQuery);
+
+  // Cascade: Model's own option list narrows to the selected Makes (or shows
+  // every make's models when none are selected yet) — same dependency shape
+  // as the real filter editor's make→model→year→trim chain, just against a
+  // static table here instead of a live Cube.js query. The typed search then
+  // narrows that cascaded list further, same as Make/Year above.
+  const modelOptions =
+    makes.length === 0 ? Object.values(MODEL_OPTIONS_BY_MAKE).flat() : makes.flatMap((m) => MODEL_OPTIONS_BY_MAKE[m] ?? []);
+  const filteredModelOptions = filterByLabel(modelOptions, modelQuery);
+
+  function handleMakesChange(next: string[]) {
+    setMakes(next);
+    const stillValidIds = new Set((next.length === 0 ? Object.values(MODEL_OPTIONS_BY_MAKE).flat() : next.flatMap((m) => MODEL_OPTIONS_BY_MAKE[m] ?? [])).map((o) => o.id));
+    setModels((prev) => prev.filter((id) => stillValidIds.has(id)));
+  }
+
+  const [transmissions, setTransmissions] = useState<string[]>([]);
+  const [options, setOptions] = useState(TRANSMISSION_OPTIONS);
+  const [isLoading, setIsLoading] = useState(false);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const handleSearch = (query: string) => {
+    setIsLoading(true);
+    clearTimeout(searchTimeoutRef.current);
+    searchTimeoutRef.current = setTimeout(() => {
+      const q = query.trim().toLowerCase();
+      // Plain filter, nothing merged back in — MultiSelect itself keeps a
+      // previously-selected transmission resolvable in the trigger preview
+      // even once it drops out of this list (see its own knownOptionsRef).
+      setOptions(q ? TRANSMISSION_OPTIONS.filter((o) => o.label.toLowerCase().includes(q)) : TRANSMISSION_OPTIONS);
+      setIsLoading(false);
+    }, 250);
+  };
+  useEffect(() => () => clearTimeout(searchTimeoutRef.current), []);
+
+  const [colors, setColors] = useState<string[]>([]);
+  const [colorOptions, setColorOptions] = useState(COLOR_OPTIONS);
+  const [colorLoading, setColorLoading] = useState(false);
+  const colorSearchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  // Caller-owned id->label cache (MultiSelect intentionally holds no data of
+  // its own — see its own doc comment on `selected`). Built once from the
+  // full option universe here since it's a static demo list; a real
+  // Cube.js-backed field would instead grow this cache as each search
+  // response comes back, merging newly-seen options in over time.
+  const knownColorsRef = useRef(new Map(COLOR_OPTIONS.map((o) => [o.id, o])));
+  const handleColorSearch = (query: string) => {
+    setColorLoading(true);
+    clearTimeout(colorSearchTimeoutRef.current);
+    colorSearchTimeoutRef.current = setTimeout(() => {
+      const q = query.trim().toLowerCase();
+      // A real relevance RANKING, not just a filter — "re" ranks Red (starts
+      // with it) ahead of Green (merely contains it), and drops Gold/Silver/
+      // Blue from the visible rows entirely.
+      const matches = !q
+        ? COLOR_OPTIONS
+        : COLOR_OPTIONS.filter((o) => o.label.toLowerCase().includes(q)).sort((a, b) => {
+            const aRank = a.label.toLowerCase().startsWith(q) ? 0 : 1;
+            const bRank = b.label.toLowerCase().startsWith(q) ? 0 : 1;
+            return aRank - bRank;
+          });
+      // Merge every currently-selected color the search excluded back in, so
+      // picking Gold and then typing "re" doesn't make Gold disappear from
+      // either the box's own preview or the checkable dropdown rows — it's
+      // still selected, it just doesn't match the current query.
+      const merged = [...matches];
+      for (const id of colors) {
+        if (merged.some((o) => o.id === id)) continue;
+        const known = knownColorsRef.current.get(id);
+        if (known) merged.push(known);
+      }
+      setColorOptions(merged);
+      setColorLoading(false);
+    }, 250);
+  };
+  useEffect(() => () => clearTimeout(colorSearchTimeoutRef.current), []);
+
+  return (
+    <Section
+      id="comp-multi-select"
+      title="MultiSelect"
+      description="SearchSelect's sibling for “choose any number” instead of “choose one” — built for the appraisal-internals filter editor's cascading Make/Model/Year/… dropdowns, which query Cube.js directly instead of embedding Embeddable's own hosted widget. Typeahead, not a second detached search bar: opening the box turns the value area itself into the search input, with already-selected labels staying visible as plain text ahead of the cursor. Selecting an option keeps the panel open and clears the typed query; filtering is the caller's job, same as SearchSelect."
+    >
+      <DemoSurface>
+        <Subsection title="Bubble reference style (label prop) — cascading Make → Model → Year → Trim">
+          <div className="lxn-sandbox-row" style={{ alignItems: 'flex-start' }}>
+            <div style={{ width: 220 }}>
+              <MultiSelect value={makes} options={filteredMakeOptions} onChange={handleMakesChange} onSearch={setMakeQuery} label="Make" />
+            </div>
+            <div style={{ width: 220 }}>
+              <MultiSelect value={models} options={filteredModelOptions} onChange={setModels} onSearch={setModelQuery} label="Model" />
+            </div>
+            <div style={{ width: 180 }}>
+              <MultiSelect value={years} options={filteredYearOptions} onChange={setYears} onSearch={setYearQuery} label="Year" />
+            </div>
+            <div style={{ width: 200 }}>
+              <MultiSelect value={[]} options={[]} onChange={() => {}} label="Trim (Optional)" />
+            </div>
+          </div>
+          <p className="lxn-l4" style={{ marginTop: 8 }}>
+            {makes.length === 0 ? 'No Make selected — Model shows every make.' : `Model scoped to: ${makes.join(', ')}`}
+          </p>
+        </Subsection>
+
+        <Subsection title="Simulated async search + subheaders — plain filter, no relevance reorder (no label prop — a caller that renders its own field label outside)">
+          <div style={{ width: 240 }}>
+            <MultiSelect
+              value={transmissions}
+              options={options}
+              onChange={setTransmissions}
+              onSearch={handleSearch}
+              isLoading={isLoading}
+              placeholderLabel="Transmission"
+            />
+          </div>
+        </Subsection>
+
+        <Subsection title="Search that RE-RANKS results, with a caller-side selection cache (the harder case — try: pick Gold, then type “re”)">
+          <div style={{ width: 240 }}>
+            <MultiSelect
+              value={colors}
+              options={colorOptions}
+              onChange={setColors}
+              onSearch={handleColorSearch}
+              isLoading={colorLoading}
+              placeholderLabel="Color"
+            />
+          </div>
+          <p className="lxn-l4" style={{ marginTop: 8 }}>
+            Selected (in pick order, unaffected by search ranking): {colors.length === 0 ? '(none)' : colors.join(', ')}
+          </p>
+        </Subsection>
+
+        <Subsection title="Loading & empty states">
+          <div className="lxn-sandbox-row" style={{ alignItems: 'flex-start' }}>
+            <div style={{ width: 220 }}>
+              <MultiSelect value={[]} options={[]} onChange={() => {}} isLoading label="Loading…" />
+            </div>
+            <div style={{ width: 220 }}>
+              <MultiSelect value={[]} options={[]} onChange={() => {}} emptyLabel="No matches" label="Engine" />
+            </div>
+          </div>
+        </Subsection>
+      </DemoSurface>
+    </Section>
+  );
+}
+
+/* ============================================================
+   Components — SingleSelect
+   ============================================================ */
+
+function SingleSelectSection() {
+  const [make, setMake] = useState<string | null>(null);
+  const [model, setModel] = useState<string | null>(null);
+
+  const [makeQuery, setMakeQuery] = useState('');
+  const [modelQuery, setModelQuery] = useState('');
+  const filterByLabel = (opts: SingleSelectOption[], query: string) => {
+    const q = query.trim().toLowerCase();
+    return q ? opts.filter((o) => o.label.toLowerCase().includes(q)) : opts;
+  };
+  const filteredMakeOptions = filterByLabel(MAKE_OPTIONS, makeQuery);
+
+  // Cascade, same shape as MultiSelect's own Make → Model demo above — a
+  // Make change that invalidates the current Model clears it, rather than
+  // leaving a stale selection the visible dropdown no longer offers.
+  const modelOptions = make ? (MODEL_OPTIONS_BY_MAKE[make] ?? []) : Object.values(MODEL_OPTIONS_BY_MAKE).flat();
+  const filteredModelOptions = filterByLabel(modelOptions, modelQuery);
+
+  function handleMakeChange(next: string | null) {
+    setMake(next);
+    const validModels = next ? (MODEL_OPTIONS_BY_MAKE[next] ?? []) : Object.values(MODEL_OPTIONS_BY_MAKE).flat();
+    const stillValid = new Set(validModels.map((o) => o.id));
+    setModel((prev) => (prev && stillValid.has(prev) ? prev : null));
+  }
+
+  const [transmission, setTransmission] = useState<string | null>(null);
+  const [options, setOptions] = useState(TRANSMISSION_OPTIONS);
+  const [isLoading, setIsLoading] = useState(false);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const handleSearch = (query: string) => {
+    setIsLoading(true);
+    clearTimeout(searchTimeoutRef.current);
+    searchTimeoutRef.current = setTimeout(() => {
+      const q = query.trim().toLowerCase();
+      setOptions(q ? TRANSMISSION_OPTIONS.filter((o) => o.label.toLowerCase().includes(q)) : TRANSMISSION_OPTIONS);
+      setIsLoading(false);
+    }, 250);
+  };
+  useEffect(() => () => clearTimeout(searchTimeoutRef.current), []);
+
+  return (
+    <Section
+      id="comp-single-select"
+      title="SingleSelect"
+      description="MultiSelect's sibling for “choose one” instead of “choose any number” — a standalone component, not a MultiSelect variant. Typeahead lives inside the box the same way, but there's nothing to push aside while typing: the current selection sits in the input's own placeholder (grey, in place) and disappears the instant a keystroke lands, purely native placeholder behavior. Every click — including re-clicking the current selection — closes the panel. The selected row is marked with a checkmark circle instead of MultiSelect's checkbox square."
+    >
+      <DemoSurface>
+        <Subsection title="Bubble reference style (label prop) — cascading Make → Model">
+          <div className="lxn-sandbox-row" style={{ alignItems: 'flex-start' }}>
+            <div style={{ width: 220 }}>
+              <SingleSelect value={make} options={filteredMakeOptions} onChange={handleMakeChange} onSearch={setMakeQuery} label="Make" />
+            </div>
+            <div style={{ width: 220 }}>
+              <SingleSelect value={model} options={filteredModelOptions} onChange={setModel} onSearch={setModelQuery} label="Model" />
+            </div>
+          </div>
+          <p className="lxn-l4" style={{ marginTop: 8 }}>
+            {make === null ? 'No Make selected — Model shows every make.' : `Model scoped to: ${make}`}
+          </p>
+        </Subsection>
+
+        <Subsection title="Simulated async search + subheaders (no label prop — a caller that renders its own field label outside)">
+          <div style={{ width: 240 }}>
+            <SingleSelect
+              value={transmission}
+              options={options}
+              onChange={setTransmission}
+              onSearch={handleSearch}
+              isLoading={isLoading}
+              placeholderLabel="Transmission"
+            />
+          </div>
+        </Subsection>
+
+        <Subsection title="Loading & empty states, and a disabled field">
+          <div className="lxn-sandbox-row" style={{ alignItems: 'flex-start' }}>
+            <div style={{ width: 220 }}>
+              <SingleSelect value={null} options={[]} onChange={() => {}} isLoading label="Loading…" />
+            </div>
+            <div style={{ width: 220 }}>
+              <SingleSelect value={null} options={[]} onChange={() => {}} emptyLabel="No matches" label="Engine" />
+            </div>
+            <div style={{ width: 220 }}>
+              <SingleSelect value="toyota" options={MAKE_OPTIONS} onChange={() => {}} label="Make" disabled />
+            </div>
+          </div>
+        </Subsection>
+      </DemoSurface>
+    </Section>
+  );
+}
+
+/* ============================================================
+   Components — DateRangePicker
+   ============================================================ */
+
+function DateRangePickerSection() {
+  const [lookback, setLookback] = useState<DateRangeValue>({ kind: 'relative', relativeTimeString: 'Last 60 months' });
+
+  return (
+    <Section
+      id="comp-date-range-picker"
+      title="DateRangePicker"
+      description="Relative-preset-or-custom-range picker — replaces Embeddable's own LexenDateRangePicker widget for the same reason MultiSelect replaces LexenMultiSelectDropdown. Two triggers: a searchable preset combobox (type to filter, or pick Custom range) and a date-display trigger that expands into a calendar. Presets apply immediately; in the calendar, clicking a day always starts a fresh selection — the next click completes the range and applies it, no separate Apply button."
+    >
+      <DemoSurface>
+        <Subsection title="Bubble reference style (label prop)">
+          <div style={{ width: 260 }}>
+            <DateRangePicker value={lookback} onChange={setLookback} label="Lookback" />
+          </div>
+          <p className="lxn-l4" style={{ marginTop: 8 }}>
+            Current value: <code className="lxn-mono">{JSON.stringify(lookback)}</code> → formatDateRangeLabel:{' '}
+            <strong className="lxn-l1">{formatDateRangeLabel(lookback)}</strong>
+          </p>
+        </Subsection>
+
+        <Subsection title="No label prop — a caller that renders its own field label outside">
+          <div style={{ width: 260 }}>
+            <DateRangePicker value={lookback} onChange={setLookback} />
+          </div>
+        </Subsection>
+
+        <Subsection title="Custom presets">
+          <div style={{ width: 260 }}>
+            <DateRangePicker
+              value={{ kind: 'relative', relativeTimeString: 'This quarter' }}
+              onChange={() => {}}
+              presets={['This week', 'This month', 'This quarter', 'This year']}
+              customLabel="Pick dates…"
+            />
+          </div>
+        </Subsection>
+
+        <Subsection title="Custom range label formatting (current vs. other UTC year)">
+          <div className="lxn-sandbox-row" style={{ alignItems: 'flex-start' }}>
+            <div style={{ width: 260 }}>
+              <DateRangePicker
+                value={{ kind: 'custom', from: `${new Date().getUTCFullYear()}-01-15`, to: `${new Date().getUTCFullYear()}-03-20` }}
+                onChange={() => {}}
+              />
+            </div>
+            <div style={{ width: 260 }}>
+              <DateRangePicker value={{ kind: 'custom', from: '2024-01-15', to: '2024-03-20' }} onChange={() => {}} />
             </div>
           </div>
         </Subsection>
@@ -867,7 +1277,7 @@ function TooltipSection() {
 
 export function Sandbox() {
   return (
-    <div className="lxn-sandbox">
+    <div className="lxn-sandbox lxn-root">
       <SandboxNav />
       <div className="lxn-sandbox-content">
         <TokensColorsSection />
@@ -884,6 +1294,9 @@ export function Sandbox() {
         <CloseButtonSection />
         <ConfirmPopoverSection />
         <SearchSelectSection />
+        <MultiSelectSection />
+        <SingleSelectSection />
+        <DateRangePickerSection />
         <TooltipSection />
       </div>
     </div>

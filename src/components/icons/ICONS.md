@@ -28,6 +28,8 @@ independently-drawn glyphs; those files are now gone, migrated below.
 | `WarningIcon`      | Lucide `circle-alert`                          | ISC          | |
 | `CloseIcon`        | Google Material Design `close` (filled)        | Apache-2.0   | Picked 2026-08-10 as canonical over a stroked-two-line X that had silently drifted from it. Used directly by `CloseButton`, and standalone anywhere that needs a bare dismiss glyph without `CloseButton`'s own chrome (e.g. `ErrorBanner`'s inline dismiss). |
 | `AutoFixHighIcon`  | Google Material Icons `auto_fix_high` (filled) | Apache-2.0   | "Auto-assigned" indicator glyph — sits beside a value the server picked automatically rather than a person selecting it (first use: `appraisal-users`' Salesperson/Appraiser/Sales Manager rows). |
+| `CalendarIcon`     | Lucide `calendar`                              | ISC          | `DateRangePicker`'s date-display trigger glyph. |
+| `LoaderIcon`       | Lucide `loader-circle`                         | ISC          | `SelectTriggerChrome`'s spinner, shown in the chevron slot while `loading` is true (a field's own option list is being refetched). Static glyph — the spin comes from that component's own CSS animation. |
 
 ## Verifying a glyph
 

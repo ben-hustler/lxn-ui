@@ -1,0 +1,132 @@
+/* Shared chrome layered on top of SingleSelect/MultiSelect's own
+   per-component CSS (single-select.css / multi-select.css keep owning the
+   box/hover/focus/panel rules) — the pieces that are identical regardless
+   of which value-model component renders them via SelectTriggerChrome.tsx:
+   the transient "saving" dim, and the auto-assigned glyph + note annotation
+   beside the closed-state value (2026-09-03, retrofit of appraisal-users'
+   bespoke ValueRow.tsx chrome onto the shared components). */
+
+/* Same visual treatment as each component's own --disabled modifier
+   (background/color swap, no hover feedback) — kept as its own class
+   because it's a TRANSIENT state (aria-busy, not aria-disabled): a caller
+   flips this on for the duration of one in-flight save, independently of
+   the permanent `disabled` prop, so the two can't just share one modifier. */
+.lxn-select-trigger--saving,
+.lxn-select-trigger--loading {
+  cursor: not-allowed;
+  background: var(--color-bg-app);
+}
+.lxn-select-trigger--saving:hover,
+.lxn-select-trigger--loading:hover {
+  background: var(--color-bg-app);
+  border-color: var(--color-border);
+}
+.lxn-select-trigger--saving
+  :is(
+    .lxn-single-select-trigger-value,
+    .lxn-multi-select-trigger-value,
+    .lxn-single-select-trigger-field-label,
+    .lxn-multi-select-trigger-field-label,
+    .lxn-single-select-chevron,
+    .lxn-multi-select-chevron
+  ),
+.lxn-select-trigger--loading
+  :is(
+    .lxn-single-select-trigger-value,
+    .lxn-multi-select-trigger-value,
+    .lxn-single-select-trigger-field-label,
+    .lxn-multi-select-trigger-field-label
+  ) {
+  color: var(--color-fg-disabled);
+}
+
+/* The spinner itself keeps the accent color rather than the dimmed-text
+   treatment above (it's not text being disabled, it's the busy indicator) —
+   same rotation approach as pulse-dots.css's own @keyframes, just a single
+   continuous spin instead of a staggered pulse. */
+.lxn-select-trigger-spinner {
+  color: var(--color-fg-accent);
+  animation: lxn-select-trigger-spin 0.8s linear infinite;
+}
+@keyframes lxn-select-trigger-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ~500ms flash confirming a save landed — no toast/banner. Border-color only
+   (each component's own trigger already draws its own 1px border), so this
+   never fights `--disabled`/`--saving`'s own background swap. */
+.lxn-select-trigger--just-saved {
+  border-color: var(--color-success);
+  transition: border-color var(--motion-quick) var(--ease-standard);
+}
+
+/* 'compact' size (2026-09-03) — shrinks the value text from lxn-l1 (16px,
+   the Bubble-reference size) to lxn-l2's own 13px, for a host that needs the
+   row as short as possible (appraisal-users' three-role-field card: the old
+   bespoke SearchSelect-era trigger read its value at 13px too). Font size
+   only, not a new color — deliberately reuses `--font-size-l2`/
+   `--line-height-snug` rather than the `.lxn-l2` utility class wholesale,
+   since that class's own `color: var(--color-fg-secondary)` would dim
+   ordinary (non-placeholder) value text, which 'compact' isn't asking for.
+   MultiSelect's growwrap span carries the same lxn-l1 sizing and its
+   `::after` measuring mirror inherits from it, so overriding the wrapper
+   here is enough — no separate rule needed for the mirror itself. */
+.lxn-select-trigger--compact
+  :is(
+    .lxn-single-select-trigger-value,
+    .lxn-single-select-trigger-input,
+    .lxn-multi-select-trigger-value,
+    .lxn-multi-select-trigger-input,
+    .lxn-multi-select-trigger-growwrap,
+    .lxn-multi-select-trigger-suffix
+  ) {
+  font-size: var(--font-size-l2);
+  line-height: var(--line-height-snug);
+}
+
+/* Groups valueArea with its note/auto annotations into ONE flex item, so
+   the trigger's own `justify-content: space-between` only puts space
+   between this whole group and the chevron/clear — not between the value
+   and its own annotations. `min-width: 0` overrides the flex-item default
+   (min-width: auto, i.e. "never shrink below content") the same way the
+   value span's own `.lxn-single-select-trigger-value`/`-multi-select-` rule
+   already has to for its ellipsis truncation to work at all. */
+.lxn-select-trigger-value-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+/* The `--labeled` trigger box is a COLUMN flex container
+   (single-select.css / multi-select.css's own `--labeled` rule) with
+   `align-items: flex-start` — meaning this group, as its flex child, is NOT
+   stretched to the box's width by default; it falls back to fit-content
+   sizing. For nowrap text (the value span's own `white-space: nowrap` via
+   text-overflow/ellipsis), min-content equals max-content, so fit-content
+   just returns the full unwrapped text width instead of clamping to the
+   box — the value span's own `width: 100%` then resolves against that
+   content-driven (not box-driven) width, so its overflow-hidden/ellipsis
+   never actually triggers and the whole trigger balloons to fit the text
+   ("Model" overflowing past its own box, 2026-09-03). Only the `--labeled`
+   layout needs this: the plain (unlabeled) trigger is a ROW flex container,
+   where this group's width is already governed by flex-shrink (default,
+   plus its own min-width: 0 above), not align-items. */
+:is(.lxn-single-select-trigger--labeled, .lxn-multi-select-trigger--labeled) .lxn-select-trigger-value-group {
+  width: 100%;
+}
+.lxn-select-trigger-annotations {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+.lxn-select-trigger-note {
+  color: var(--color-fg-secondary);
+}
+.lxn-select-trigger-auto-icon {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-success);
+}

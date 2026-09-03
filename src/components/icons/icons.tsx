@@ -238,6 +238,19 @@ export function AutoFixHighIcon(props: SVGProps<SVGSVGElement> & { size?: number
   );
 }
 
+/** DateRangePicker's date-display trigger glyph — Lucide's `calendar` glyph,
+   verbatim. */
+export function CalendarIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+    </Icon>
+  );
+}
+
 /** Dismiss glyph for anything that isn't CloseButton's own chrome (e.g.
    ErrorBanner's inline dismiss, which owns its own small transparent button
    and just needs the bare glyph) — Google Material Design's "close" glyph,
@@ -251,5 +264,17 @@ export function CloseIcon(props: SVGProps<SVGSVGElement> & { size?: number }) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...rest}>
       <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
     </svg>
+  );
+}
+
+/** Loading spinner glyph — Lucide's `loader-circle` glyph verbatim (a single
+   ~270° arc, not a full ring), so a caller's own CSS rotation reads as
+   continuous spinning rather than a static "C". No motion of its own — see
+   SelectTriggerChrome's `.lxn-select-trigger-spinner` for the animation. */
+export function LoaderIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+    </Icon>
   );
 }

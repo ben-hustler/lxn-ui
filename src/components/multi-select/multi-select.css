@@ -1,0 +1,291 @@
+/* Default (no renderTrigger) box — same structure as search-select.css's own
+   default trigger. Semantic tokens throughout (CLAUDE.md), not raw scale. */
+.lxn-multi-select {
+  display: block;
+  width: 100%;
+}
+.lxn-multi-select-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 5px 7px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  /* Buttons center-align text by default in the UA stylesheet — override so
+     the label/value always reads left-aligned, matching the Bubble reference. */
+  text-align: left;
+  transition: background var(--motion-quick) var(--ease-standard), border-color var(--motion-quick) var(--ease-standard);
+}
+.lxn-multi-select-trigger:hover {
+  background: var(--color-bg-sunken);
+  border-color: var(--color-border-strong);
+}
+.lxn-multi-select-trigger:focus-visible {
+  outline: 2px solid var(--color-fg-accent);
+  outline-offset: 1px;
+}
+.lxn-multi-select-trigger-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lxn-multi-select-trigger-value.is-placeholder {
+  color: var(--color-fg-tertiary);
+}
+/* OPEN state — the input sits first (left) and grows to exactly fit what's
+   typed, immediately followed by a comma and the already-selected labels
+   trailing off to the right — typing pushes that trailing list rightward
+   (and it truncates) rather than the whole value vanishing into an empty
+   search box. */
+.lxn-multi-select-trigger-value--editing {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  text-overflow: clip;
+}
+.lxn-multi-select-trigger-suffix {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Muted so the already-picked, read-only list visibly recedes behind the
+   live typeahead input — same token as the placeholder text. Qualified with
+   the parent selector (rather than the bare class) so its specificity
+   actually beats `.lxn-l1`'s own `color` rule from tokens.css — same
+   specificity, bare-class-vs-bare-class, was a coin flip decided by
+   stylesheet load order, and lost. */
+.lxn-multi-select-trigger-value--editing .lxn-multi-select-trigger-suffix {
+  color: var(--color-fg-tertiary);
+}
+/* Auto-grow-to-content trick: a hidden `::after` mirrors the input's own
+   value (via `content: attr(data-value)`, same inherited font as the real
+   input) and, being an ordinary inline box, sizes the wrapper to exactly
+   that text's width. The real <input> is taken OUT of flow (`position:
+   absolute`, pinned to all four edges) so it never contributes its own
+   width to that measurement — this is deliberate, not incidental: an
+   earlier version shared a CSS Grid cell between the mirror and the input
+   (both in normal grid flow), and a percentage width on a grid item is
+   spec'd to compute as `auto` for intrinsic-sizing purposes, which fed
+   through to the browser's UA-default text-input width (~20 characters,
+   the same default the `size` attribute controls) — so the grid track sized
+   itself to that ~20ch default instead of the mirrored query text, and the
+   trailing selected-items list (the sibling suffix span, the only flexible/
+   shrinkable item) got squeezed down to nothing rather than truncating with
+   an ellipsis ("selected items disappear instead of getting pushed right").
+   Positioning the input absolutely over the mirror sidesteps that default-
+   width leak entirely, since the mirror is plain text with no such rule.
+   This wrapper is ALWAYS rendered around <input> (MultiSelect.tsx never
+   conditionally mounts/unmounts it) — only this modifier class changes
+   between "grow to content" and "--fill" (nothing selected, no trailing
+   list to push, so it just fills the box and the placeholder gets its full
+   width). Keeping the wrapper unconditional is deliberate: making it
+   conditional was the actual bug behind "focus lost after the very first
+   pick" (see the .tsx's own comment on `existingList`) — a real <input> DOM
+   node must never move to a new position in the tree just because a
+   sibling's content changed. */
+.lxn-multi-select-trigger-growwrap {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+  flex: 0 0 auto;
+  max-width: 100%;
+  /* Keeps the caret visibly clickable even with an empty query. */
+  min-width: 4px;
+}
+.lxn-multi-select-trigger-growwrap::after {
+  content: attr(data-value);
+  visibility: hidden;
+  white-space: pre;
+  display: inline-block;
+}
+.lxn-multi-select-trigger-growwrap .lxn-multi-select-trigger-input {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
+.lxn-multi-select-trigger-growwrap--fill {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.lxn-multi-select-trigger-growwrap--fill::after {
+  content: none;
+}
+.lxn-multi-select-trigger-growwrap--fill .lxn-multi-select-trigger-input {
+  position: static;
+  width: 100%;
+}
+.lxn-multi-select-trigger-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0;
+  color: var(--color-fg-primary);
+}
+.lxn-multi-select-trigger-input::placeholder {
+  color: var(--color-fg-tertiary);
+}
+.lxn-multi-select-chevron {
+  flex: none;
+  color: var(--color-fg-tertiary);
+}
+
+/* Clear-all red X — only rendered (by the .tsx) while the panel is open AND
+   at least one option is selected, REPLACING the chevron in its own slot
+   rather than sitting alongside it (the element carries both
+   `lxn-multi-select-chevron` and this class, so it inherits the chevron's
+   own flex/absolute positioning for free — no extra width, no trigger
+   padding change needed). This just resets the <button> UA chrome
+   (border/background/padding) the chevron's bare <svg> never had, and swaps
+   the tertiary chevron color for the negative/loss red (same token as a
+   negative numeric value, not --color-error's form-validation red) so it
+   reads as a destructive action rather than another neutral icon. */
+.lxn-multi-select-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-negative);
+  cursor: pointer;
+  transition: background var(--motion-quick) var(--ease-standard);
+}
+.lxn-multi-select-clear:hover {
+  background: var(--color-negative-bg);
+}
+.lxn-multi-select-clear:focus-visible {
+  outline: 2px solid var(--color-fg-accent);
+  outline-offset: 1px;
+}
+
+/* Read-only, can't be opened — visually recedes into the page (bg-app, the
+   same token .intc-root/other consumers use for their own page background)
+   rather than sitting on bg-surface like an active control, plus fg-disabled
+   text/chevron and no hover feedback. */
+.lxn-multi-select-trigger--disabled {
+  cursor: not-allowed;
+  background: var(--color-bg-app);
+  color: var(--color-fg-disabled);
+}
+.lxn-multi-select-trigger--disabled:hover {
+  background: var(--color-bg-app);
+  border-color: var(--color-border);
+}
+.lxn-multi-select-trigger--disabled .lxn-multi-select-trigger-value,
+.lxn-multi-select-trigger--disabled .lxn-multi-select-trigger-field-label,
+.lxn-multi-select-trigger--disabled .lxn-multi-select-chevron {
+  color: var(--color-fg-disabled);
+}
+
+/* Bubble reference style — field name inside the box, above the value,
+   chevron centered on the full (now taller) box height. */
+.lxn-multi-select-trigger--labeled {
+  position: relative;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 34px 7px 10px;
+  min-height: 52px;
+}
+.lxn-multi-select-trigger-field-label {
+  pointer-events: none;
+}
+.lxn-multi-select-trigger--labeled .lxn-multi-select-trigger-value {
+  width: 100%;
+}
+.lxn-multi-select-trigger--labeled .lxn-multi-select-chevron {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* ---- Panel — portalled and positioned via an inline transform computed
+   from the trigger's live rect, same technique as SearchSelect's own panel. */
+.lxn-multi-select-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  /* Matches the trigger box's own --radius-sm, not --radius-md — a rounder
+     panel than its own trigger read as mismatched. */
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  z-index: 1200;
+  overflow: hidden;
+}
+.lxn-multi-select-list {
+  max-height: 240px;
+  overflow-y: auto;
+}
+.lxn-multi-select-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.lxn-multi-select-option:hover,
+.lxn-multi-select-option:focus-visible,
+.lxn-multi-select-option.is-highlighted {
+  background: var(--color-hover-accent-bg);
+  outline: none;
+}
+.lxn-multi-select-option-checkbox {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-fg-on-primary);
+  background: var(--color-bg-surface);
+  transition: background var(--motion-quick) var(--ease-standard), border-color var(--motion-quick) var(--ease-standard);
+}
+.lxn-multi-select-option[aria-selected='true'] .lxn-multi-select-option-checkbox {
+  background: var(--color-action-primary);
+  border-color: var(--color-action-primary);
+}
+.lxn-multi-select-option-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.lxn-multi-select-option-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lxn-multi-select-empty {
+  padding: 12px;
+}
+
+/* 'compact' size (2026-09-03) — same reasoning as SingleSelect's own
+   .lxn-single-select-panel--compact: the option label is lxn-l1 (16px) by
+   default, same as the trigger's own value text, so it needs to follow the
+   trigger down to SelectTriggerChrome's --compact (13px) or the list reads
+   as oddly oversized under its own shrunk trigger. Row padding trimmed to
+   match (8px -> 6px vertical). */
+.lxn-multi-select-panel--compact .lxn-multi-select-option {
+  padding: 6px 12px;
+}
+.lxn-multi-select-panel--compact .lxn-multi-select-option-label {
+  font-size: var(--font-size-l2);
+  line-height: var(--line-height-snug);
+}

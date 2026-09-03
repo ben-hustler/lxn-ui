@@ -59,7 +59,15 @@ export interface SearchSelectProps {
   className?: string;
 }
 
-/** Generic searchable/typeahead select (lxn-ui, not app-specific). Click the
+/**
+ * @deprecated 2026-09-03 — superseded by SingleSelect, which folds the
+ * typeahead INSIDE the trigger box (this component's own separate pinned
+ * search bar is the thing that's drifting away from the rest of lxn-ui's
+ * combobox family — MultiSelect already made that move). Left in place
+ * (unreleased, no version bump) since existing consumers still import it;
+ * don't reach for it in new work — use SingleSelect instead.
+ *
+ * Generic searchable/typeahead select (lxn-ui, not app-specific). Click the
  * trigger, a panel opens below with a pinned search input on top and a
  * scrollable option list beneath, usable immediately without typing —
  * filtering itself is the caller's job (via `onSearch`/the `options` it
