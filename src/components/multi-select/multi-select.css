@@ -5,12 +5,15 @@
   width: 100%;
 }
 .lxn-multi-select-trigger {
+  position: relative;
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  padding: 5px 7px;
+  /* Right padding reserves the absolutely-positioned chevron slot's own
+     footprint (14px icon + 7px right offset, same edge gap as the left
+     padding, + a hair of breathing room) — see .lxn-multi-select-chevron
+     below for why that slot is out of flow rather than a second flex item. */
+  padding: 5px 28px 5px 7px;
   background: var(--color-bg-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -135,8 +138,21 @@
 .lxn-multi-select-trigger-input::placeholder {
   color: var(--color-fg-tertiary);
 }
+/* Always out of flow (not a second flex item alongside the value) — this
+   slot swaps between the chevron, the loading spinner, and the clear-all
+   button (all three share this class), and the spinner's own wrapping
+   <span> (see SelectTriggerChrome.tsx) would otherwise introduce a phantom
+   line-box "strut" sized off the ambient inherited font/line-height rather
+   than the icon itself, silently growing the row the instant loading flips
+   on — worst in 'compact' mode, where the row's own text line-height is
+   smaller than that strut floor (reported 2026-09-03). Taking the whole
+   slot out of flow, the same way the --labeled layout below already did,
+   makes every occupant's height irrelevant to the row's height. */
 .lxn-multi-select-chevron {
-  flex: none;
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--color-fg-tertiary);
 }
 
@@ -207,10 +223,7 @@
   width: 100%;
 }
 .lxn-multi-select-trigger--labeled .lxn-multi-select-chevron {
-  position: absolute;
   right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
 }
 
 /* ---- Panel — portalled and positioned via an inline transform computed

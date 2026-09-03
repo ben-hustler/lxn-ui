@@ -99,21 +99,28 @@
   gap: 4px;
   min-width: 0;
 }
-/* The `--labeled` trigger box is a COLUMN flex container
-   (single-select.css / multi-select.css's own `--labeled` rule) with
-   `align-items: flex-start` — meaning this group, as its flex child, is NOT
-   stretched to the box's width by default; it falls back to fit-content
-   sizing. For nowrap text (the value span's own `white-space: nowrap` via
-   text-overflow/ellipsis), min-content equals max-content, so fit-content
-   just returns the full unwrapped text width instead of clamping to the
-   box — the value span's own `width: 100%` then resolves against that
-   content-driven (not box-driven) width, so its overflow-hidden/ellipsis
-   never actually triggers and the whole trigger balloons to fit the text
-   ("Model" overflowing past its own box, 2026-09-03). Only the `--labeled`
-   layout needs this: the plain (unlabeled) trigger is a ROW flex container,
-   where this group's width is already governed by flex-shrink (default,
-   plus its own min-width: 0 above), not align-items. */
-:is(.lxn-single-select-trigger--labeled, .lxn-multi-select-trigger--labeled) .lxn-select-trigger-value-group {
+/* Needed in BOTH layouts, for two different reasons:
+   - The `--labeled` trigger box is a COLUMN flex container (single-select.css
+     / multi-select.css's own `--labeled` rule) with `align-items: flex-start`
+     — meaning this group, as its flex child, is NOT stretched to the box's
+     width by default; it falls back to fit-content sizing. For nowrap text
+     (the value span's own `white-space: nowrap` via text-overflow/ellipsis),
+     min-content equals max-content, so fit-content just returns the full
+     unwrapped text width instead of clamping to the box — the value span's
+     own `width: 100%` then resolves against that content-driven (not
+     box-driven) width, so its overflow-hidden/ellipsis never actually
+     triggers and the whole trigger balloons to fit the text ("Model"
+     overflowing past its own box, 2026-09-03).
+   - The plain (unlabeled) trigger is a ROW flex container where this group
+     used to be sized by ordinary flex-shrink alongside the chevron, a
+     second flex item. Now that the chevron/spinner/clear slot is always
+     absolutely positioned (single-select.css / multi-select.css's own
+     `.lxn-*-chevron`, 2026-09-03), this group is the row's ONLY flex child,
+     and a lone flex item doesn't stretch to fill its container by default
+     (flex-basis: auto sizes it to content) — without `width: 100%` here it
+     would just hug the text width, leaving the trigger's reserved
+     chevron-slot padding as dead space instead of truncating correctly. */
+.lxn-select-trigger-value-group {
   width: 100%;
 }
 .lxn-select-trigger-annotations {
