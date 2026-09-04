@@ -1,0 +1,49 @@
+/* KpiTile — a labeled metric card: label, hero value, optional sublabel.
+   Promoted out of lexen-bubble-web-comp/internals' own ad-hoc .intc-kpi-tile
+   once a second consumer needed the identical box shape (offer-analytics-
+   react's hand-rolled KpiRow.tsx) — see PATTERNS.md's "primitives built
+   lazily" note and w36-internal-comps-webcomps/claude-reference/build-plans/
+   internal-comps.md's Slice 2 (2026-09-04). */
+.lxn-kpi-tile {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4) var(--space-5);
+  min-width: 160px;
+}
+
+/* Standalone card, sitting directly on the page background — separates with
+   box-shadow, not a border, per PATTERNS.md's "Borders are for controls, not
+   containers" rule (the ad-hoc tile this replaced predated that rule and
+   bordered itself the wrong way; fixed here rather than carried forward). */
+.lxn-kpi-tile--surface {
+  border-radius: var(--radius-md);
+  background: var(--color-bg-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Nested inside a panel that already supplies the surface (appraisal-
+   internals' KPI rows inside .intc-filter-editor) — no background/shadow of
+   its own, just a hairline border. --radius-sm to match the same panel's
+   other controls (MultiSelect's own trigger box), not --radius-md. Smaller
+   min-width than the surface card's 160px default — this is the dense,
+   many-tiles-per-row context (a 6-across grid), and 130px is also legacy's
+   own literal spec for these exact metric cards
+   (bubble-internal-comps-v4-summary.md: "Each metric embeddable has a
+   minimum width of 130px"), not an arbitrary pick. */
+.lxn-kpi-tile--bordered {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-subtle);
+  min-width: 130px;
+}
+
+/* Compound selectors (not a bare modifier class) so these reliably win over
+   .lxn-n2/.lxn-l4's own color regardless of CSS import order between this
+   file and tokens.css. */
+.lxn-kpi-tile-value.lxn-kpi-tile-value--error {
+  color: var(--color-error);
+}
+
+.lxn-kpi-tile-sublabel.lxn-kpi-tile-sublabel--error {
+  color: var(--color-error);
+}

@@ -34,6 +34,7 @@ import {
   type DateRangeValue,
   formatDateRangeLabel,
   type IconProps,
+  KpiTile,
 } from '../src/index';
 import './sandbox.css';
 
@@ -112,6 +113,7 @@ const NAV_GROUPS = [
       ['comp-multi-select', 'MultiSelect'],
       ['comp-single-select', 'SingleSelect'],
       ['comp-date-range-picker', 'DateRangePicker'],
+      ['comp-kpi-tile', 'KpiTile'],
       ['comp-tooltip', 'Tooltip'],
     ],
   },
@@ -1207,6 +1209,61 @@ function DateRangePickerSection() {
 }
 
 /* ============================================================
+   Components — KpiTile
+   ============================================================ */
+
+function KpiTileSection() {
+  return (
+    <Section
+      id="comp-kpi-tile"
+      title="KpiTile"
+      description="Labeled metric card — label, hero value, optional sublabel. Built for appraisal-internals' Location/Organization summary rows (Sold Units, Days to Sell, ACV, Recon, Retail, Front Gross); offer-analytics-react's own hand-rolled KpiRow.tsx is a candidate to adopt this later. lxn-ui owns no formatting/threshold logic — the consumer passes a display-ready value and decides when to pass valueTone='error'."
+    >
+      <DemoSurface>
+        <Subsection title="A Location row (real appraisal-internals shape)">
+          <div className="lxn-sandbox-row">
+            <KpiTile label="Sold Units" value="128" />
+            <KpiTile label="Days to Sell" value="62 Days" />
+            <KpiTile label="ACV" value="$18,200" />
+            <KpiTile label="Recon" value="$1,150" />
+            <KpiTile label="Retail" value="$24,500" />
+            <KpiTile label="Front Gross" value="$2,300" />
+          </div>
+        </Subsection>
+
+        <Subsection title="Threshold breach (valueTone='error') — Days to Sell ≥ 90, Front Gross ≤ 0">
+          <div className="lxn-sandbox-row">
+            <KpiTile label="Days to Sell" value="94 Days" valueTone="error" />
+            <KpiTile label="Front Gross" value="-$400" valueTone="error" />
+          </div>
+        </Subsection>
+
+        <Subsection title="Sublabel — echoing scope, or an independent error state">
+          <div className="lxn-sandbox-row">
+            <KpiTile label="Sold Units" value="12" sublabel="org obid_shire_auto" />
+            <KpiTile label="ACV" value="—" sublabel="Comparables data is temporarily unavailable." sublabelTone="error" />
+          </div>
+        </Subsection>
+
+        <Subsection title="Loading state (caller-formatted, no lxn-ui-owned skeleton)">
+          <div className="lxn-sandbox-row">
+            <KpiTile label="Sold Units" value="…" />
+          </div>
+        </Subsection>
+
+        <Subsection title="variant='bordered' — nested inside a panel that already supplies the surface (appraisal-internals' KPI rows live inside its own .intc-filter-editor, not on the page background)">
+          <div className="lxn-sandbox-row">
+            <KpiTile label="Sold Units" value="128" variant="bordered" />
+            <KpiTile label="Days to Sell" value="94 Days" valueTone="error" variant="bordered" />
+            <KpiTile label="ACV" value="$18,200" variant="bordered" />
+          </div>
+        </Subsection>
+      </DemoSurface>
+    </Section>
+  );
+}
+
+/* ============================================================
    Components — Tooltip
    ============================================================ */
 
@@ -1297,6 +1354,7 @@ export function Sandbox() {
         <MultiSelectSection />
         <SingleSelectSection />
         <DateRangePickerSection />
+        <KpiTileSection />
         <TooltipSection />
       </div>
     </div>

@@ -36,3 +36,5 @@ export { SingleSelect } from './components/single-select/SingleSelect';
 export type { SingleSelectOption, SingleSelectProps, SingleSelectTriggerArgs } from './components/single-select/SingleSelect';
 export { DateRangePicker, formatDateRangeLabel, resolveRelativeRange } from './components/date-range-picker/DateRangePicker';
 export type { DateRangeValue, DateRangePickerProps } from './components/date-range-picker/DateRangePicker';
+export { KpiTile } from './components/kpi-tile/KpiTile';
+export type { KpiTileProps, KpiTileTone, KpiTileVariant } from './components/kpi-tile/KpiTile';
