@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import './kpi-tile.css';
 
-export type KpiTileTone = 'default' | 'error';
+export type KpiTileTone = 'default' | 'error' | 'won' | 'lost';
 
 /** 'surface' (default): a standalone card — white background + box-shadow,
  * for a tile sitting directly on the page background, per PATTERNS.md's
@@ -21,9 +21,12 @@ export interface KpiTileProps {
    * `background` prop. Pass whatever string/node is already display-ready
    * ("$24,500", "62 Days", "…" while loading, "—" for empty/errored). */
   value: ReactNode;
-  /** Colors the value with `--color-error` — for a threshold breach (e.g.
-   * Days to Sell too high, Front Gross negative). lxn-ui doesn't know what
-   * the threshold is; the consumer decides when to pass `'error'`. */
+  /** `'error'` colors the value with `--color-error` — a genuine failure
+   * (the metric itself couldn't be computed). `'won'`/`'lost'` color with
+   * `--color-data-won`/`--color-data-lost` — the same green/red pair the
+   * data-viz palette reserves for a favorable/unfavorable outcome (e.g. Days
+   * to Sell under/over threshold, Front Gross positive/negative). lxn-ui
+   * doesn't know the threshold; the consumer decides which tone to pass. */
   valueTone?: KpiTileTone;
   /** Optional line below the value — an org/location echo, or an error
    * message explaining why `value` is empty. */
@@ -35,8 +38,8 @@ export interface KpiTileProps {
 
 export function KpiTile({ label, value, valueTone = 'default', sublabel, sublabelTone = 'default', variant = 'surface', className }: KpiTileProps) {
   const classes = ['lxn-kpi-tile', `lxn-kpi-tile--${variant}`, className || ''].filter(Boolean).join(' ');
-  const valueClasses = ['lxn-n2', 'lxn-kpi-tile-value', valueTone === 'error' ? 'lxn-kpi-tile-value--error' : ''].filter(Boolean).join(' ');
-  const sublabelClasses = ['lxn-l4', 'lxn-kpi-tile-sublabel', sublabelTone === 'error' ? 'lxn-kpi-tile-sublabel--error' : ''].filter(Boolean).join(' ');
+  const valueClasses = ['lxn-n2', 'lxn-kpi-tile-value', valueTone !== 'default' ? `lxn-kpi-tile-value--${valueTone}` : ''].filter(Boolean).join(' ');
+  const sublabelClasses = ['lxn-l4', 'lxn-kpi-tile-sublabel', sublabelTone !== 'default' ? `lxn-kpi-tile-sublabel--${sublabelTone}` : ''].filter(Boolean).join(' ');
 
   return (
     <div className={classes}>

@@ -44,6 +44,25 @@
   color: var(--color-error);
 }
 
+/* won/lost use the data-viz palette's own outcome pair (tokens.css), not
+   --color-error/--color-success — this is a favorable/unfavorable-outcome
+   color, not a pass/fail one. */
+.lxn-kpi-tile-value.lxn-kpi-tile-value--won {
+  color: var(--color-data-won);
+}
+
+.lxn-kpi-tile-value.lxn-kpi-tile-value--lost {
+  color: var(--color-data-lost);
+}
+
 .lxn-kpi-tile-sublabel.lxn-kpi-tile-sublabel--error {
   color: var(--color-error);
+}
+
+.lxn-kpi-tile-sublabel.lxn-kpi-tile-sublabel--won {
+  color: var(--color-data-won);
+}
+
+.lxn-kpi-tile-sublabel.lxn-kpi-tile-sublabel--lost {
+  color: var(--color-data-lost);
 }

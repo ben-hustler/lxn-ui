@@ -1217,7 +1217,7 @@ function KpiTileSection() {
     <Section
       id="comp-kpi-tile"
       title="KpiTile"
-      description="Labeled metric card — label, hero value, optional sublabel. Built for appraisal-internals' Location/Organization summary rows (Sold Units, Days to Sell, ACV, Recon, Retail, Front Gross); offer-analytics-react's own hand-rolled KpiRow.tsx is a candidate to adopt this later. lxn-ui owns no formatting/threshold logic — the consumer passes a display-ready value and decides when to pass valueTone='error'."
+      description="Labeled metric card — label, hero value, optional sublabel. Built for appraisal-internals' Location/Organization summary rows (Sold Units, Days to Sell, ACV, Recon, Retail, Front Gross); offer-analytics-react's own hand-rolled KpiRow.tsx is a candidate to adopt this later. lxn-ui owns no formatting/threshold logic — the consumer passes a display-ready value and decides when to pass valueTone='won'/'lost'/'error'."
     >
       <DemoSurface>
         <Subsection title="A Location row (real appraisal-internals shape)">
@@ -1231,10 +1231,12 @@ function KpiTileSection() {
           </div>
         </Subsection>
 
-        <Subsection title="Threshold breach (valueTone='error') — Days to Sell ≥ 90, Front Gross ≤ 0">
+        <Subsection title="Favorable/unfavorable outcome (valueTone='won'/'lost') — Days to Sell < 90 vs. ≥ 90, Front Gross > 0 vs. ≤ 0">
           <div className="lxn-sandbox-row">
-            <KpiTile label="Days to Sell" value="94 Days" valueTone="error" />
-            <KpiTile label="Front Gross" value="-$400" valueTone="error" />
+            <KpiTile label="Days to Sell" value="62 Days" valueTone="won" />
+            <KpiTile label="Front Gross" value="$2,300" valueTone="won" />
+            <KpiTile label="Days to Sell" value="94 Days" valueTone="lost" />
+            <KpiTile label="Front Gross" value="-$400" valueTone="lost" />
           </div>
         </Subsection>
 
@@ -1254,7 +1256,8 @@ function KpiTileSection() {
         <Subsection title="variant='bordered' — nested inside a panel that already supplies the surface (appraisal-internals' KPI rows live inside its own .intc-filter-editor, not on the page background)">
           <div className="lxn-sandbox-row">
             <KpiTile label="Sold Units" value="128" variant="bordered" />
-            <KpiTile label="Days to Sell" value="94 Days" valueTone="error" variant="bordered" />
+            <KpiTile label="Days to Sell" value="62 Days" valueTone="won" variant="bordered" />
+            <KpiTile label="Days to Sell" value="94 Days" valueTone="lost" variant="bordered" />
             <KpiTile label="ACV" value="$18,200" variant="bordered" />
           </div>
         </Subsection>

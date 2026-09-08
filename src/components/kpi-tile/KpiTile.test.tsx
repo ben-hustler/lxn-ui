@@ -31,4 +31,19 @@ describe('<KpiTile>', () => {
     expect(container.querySelector('.lxn-kpi-tile-value--error')).toBeNull();
     expect(container.querySelector('.lxn-kpi-tile-sublabel--error')).toBeTruthy();
   });
+
+  it('applies the won/lost tone classes to the value independently of each other', () => {
+    const { rerender, container } = render(<KpiTile label="Front Gross" value="$0" />);
+    expect(container.querySelector('.lxn-kpi-tile-value--won')).toBeNull();
+    expect(container.querySelector('.lxn-kpi-tile-value--lost')).toBeNull();
+
+    rerender(<KpiTile label="Front Gross" value="$1,200" valueTone="won" />);
+    expect(container.querySelector('.lxn-kpi-tile-value--won')).toBeTruthy();
+    expect(container.querySelector('.lxn-kpi-tile-value--lost')).toBeNull();
+    expect(container.querySelector('.lxn-kpi-tile-sublabel--won')).toBeNull();
+
+    rerender(<KpiTile label="Front Gross" value="-$400" valueTone="lost" />);
+    expect(container.querySelector('.lxn-kpi-tile-value--lost')).toBeTruthy();
+    expect(container.querySelector('.lxn-kpi-tile-value--won')).toBeNull();
+  });
 });
