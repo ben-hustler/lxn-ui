@@ -1,0 +1,69 @@
+/* Relies on tokens.css already being imported by the consumer. Shares the
+   ~30px/13px/medium-weight target `ButtonMain`'s `xs` size, `StatusBadge`,
+   and the compact Single/MultiSelect trigger all converge on (2026-09-08) —
+   6px vertical padding + l2/snug type is the same math `StatusBadge` uses.
+   Same box shape as `StatusBadge` (`--radius-sm`, not a full pill) per
+   explicit correction 2026-09-08 — the initial 999px pill shape didn't match
+   the rest of the family. Accent-tinted rather than neutral/white-on-color
+   like `StatusBadge`: these chips read as "currently filtering by this," an
+   active/accent state, not `StatusBadge`'s own arbitrary-per-consumer
+   background. Text/border colors matched 2026-09-08 to the legacy Bubble
+   chip's own exact values (`rgb(0,96,115)`/`rgb(127,184,195)`, confirmed
+   bit-for-bit against `--lxn-accent-deep-teal`/`--lxn-accent-light-teal`)
+   rather than the generic `--color-fg-accent` (`--lxn-accent-teal`) used
+   everywhere else for interactive emphasis — background/hover background
+   stay `--lxn-accent-tint`/`--color-hover-accent-bg` (not specified by the
+   legacy spec, unchanged from the original pick). No transitions/animations
+   anywhere in this file — explicit ask 2026-09-08: every state change here
+   is instant. */
+.lxn-filter-chip {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border: 1px solid var(--lxn-accent-light-teal);
+  border-radius: var(--radius-sm);
+  background: var(--lxn-accent-tint);
+  color: var(--lxn-accent-deep-teal);
+  font: var(--font-weight-medium) var(--font-size-l2) / var(--line-height-snug) var(--font-family-sans);
+  white-space: nowrap;
+}
+
+/* Locked chip (no `onRemove`) is a plain `<span>` — no button reset needed,
+   no hover/focus feedback, matches inventory-dashboard's own
+   `ActiveFilterChip` "protected filters render without an ×" convention. */
+
+.lxn-filter-chip--removable {
+  cursor: pointer;
+}
+.lxn-filter-chip--removable:hover {
+  background: var(--color-hover-accent-bg);
+}
+.lxn-filter-chip--removable:focus-visible {
+  outline: 2px solid var(--lxn-accent-deep-teal);
+  outline-offset: 1px;
+}
+
+.lxn-filter-chip-label {
+  pointer-events: none;
+}
+
+/* No transition and no reserved space at rest — `width: 0` + `overflow:
+   hidden` collapses this to nothing (not just invisible) when idle, so the
+   chip doesn't carry a permanent empty gap for a glyph that isn't showing.
+   On hover/focus it snaps straight to full width, growing the chip and
+   pushing the label over instantly — decision was "expand the size and bump
+   the text," not animate a reveal into space that was already there. */
+.lxn-filter-chip-x {
+  display: inline-flex;
+  align-items: center;
+  width: 0;
+  margin-left: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.lxn-filter-chip--removable:hover .lxn-filter-chip-x,
+.lxn-filter-chip--removable:focus-visible .lxn-filter-chip-x {
+  width: auto;
+  margin-left: 4px;
+}

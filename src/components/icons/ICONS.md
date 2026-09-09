@@ -30,6 +30,7 @@ independently-drawn glyphs; those files are now gone, migrated below.
 | `AutoFixHighIcon`  | Google Material Icons `auto_fix_high` (filled) | Apache-2.0   | "Auto-assigned" indicator glyph — sits beside a value the server picked automatically rather than a person selecting it (first use: `appraisal-users`' Salesperson/Appraiser/Sales Manager rows). |
 | `CalendarIcon`     | Lucide `calendar`                              | ISC          | `DateRangePicker`'s date-display trigger glyph. |
 | `LoaderIcon`       | Lucide `loader-circle`                         | ISC          | `SelectTriggerChrome`'s spinner, shown in the chevron slot while `loading` is true (a field's own option list is being refetched). Static glyph — the spin comes from that component's own CSS animation. |
+| `SlidersIcon`      | Bootstrap Icons `sliders`                      | MIT          | Internal Comps' Filter button glyph (2026-09-08) — explicit ask for this exact glyph (three rows, each a line + offset round handle); neither Lucide's `sliders-vertical` (a different, vertical-bars pictograph) nor Material has a real match. Kept at its native 16x16 viewBox rather than resized to this file's usual 24x24. First Bootstrap Icons glyph in this set. |
 
 ## Verifying a glyph
 
@@ -42,3 +43,6 @@ whether that's the reason before assuming a mistake.
 Material Icons: `https://fonts.google.com/icons` — search "close", filled
 style, 24px, path data via the Google Fonts icon detail panel or the
 `material-design-icons` GitHub repo.
+
+Bootstrap Icons: `https://raw.githubusercontent.com/twbs/icons/main/icons/<name>.svg`
+(e.g. `.../icons/sliders.svg`), or browse `https://icons.getbootstrap.com/`.

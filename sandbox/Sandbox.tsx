@@ -35,6 +35,8 @@ import {
   formatDateRangeLabel,
   type IconProps,
   KpiTile,
+  SlidersIcon,
+  FilterChip,
 } from '../src/index';
 import './sandbox.css';
 
@@ -106,6 +108,7 @@ const NAV_GROUPS = [
       ['comp-button-main', 'ButtonMain'],
       ['comp-button-card', 'ButtonCard'],
       ['comp-status-badge', 'StatusBadge'],
+      ['comp-filter-chip', 'FilterChip'],
       ['comp-pulse-dots', 'PulseDots'],
       ['comp-close-button', 'CloseButton'],
       ['comp-confirm-popover', 'ConfirmPopover'],
@@ -520,9 +523,14 @@ function TokensIconsSection() {
 
 function ButtonMainSection() {
   const [loading, setLoading] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   return (
-    <Section id="comp-button-main" title="ButtonMain" description="Main CTA button — primary/secondary/tertiary/danger, in large/small/wide sizes.">
+    <Section
+      id="comp-button-main"
+      title="ButtonMain"
+      description="Main CTA button — primary/secondary/tertiary/danger, in large/small/xs/wide sizes. Any size/variant can also be a toggle via `pressed`."
+    >
       <DemoSurface>
         <Subsection title="Variants (large)">
           <div className="lxn-sandbox-row">
@@ -539,6 +547,29 @@ function ButtonMainSection() {
             <ButtonMain label="Secondary" variant="secondary" size="small" />
             <ButtonMain label="Tertiary" variant="tertiary" size="small" />
             <ButtonMain label="Danger" variant="danger" size="small" />
+          </div>
+        </Subsection>
+
+        <Subsection title="xs (converges with StatusBadge/FilterChip/compact Select — ~30px/13px/medium)">
+          <div className="lxn-sandbox-row">
+            <ButtonMain label="Primary" variant="primary" size="xs" />
+            <ButtonMain label="Secondary" variant="secondary" size="xs" />
+            <ButtonMain label="Tertiary" variant="tertiary" size="xs" />
+            <ButtonMain label="Danger" variant="danger" size="xs" />
+          </div>
+        </Subsection>
+
+        <Subsection title="Toggle (`pressed` — Internal Comps' Filter button)">
+          <div className="lxn-sandbox-row">
+            <ButtonMain
+              label="Filters"
+              icon={<SlidersIcon size={14} />}
+              variant="tertiary"
+              size="xs"
+              pressed={filtersOpen}
+              onClick={() => setFiltersOpen((v) => !v)}
+            />
+            <span className="lxn-l4">{filtersOpen ? 'Panel open' : 'Panel closed'}</span>
           </div>
         </Subsection>
 
@@ -633,6 +664,34 @@ function StatusBadgeSection() {
           <StatusBadge label="Locked" icon={<CheckIcon size={12} />} background="var(--color-status-locked-bg)" />
           <StatusBadge icon={<CheckIcon size={12} />} aria-label="Selected" background="var(--color-status-accepted-bg)" />
         </div>
+      </DemoSurface>
+    </Section>
+  );
+}
+
+/* ============================================================
+   Components — FilterChip
+   ============================================================ */
+
+function FilterChipSection() {
+  const [values, setValues] = useState(['Civic', 'Accord', 'Automatic']);
+
+  return (
+    <Section
+      id="comp-filter-chip"
+      title="FilterChip"
+      description="One chip per selected value (Internal Comps header) — bare value text, hover-revealed ×, whole chip is the click target. Removes optimistically (no pending state of its own — a caller corrects afterward on failure). Omit onRemove for a locked chip (Make/Lookback)."
+    >
+      <DemoSurface>
+        <Subsection title="Removable + locked">
+          <div className="lxn-sandbox-row">
+            {values.map((v) => (
+              <FilterChip key={v} label={v} onRemove={() => setValues((s) => s.filter((x) => x !== v))} />
+            ))}
+            <FilterChip label="Honda" />
+            <FilterChip label="Last 90 days" />
+          </div>
+        </Subsection>
       </DemoSurface>
     </Section>
   );
@@ -1350,6 +1409,7 @@ export function Sandbox() {
         <ButtonMainSection />
         <ButtonCardSection />
         <StatusBadgeSection />
+        <FilterChipSection />
         <PulseDotsSection />
         <CloseButtonSection />
         <ConfirmPopoverSection />

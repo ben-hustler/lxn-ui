@@ -24,6 +24,7 @@ export {
   CloseIcon,
   AutoFixHighIcon,
   CalendarIcon,
+  SlidersIcon,
 } from './components/icons/icons';
 export type { IconProps } from './components/icons/icons';
 export { StatusBadge } from './components/status-badge/StatusBadge';
@@ -38,3 +39,5 @@ export { DateRangePicker, formatDateRangeLabel, resolveRelativeRange } from './c
 export type { DateRangeValue, DateRangePickerProps } from './components/date-range-picker/DateRangePicker';
 export { KpiTile } from './components/kpi-tile/KpiTile';
 export type { KpiTileProps, KpiTileTone, KpiTileVariant } from './components/kpi-tile/KpiTile';
+export { FilterChip } from './components/filter-chip/FilterChip';
+export type { FilterChipProps } from './components/filter-chip/FilterChip';

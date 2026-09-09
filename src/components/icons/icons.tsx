@@ -267,6 +267,28 @@ export function CloseIcon(props: SVGProps<SVGSVGElement> & { size?: number }) {
   );
 }
 
+/** Filter button glyph (Internal Comps header, 2026-09-08) — Bootstrap
+   Icons' `sliders` glyph, verbatim. Not a Lucide/Material glyph like every
+   other icon in this file, and that's fine: this set's actual rule (per
+   ICONS.md) is "verbatim copy of a real, published icon, tracked here," not
+   "must all come from one library" — Bootstrap's `sliders` is the real
+   glyph a stakeholder pointed at (three rows, each a line + an offset round
+   handle), and neither Lucide's `sliders-vertical` (a different, vertical-
+   bars pictograph) nor a redrawn approximation matches it. Native 16x16
+   viewBox kept as-is rather than force-fit to this file's usual 24x24 —
+   verbatim means the real path data, not a resized copy of it. */
+export function SlidersIcon(props: SVGProps<SVGSVGElement> & { size?: number }) {
+  const { size = 24, ...rest } = props;
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" {...rest}>
+      <path
+        fillRule="evenodd"
+        d="M11.5 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M9.05 3a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0V3zM4.5 7a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M2.05 8a2.5 2.5 0 0 1 4.9 0H16v1H6.95a2.5 2.5 0 0 1-4.9 0H0V8zm9.45 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3m-2.45 1a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0v-1z"
+      />
+    </svg>
+  );
+}
+
 /** Loading spinner glyph — Lucide's `loader-circle` glyph verbatim (a single
    ~270° arc, not a full ring), so a caller's own CSS rotation reads as
    continuous spinning rather than a static "C". No motion of its own — see

@@ -1,25 +1,32 @@
-/* Relies on tokens.css already being imported by the consumer. Padding/
-   radius/type values match appraisal-customer's own .cust-status-pill
-   exactly — that component's comment already documented itself as
+/* Padding/radius originally matched appraisal-customer's own
+   .cust-status-pill exactly (that component's comment documented itself as
    reproducing "the design system's real exported LxnStatusPill component"
-   from tokens, so it's the more authoritative of the two pre-existing
-   implementations (appraisal-offer's .ofr-status-tag used slightly
-   different padding/radius with no such backing). */
+   from tokens). Type size/line-height/weight converged 2026-09-08 onto the
+   shared ~30px/13px/medium-weight target `ButtonMain`'s new `xs` size,
+   `FilterChip`, and the compact Single/MultiSelect trigger all share —
+   raw `--font-size-l2`/`--line-height-snug` tokens rather than the `.lxn-l2`
+   utility class (same reasoning as `select-trigger-chrome.css`'s own
+   compact mode: `.lxn-l2` bundles a secondary color and regular weight,
+   neither of which fit a badge that always sets its own background/white
+   text). Uppercase + wide letter-spacing are kept — this is now the default
+   look for every `StatusBadge` consumer, HomeCard's "Selected" badge
+   included; padding bumped from 5px to 6px to land the box at ~30px tall
+   under the larger type. */
 .lxn-status-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
-  padding: 5px 10px;
+  padding: 6px 10px;
   border-radius: var(--radius-sm);
-  font: var(--font-weight-medium) var(--font-size-eyebrow) / 1 var(--font-family-sans);
+  font: var(--font-weight-medium) var(--font-size-l2) / var(--line-height-snug) var(--font-family-sans);
   letter-spacing: var(--letter-spacing-wide);
   text-transform: uppercase;
   color: var(--lxn-white);
   white-space: nowrap;
 }
 .lxn-status-badge--icon-only {
-  padding: 5px;
+  padding: 9px;
 }
 .lxn-status-badge-icon {
   display: inline-flex;
