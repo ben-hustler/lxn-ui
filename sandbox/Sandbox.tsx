@@ -37,6 +37,9 @@ import {
   KpiTile,
   SlidersIcon,
   FilterChip,
+  DataTable,
+  type DataTableColumnGroup,
+  type DataTableRow,
 } from '../src/index';
 import './sandbox.css';
 
@@ -117,6 +120,7 @@ const NAV_GROUPS = [
       ['comp-single-select', 'SingleSelect'],
       ['comp-date-range-picker', 'DateRangePicker'],
       ['comp-kpi-tile', 'KpiTile'],
+      ['comp-data-table', 'DataTable'],
       ['comp-tooltip', 'Tooltip'],
     ],
   },
@@ -1326,6 +1330,95 @@ function KpiTileSection() {
 }
 
 /* ============================================================
+   Components — DataTable
+   ============================================================ */
+
+const DATA_TABLE_GROUPS: DataTableColumnGroup[] = [
+  {
+    label: 'Sold',
+    columns: [
+      { key: 'units', label: 'Units' },
+      { key: 'dts', label: 'Days to Sell' },
+    ],
+  },
+  {
+    label: 'Cost',
+    columns: [
+      { key: 'acv', label: 'ACV' },
+      { key: 'total_cost', label: 'Total' },
+      { key: 'recon', label: 'Recon' },
+    ],
+  },
+  {
+    label: 'Profit',
+    columns: [
+      { key: 'front', label: 'Front' },
+      { key: 'fi', label: 'F&I' },
+      { key: 'total_profit', label: 'Total' },
+    ],
+  },
+];
+
+function demoMeasures(seed: number) {
+  const units = 1 + (seed % 9);
+  const dts = 20 + ((seed * 7) % 90);
+  const acv = 15000 + seed * 137;
+  const recon = 800 + seed * 23;
+  return {
+    units: { sortValue: units, display: String(units) },
+    dts: { sortValue: dts, display: `${dts} Days` },
+    acv: { sortValue: acv, display: `$${acv.toLocaleString()}` },
+    total_cost: { sortValue: acv + recon, display: `$${(acv + recon).toLocaleString()}` },
+    recon: { sortValue: recon, display: `$${recon.toLocaleString()}` },
+    front: { sortValue: 2000 - seed * 11, display: `$${(2000 - seed * 11).toLocaleString()}` },
+    fi: { sortValue: 400 + seed * 3, display: `$${(400 + seed * 3).toLocaleString()}` },
+    total_profit: { sortValue: 2400 - seed * 8, display: `$${(2400 - seed * 8).toLocaleString()}` },
+  };
+}
+
+function demoTableRow(key: string, rowLabel: ReactNode, seed: number, children?: DataTableRow[]): DataTableRow {
+  return { key, rowLabel, cells: demoMeasures(seed), children };
+}
+
+/** Year → Trim → Vehicle — three levels deep, to show a drilldown isn't
+ * capped at one: a row's `children` can themselves carry `children`. */
+const VEHICLE_TRIM_NAMES = ['LX', 'Touring'];
+
+function demoYearRow(year: number, seed: number): DataTableRow {
+  const trims = VEHICLE_TRIM_NAMES.map((trim, ti) => {
+    const trimSeed = seed + ti + 1;
+    const vehicles = Array.from({ length: 2 }, (_, vi) =>
+      demoTableRow(`${year}-${trim}-veh-${vi}`, `Stock #${1000 + seed * 10 + ti * 2 + vi}`, trimSeed + vi + 1),
+    );
+    return demoTableRow(`${year}-${trim}`, trim, trimSeed, vehicles);
+  });
+  return demoTableRow(`year-${year}`, `${year} · LE`, seed, trims);
+}
+
+function DataTableSection() {
+  const locationRows = [2024, 2023, 2022, 2021, 2020].map((year, i) => demoYearRow(year, i * 4));
+  const orgRows = Array.from({ length: 23 }, (_, i) => demoTableRow(`org-${i}`, `Location ${i + 1}`, i));
+
+  return (
+    <Section
+      id="comp-data-table"
+      title="DataTable"
+      description="Grouped, sortable, drillable data table — built for appraisal-internals' Location/Organization detail tables (Slice 4). lxn-ui owns structure and interactivity (column grouping, click-to-sort, click-anywhere-to-drill-down, vertical scroll past a capped height) only; every cell carries its own sortValue alongside an already-formatted display node, so no currency/decimal/unit logic lives here — same boundary as KpiTile's value prop."
+    >
+      <DemoSurface>
+        <Subsection title="A Location table (click a row to drill down — Year → Trim → Vehicle, three levels deep)">
+          <DataTable rowLabelHeader="Year → Trim → Vehicle" columnGroups={DATA_TABLE_GROUPS} rows={locationRows} />
+        </Subsection>
+
+        <Subsection title="An Organization table (23 rows — scrolls past a capped height instead of paginating; click a column header to sort)">
+          <DataTable rowLabelHeader="Location" columnGroups={DATA_TABLE_GROUPS} rows={orgRows} />
+        </Subsection>
+      </DemoSurface>
+    </Section>
+  );
+}
+
+/* ============================================================
    Components — Tooltip
    ============================================================ */
 
@@ -1418,6 +1511,7 @@ export function Sandbox() {
         <SingleSelectSection />
         <DateRangePickerSection />
         <KpiTileSection />
+        <DataTableSection />
         <TooltipSection />
       </div>
     </div>

@@ -1,0 +1,216 @@
+/* Built for appraisal-internals' Location/Organization detail tables
+   (2026-09-09) — a grouped, sortable, drillable data table. lxn-ui owns
+   structure/interactivity only: sort comparison runs on each cell's
+   `sortValue`, never on its (already-formatted) `display` node, so no
+   currency/decimal/unit logic ever needs to live here — same "consumer owns
+   its own vocabulary" boundary as KpiTile's `value` prop.
+
+   Horizontal scroll, not responsive column-hiding, for a wide multi-measure
+   table on narrow widths — dropping columns would hide data the consumer
+   specifically opened this view to see. Vertical scroll (2026-09-10,
+   replacing pagination) keeps a tall row set in check the same way — the
+   full set renders and scrolls past a capped height, header pinned via
+   `position: sticky`, instead of windowing into pages.
+
+   th/td are never given `display: flex` directly — that broke a `rowSpan`
+   cell's participation in the table's column-track layout (a sibling cell
+   in the next row landed in the wrong column). Icon+label pairs get their
+   own inner flex wrapper (`.lxn-data-table-row-header-inner`) instead, and
+   the row-label header no longer spans rows at all: it splits into a blank
+   corner cell (row 1, styled like the group headers) and the actual label
+   (row 2, alongside the measure column headers) — matching the Figma
+   source's own two-cell structure.
+
+   A drilldown's children (2026-09-10) are ordinary rows, not a distinct
+   "expanded panel" shape — a row with `children` just reveals more `<tr>`s
+   indented one step further, styled identically to any other row, so
+   nesting to arbitrary depth (Year → Trim → Vehicle) needs no CSS of its
+   own beyond the indent.
+
+   EVERY cell — header and body alike — draws its grid line as a
+   `box-shadow`, never a `border` (2026-09-10). Two reasons, both learned
+   the hard way:
+
+   1. The `<thead>` is `position: sticky`, and a sticky element inside a
+      `border-collapse: collapse` table drops its cells' collapsed borders
+      once it starts stickying, in Chrome/Firefox. box-shadow was never
+      part of the collapsing model, so it isn't affected.
+   2. box-shadow also isn't DEDUPLICATED between adjacent cells the way a
+      collapsed border is — so an `inset 0 0 0 1px` on every side of every
+      cell drew every internal seam TWICE (once from each neighboring
+      cell). Fixed by drawing only the right + bottom edge of each cell:
+      every seam is then drawn exactly once, by exactly one of its two
+      neighbors. Mixing `border` (body) with `box-shadow` (header) made
+      this worse, not better — the header/body seam specifically got
+      double-drawn (the header's own bottom edge plus the body's first-row
+      top edge, two independent declarations with no way to collapse
+      against each other), which is why only that seam still read as
+      thicker even after the header's own internal seams were fixed. Using
+      box-shadow everywhere, right+bottom only, removes the possibility of
+      that mismatch entirely — every seam in the table, header-to-header,
+      header-to-body, or body-to-body, is the same 1px line, drawn once.
+      This is also why `border-collapse: collapse` below no longer does
+      anything visible — nothing sets an actual `border` any more — it's
+      left in place only because removing it has no effect either way. */
+
+.lxn-data-table {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.lxn-data-table-scroll {
+  overflow: auto;
+}
+
+.lxn-data-table-table {
+  width: 100%;
+  border-collapse: collapse;
+  white-space: nowrap;
+}
+
+.lxn-data-table-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* One consistent light header band (--color-border-subtle) across both
+   header rows, edged in --color-border-strong — the same "darker in the
+   header, lighter in the rows" pairing as the body's own (lighter) grid
+   lines further down. */
+.lxn-data-table-corner-header,
+.lxn-data-table-group-header,
+.lxn-data-table-col-header,
+thead .lxn-data-table-row-header-cell {
+  box-shadow:
+    inset -1px 0 0 0 var(--color-border-strong),
+    inset 0 -1px 0 0 var(--color-border-strong);
+}
+
+.lxn-data-table-corner-header {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-border-subtle);
+}
+
+.lxn-data-table-group-header {
+  padding: var(--space-2) var(--space-3);
+  text-align: center;
+  background: var(--color-border-subtle);
+  color: var(--color-fg-primary);
+}
+
+.lxn-data-table-col-header {
+  padding: 0;
+  background: var(--color-border-subtle);
+  text-align: right;
+}
+.lxn-data-table-col-header:first-of-type {
+  text-align: left;
+}
+
+/* `font` is deliberately NOT reset here (e.g. to `inherit`) — these buttons
+   always carry `.lxn-l3` alongside this class, and a same-specificity
+   `font: inherit` on this rule would win by source order over `.lxn-l3`'s
+   own `font` shorthand (both are single-class selectors), making the button
+   inherit its unstyled parent `<th>`'s font instead of using its own. */
+.lxn-data-table-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  justify-content: flex-end;
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-fg-primary);
+}
+.lxn-data-table-col-header:first-of-type .lxn-data-table-sort-btn {
+  justify-content: flex-start;
+}
+
+.lxn-data-table-sort-icon {
+  flex-shrink: 0;
+}
+
+.lxn-data-table-row-header-cell {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  box-shadow:
+    inset -1px 0 0 0 var(--color-border-subtle),
+    inset 0 -1px 0 0 var(--color-border-subtle);
+}
+thead .lxn-data-table-row-header-cell {
+  background: var(--color-border-subtle);
+  padding: 0;
+}
+
+/* The thead row-label cell's own sort button — a dedicated class rather
+   than reusing `.lxn-data-table-sort-btn`: that one is right-aligned for
+   the numeric measure columns, this one is left-aligned text with the
+   arrow pushed to the far end (`justify-content: space-between`). */
+.lxn-data-table-row-header-sort-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-fg-primary);
+  text-align: left;
+}
+
+.lxn-data-table-row-header-inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.lxn-data-table-disclosure-icon {
+  flex-shrink: 0;
+  color: var(--color-fg-tertiary);
+  transition: transform 120ms var(--ease-standard);
+}
+
+/* Alternates by TOP-level sibling index only — a drilldown's children
+   inherit their ancestor's stripe unchanged (see flattenTree's
+   `inheritedStripe`) rather than continuing their own odd/even count, so a
+   whole expanded group reads as one consistent color, not a second zebra
+   pattern nested inside the first. --color-bg-sunken is lighter than the
+   header's own fill (--color-border-subtle) so the header still reads as
+   the "heaviest" surface. */
+.lxn-data-table-row--stripe-a {
+  background: var(--color-bg-surface);
+}
+.lxn-data-table-row--stripe-b {
+  background: var(--color-bg-sunken);
+}
+.lxn-data-table-row--interactive {
+  cursor: pointer;
+}
+/* Each stripe darkens by exactly one step on the neutral ladder on hover —
+   NOT a relative `filter: brightness()`, which has no awareness of
+   `--color-border-subtle` and can (and did) land close enough to it that
+   the grid lines seemed to vanish into the hover fill. Both of these stay
+   one full step lighter than border-subtle (neutral-150), so hover is
+   always visibly darker than the row's own resting color without ever
+   closing in on the line color. */
+.lxn-data-table-row--stripe-a.lxn-data-table-row--interactive:hover {
+  background: var(--color-bg-sunken);
+}
+.lxn-data-table-row--stripe-b.lxn-data-table-row--interactive:hover {
+  background: var(--color-bg-app);
+}
+
+.lxn-data-table-cell {
+  padding: var(--space-2) var(--space-3);
+  text-align: right;
+  box-shadow:
+    inset -1px 0 0 0 var(--color-border-subtle),
+    inset 0 -1px 0 0 var(--color-border-subtle);
+}

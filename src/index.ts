@@ -41,3 +41,11 @@ export { KpiTile } from './components/kpi-tile/KpiTile';
 export type { KpiTileProps, KpiTileTone, KpiTileVariant } from './components/kpi-tile/KpiTile';
 export { FilterChip } from './components/filter-chip/FilterChip';
 export type { FilterChipProps } from './components/filter-chip/FilterChip';
+export { DataTable } from './components/data-table/DataTable';
+export type {
+  DataTableProps,
+  DataTableColumn,
+  DataTableColumnGroup,
+  DataTableCell,
+  DataTableRow,
+} from './components/data-table/DataTable';
