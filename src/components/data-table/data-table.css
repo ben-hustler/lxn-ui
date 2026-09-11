@@ -27,9 +27,8 @@
    nesting to arbitrary depth (Year → Trim → Vehicle) needs no CSS of its
    own beyond the indent.
 
-   EVERY cell — header and body alike — draws its grid line as a
-   `box-shadow`, never a `border` (2026-09-10). Two reasons, both learned
-   the hard way:
+   The thead draws its grid lines as `box-shadow`, never a `border`
+   (2026-09-10). Two reasons, both learned the hard way:
 
    1. The `<thead>` is `position: sticky`, and a sticky element inside a
       `border-collapse: collapse` table drops its cells' collapsed borders
@@ -40,18 +39,22 @@
       cell drew every internal seam TWICE (once from each neighboring
       cell). Fixed by drawing only the right + bottom edge of each cell:
       every seam is then drawn exactly once, by exactly one of its two
-      neighbors. Mixing `border` (body) with `box-shadow` (header) made
-      this worse, not better — the header/body seam specifically got
-      double-drawn (the header's own bottom edge plus the body's first-row
-      top edge, two independent declarations with no way to collapse
-      against each other), which is why only that seam still read as
-      thicker even after the header's own internal seams were fixed. Using
-      box-shadow everywhere, right+bottom only, removes the possibility of
-      that mismatch entirely — every seam in the table, header-to-header,
-      header-to-body, or body-to-body, is the same 1px line, drawn once.
-      This is also why `border-collapse: collapse` below no longer does
-      anything visible — nothing sets an actual `border` any more — it's
-      left in place only because removing it has no effect either way. */
+      neighbors.
+
+   tbody, however, went BACK to a real `border` (2026-09-11) — right+bottom
+   only, same "drawn once" rule, so the header/body seam still isn't
+   double-drawn (the header's own box-shadow bottom edge is the only thing
+   drawn there; tbody's first row adds no top border). tbody never sticks,
+   so it never hits reason 1 above, and `border-collapse: collapse` (still
+   set below) lets Chrome/Firefox snap every real collapsed border to one
+   crisp device pixel — box-shadow doesn't get that treatment. At a
+   fractional device-pixel-ratio (e.g. 150% Windows scaling), this table's
+   37px row height lands mid-physical-pixel, and a box-shadow inset there
+   rasterizes as a soft ~2-device-pixel blend on some rows and a crisp 1px
+   line on others: the same 1px line reading as "randomly" thicker/thinner
+   row to row. Verified with headless Chrome at forced 1.5x device-scale:
+   box-shadow hairlines blended on ~every seam; real borders under
+   border-collapse stayed a crisp single pixel on every one. */
 
 .lxn-data-table {
   display: flex;
@@ -137,9 +140,11 @@ thead .lxn-data-table-row-header-cell {
 .lxn-data-table-row-header-cell {
   padding: var(--space-2) var(--space-3);
   text-align: left;
-  box-shadow:
-    inset -1px 0 0 0 var(--color-border-subtle),
-    inset 0 -1px 0 0 var(--color-border-subtle);
+  transition: color 120ms var(--ease-standard);
+}
+tbody .lxn-data-table-row-header-cell {
+  border-right: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 thead .lxn-data-table-row-header-cell {
   background: var(--color-border-subtle);
@@ -207,10 +212,40 @@ thead .lxn-data-table-row-header-cell {
   background: var(--color-bg-app);
 }
 
+/* A leaf-clickable row (onLeafClick) gets the same whole-row hover darkening
+   as an expandable branch row above — that alone doesn't tell the two apart.
+   Recoloring the row-label text (the leftmost column) is the extra cue that
+   THIS row's click target opens something (e.g. appraisal-internals' vehicle
+   detail modal) rather than just expanding the tree one level further; a
+   branch row's label never gets this since it isn't `--leaf-clickable`.
+   Higher specificity (three classes/pseudo-class) beats `.lxn-b2`/`.lxn-b3`'s
+   own `color: var(--color-fg-primary)` on the same `<th>` without
+   `!important`. */
+.lxn-data-table-row--leaf-clickable:hover .lxn-data-table-row-header-cell {
+  color: var(--color-fg-accent);
+}
+
 .lxn-data-table-cell {
   padding: var(--space-2) var(--space-3);
   text-align: right;
-  box-shadow:
-    inset -1px 0 0 0 var(--color-border-subtle),
-    inset 0 -1px 0 0 var(--color-border-subtle);
+  border-right: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+/* Brackets an expanded top-level section in a darker, very slightly heavier
+   (--color-border-strong, 1.5px vs. the hairline's 1px, 2026-09-11)
+   top/bottom line, so the group reads as one unit against its collapsed
+   siblings above/below rather than blending into them — DataTable.tsx's
+   `markSectionEdges` puts these classes only on the row that opens the
+   section and the last visible row inside it (however deep), never on a
+   collapsed top-level row. Real `border`, same as every other line here, so
+   `border-collapse` resolves the seam against a neighboring row's own
+   (lighter, thinner) border rather than double-drawing both. */
+.lxn-data-table-row--section-start .lxn-data-table-row-header-cell,
+.lxn-data-table-row--section-start .lxn-data-table-cell {
+  border-top: 1.5px solid var(--color-border-strong);
+}
+.lxn-data-table-row--section-end .lxn-data-table-row-header-cell,
+.lxn-data-table-row--section-end .lxn-data-table-cell {
+  border-bottom: 1.5px solid var(--color-border-strong);
 }

@@ -96,6 +96,13 @@ interface FlatRow {
   row: DataTableRow;
   depth: number;
   stripeClass: StripeClass;
+  /** True only on the top-level row that opens an expanded section (never
+   * on a collapsed top-level row, which has no descendants to bracket). */
+  sectionStart: boolean;
+  /** True on the last visible row of an expanded top-level section — the
+   * deepest last descendant, or the top-level row itself if none of its
+   * children are themselves expanded further. */
+  sectionEnd: boolean;
 }
 
 /** Depth-first flatten, descending into a row's children only while it's in
@@ -108,8 +115,8 @@ interface FlatRow {
  * top-level ancestor's stripe unchanged, so a drilldown's children read as
  * the same color as their parent rather than continuing their own
  * odd/even count. */
-function flattenTree(list: DataTableRow[], expandedKeys: Set<string>, depth = 0, inheritedStripe?: StripeClass): FlatRow[] {
-  const out: FlatRow[] = [];
+function flattenTree(list: DataTableRow[], expandedKeys: Set<string>, depth = 0, inheritedStripe?: StripeClass): Omit<FlatRow, 'sectionStart' | 'sectionEnd'>[] {
+  const out: Omit<FlatRow, 'sectionStart' | 'sectionEnd'>[] = [];
   list.forEach((row, i) => {
     const stripeClass: StripeClass = inheritedStripe ?? (i % 2 === 0 ? 'lxn-data-table-row--stripe-a' : 'lxn-data-table-row--stripe-b');
     out.push({ row, depth, stripeClass });
@@ -118,6 +125,29 @@ function flattenTree(list: DataTableRow[], expandedKeys: Set<string>, depth = 0,
     }
   });
   return out;
+}
+
+/** One linear pass over the already-flattened list marking the first and
+ * last visible row of every EXPANDED top-level section — every depth>0 row
+ * only exists because its top-level ancestor is open, so "is this run open"
+ * only needs re-checking each time a new depth-0 row is seen. Used to
+ * bracket an expanded group in a slightly heavier top/bottom line than the
+ * hairlines between its own rows, so the group reads as one unit rather
+ * than blending into its neighbors. A collapsed top-level row (no run of
+ * descendants to bracket) never gets either flag. */
+function markSectionEdges(flat: Omit<FlatRow, 'sectionStart' | 'sectionEnd'>[], expandedKeys: Set<string>): FlatRow[] {
+  let currentTopLevelOpen = false;
+  return flat.map((fr, i) => {
+    if (fr.depth === 0) {
+      currentTopLevelOpen = Boolean(fr.row.children && fr.row.children.length > 0 && expandedKeys.has(fr.row.key));
+    }
+    const nextStartsNewTopLevel = flat[i + 1] === undefined || flat[i + 1]?.depth === 0;
+    return {
+      ...fr,
+      sectionStart: fr.depth === 0 && currentTopLevelOpen,
+      sectionEnd: nextStartsNewTopLevel && currentTopLevelOpen,
+    };
+  });
 }
 
 /** `sortColumnKey === null` means "sorted by the row-label column's own
@@ -155,7 +185,10 @@ export function DataTable({ rowLabelHeader, columnGroups, rows, maxBodyHeight = 
   }
 
   const sortedRows = useMemo(() => sortTree(rows, sortColumnKey, sortDirection), [rows, sortColumnKey, sortDirection]);
-  const flatRows = useMemo(() => flattenTree(sortedRows, expandedKeys), [sortedRows, expandedKeys]);
+  const flatRows = useMemo(
+    () => markSectionEdges(flattenTree(sortedRows, expandedKeys), expandedKeys),
+    [sortedRows, expandedKeys],
+  );
 
   const classes = ['lxn-data-table', className || ''].filter(Boolean).join(' ');
 
@@ -208,7 +241,7 @@ export function DataTable({ rowLabelHeader, columnGroups, rows, maxBodyHeight = 
             </tr>
           </thead>
           <tbody>
-            {flatRows.map(({ row, depth, stripeClass }) => {
+            {flatRows.map(({ row, depth, stripeClass, sectionStart, sectionEnd }) => {
               const isExpandable = Boolean(row.children && row.children.length > 0);
               const isOpen = isExpandable && expandedKeys.has(row.key);
               // A leaf only becomes interactive at all once `onLeafClick` is
@@ -217,7 +250,16 @@ export function DataTable({ rowLabelHeader, columnGroups, rows, maxBodyHeight = 
               const isLeafClickable = !isExpandable && Boolean(onLeafClick);
               const isInteractive = isExpandable || isLeafClickable;
               const activate = isExpandable ? () => toggleExpanded(row.key) : isLeafClickable ? () => onLeafClick!(row) : undefined;
-              const rowClasses = ['lxn-data-table-row', stripeClass, isInteractive ? 'lxn-data-table-row--interactive' : ''].filter(Boolean).join(' ');
+              const rowClasses = [
+                'lxn-data-table-row',
+                stripeClass,
+                isInteractive ? 'lxn-data-table-row--interactive' : '',
+                isLeafClickable ? 'lxn-data-table-row--leaf-clickable' : '',
+                sectionStart ? 'lxn-data-table-row--section-start' : '',
+                sectionEnd ? 'lxn-data-table-row--section-end' : '',
+              ]
+                .filter(Boolean)
+                .join(' ');
 
               return (
                 <tr

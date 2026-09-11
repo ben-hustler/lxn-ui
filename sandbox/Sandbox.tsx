@@ -1398,19 +1398,27 @@ function demoYearRow(year: number, seed: number): DataTableRow {
 function DataTableSection() {
   const locationRows = [2024, 2023, 2022, 2021, 2020].map((year, i) => demoYearRow(year, i * 4));
   const orgRows = Array.from({ length: 23 }, (_, i) => demoTableRow(`org-${i}`, `Location ${i + 1}`, i));
+  // `onLeafClick` only ever fires for a childless row — a Year/Trim branch
+  // still just expands (DataTable.tsx's own isExpandable check wins first).
+  // appraisal-internals' LocationDetailTable is the real consumer: the same
+  // callback opens VehicleDetailModal instead of setting local state.
+  const [selectedLeaf, setSelectedLeaf] = useState<DataTableRow | null>(null);
 
   return (
     <Section
       id="comp-data-table"
       title="DataTable"
-      description="Grouped, sortable, drillable data table — built for appraisal-internals' Location/Organization detail tables (Slice 4). lxn-ui owns structure and interactivity (column grouping, click-to-sort, click-anywhere-to-drill-down, vertical scroll past a capped height) only; every cell carries its own sortValue alongside an already-formatted display node, so no currency/decimal/unit logic lives here — same boundary as KpiTile's value prop."
+      description="Grouped, sortable, drillable data table — built for appraisal-internals' Location/Organization detail tables (Slice 4). lxn-ui owns structure and interactivity (column grouping, click-to-sort, click-anywhere-to-drill-down, vertical scroll past a capped height, and — via the optional onLeafClick prop — click-to-select on a childless row) only; every cell carries its own sortValue alongside an already-formatted display node, so no currency/decimal/unit logic lives here — same boundary as KpiTile's value prop."
     >
       <DemoSurface>
-        <Subsection title="A Location table (click a row to drill down — Year → Trim → Vehicle, three levels deep)">
-          <DataTable rowLabelHeader="Year → Trim → Vehicle" columnGroups={DATA_TABLE_GROUPS} rows={locationRows} />
+        <Subsection title="A Location table (click a branch row to drill down — Year → Trim → Vehicle; click a leaf Vehicle row to select it via onLeafClick, same trigger appraisal-internals uses to open its vehicle detail modal)">
+          <DataTable rowLabelHeader="Year → Trim → Vehicle" columnGroups={DATA_TABLE_GROUPS} rows={locationRows} onLeafClick={setSelectedLeaf} />
+          <p className="lxn-l4" style={{ marginTop: 8 }}>
+            {selectedLeaf ? <>Selected leaf: {selectedLeaf.rowLabel}</> : 'No leaf row selected yet — expand a Year and Trim, then click a Stock # row.'}
+          </p>
         </Subsection>
 
-        <Subsection title="An Organization table (23 rows — scrolls past a capped height instead of paginating; click a column header to sort)">
+        <Subsection title="An Organization table (23 rows — scrolls past a capped height instead of paginating; click a column header to sort; no onLeafClick here, so every row is a plain, non-interactive leaf)">
           <DataTable rowLabelHeader="Location" columnGroups={DATA_TABLE_GROUPS} rows={orgRows} />
         </Subsection>
       </DemoSurface>
