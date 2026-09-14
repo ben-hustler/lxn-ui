@@ -36,7 +36,27 @@ export function Tooltip({ text, children, className }: TooltipProps) {
       tabIndex={0}
       onMouseEnter={(e) => controller.show(e.currentTarget, text)}
       onMouseLeave={() => controller.hide()}
-      onFocus={(e) => controller.show(e.currentTarget, text)}
+      onFocus={(e) => {
+        // Only keyboard-driven focus should reveal the tooltip. Without this
+        // guard, useFocusTrap's opener?.focus?.() restoring focus to this
+        // anchor when a modal it opened closes (a11y-correct — see
+        // useFocusTrap.ts) fires this same onFocus, popping the tooltip back
+        // up with no real hover/keyboard-nav behind it — it then just sits
+        // there since nothing else fires a blur/mouseleave to hide it
+        // (customer-page card actions, 2026-09-13). A mouse-opened modal's
+        // close leaves the anchor in mouse-modality focus, so
+        // :focus-visible is false here; tabbing to it keeps it true, so
+        // keyboard users still see the tooltip exactly as before.
+        const el = e.currentTarget;
+        let isKeyboardFocus = true;
+        try {
+          isKeyboardFocus = el.matches(":focus-visible");
+        } catch {
+          // Unsupported selector (older engine) — fail open to the
+          // pre-existing show-on-any-focus behavior.
+        }
+        if (isKeyboardFocus) controller.show(el, text);
+      }}
       onBlur={() => controller.hide()}
     >
       {children}
