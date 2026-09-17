@@ -211,18 +211,14 @@ thead .lxn-data-table-row-header-cell.lxn-data-table-summary-cell {
 .lxn-data-table-row--interactive {
   cursor: pointer;
 }
-/* Each stripe darkens by exactly one step on the neutral ladder on hover —
-   NOT a relative `filter: brightness()`, which has no awareness of
-   `--color-border-subtle` and can (and did) land close enough to it that
-   the grid lines seemed to vanish into the hover fill. Both of these stay
-   one full step lighter than border-subtle (neutral-150), so hover is
-   always visibly darker than the row's own resting color without ever
-   closing in on the line color. */
-.lxn-data-table-row--stripe-a.lxn-data-table-row--interactive:hover {
-  background: var(--color-bg-sunken);
-}
-.lxn-data-table-row--stripe-b.lxn-data-table-row--interactive:hover {
-  background: var(--color-bg-app);
+/* The same blue accent hover every other interactive lxn-ui surface uses
+   (SingleSelect/MultiSelect options, DateRangePicker cells, ButtonMain,
+   CloseButton, FilterChip) — one color regardless of which stripe the row
+   started on, not a neutral-ladder darken-by-one-step the way this used to
+   work: that read as "row-specific" shading rather than the shared
+   interactive-hover cue the rest of lxn-ui already trained people on. */
+.lxn-data-table-row--interactive:hover {
+  background: var(--color-hover-accent-bg);
 }
 
 /* A leaf-clickable row (onLeafClick) gets the same whole-row hover darkening
