@@ -1423,7 +1423,7 @@ function DataTableSection() {
       <DemoSurface>
         <Subsection title="A Location table (click a branch row to drill down — Year → Trim → Vehicle; click a leaf Vehicle row to select it via onLeafClick, same trigger appraisal-internals uses to open its vehicle detail modal)">
           <DataTable
-            rowLabelHeader="Year → Trim → Vehicle"
+            rowLabelHeader={['Year', 'Trim', 'Vehicle']}
             columnGroups={DATA_TABLE_GROUPS}
             rows={locationRows}
             summaryRow={DATA_TABLE_SUMMARY_ROW}
@@ -1435,7 +1435,7 @@ function DataTableSection() {
         </Subsection>
 
         <Subsection title="An Organization table (23 rows — scrolls past a capped height instead of paginating; click a column header to sort; no onLeafClick here, so every row is a plain, non-interactive leaf)">
-          <DataTable rowLabelHeader="Location" columnGroups={DATA_TABLE_GROUPS} rows={orgRows} />
+          <DataTable rowLabelHeader={['Location']} columnGroups={DATA_TABLE_GROUPS} rows={orgRows} />
         </Subsection>
       </DemoSurface>
     </Section>

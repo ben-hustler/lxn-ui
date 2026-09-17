@@ -34,9 +34,9 @@
    things that still count as "dividers" are:
 
    1. The spanning group-label row ("Sold" / "Cost" / "Profit") is gone.
-      `columnGroups` still exists and still draws a heavier divider before
-      each group's first column, just without the text — see
-      DataTable.tsx's `headerCellDivider`.
+      `columnGroups` still exists and still draws a divider before each
+      group's first column, just without the text — see DataTable.tsx's
+      `dividerClassName`.
    2. The header no longer fills with `--color-border-subtle` — it's plain
       `--color-bg-surface` (white) like the body, so `thead` needs its own
       explicit background only so a pinned, sticky header still opaquely
@@ -45,43 +45,146 @@
    3. Every column boundary used to get a hairline (a full grid). Now only
       the 1-3 group-boundary dividers get a line at all — no line between
       e.g. "Units Sold" and "Days to Sell" — drawn full-height (header
-      through body) in `--color-border-strong`, box-shadow in the (sticky)
-      header and a real `border-left` in the body, same split as the
-      header/body seam below.
+      through body) in `--color-border-strong`, as a REAL `border-left`
+      everywhere (see the divider classes near the bottom of this file, and
+      the note below on how this table's CSS Grid layout is what made a
+      real border safe to use in the sticky header too). The FIRST such
+      divider (separating
+      the row-label column from the first measure group) is drawn at full
+      weight; every later one (before "ACV", "Front Profit") is drawn at
+      half weight, matching the Figma source's own `border-l` vs.
+      `border-l-[0.5px]` — same color either way, just thinner, which is
+      what actually reads as "lighter."
 
-   The thead draws its grid lines as `box-shadow`, never a `border`
-   (2026-09-10). Two reasons, both learned the hard way:
+   Every divider is a plain, ordinary `border` (2026-09-17, replacing a
+   `box-shadow`-based fake-border technique this file went through for a
+   while — box-shadow doesn't get a real border's crisp, stable device-
+   pixel rendering, which turned into its own chain of problems: dividers
+   rendering inconsistently thicker, or flickering fully in and out, as a
+   column's auto-computed width shifted by fractions of a pixel between
+   renders). Box-shadow was only ever needed because `position: sticky`
+   inside a `border-collapse: collapse` table drops its cells' collapsed
+   borders once it starts stickying — a real Chrome/Firefox bug — and the
+   FIX for that turned out to be a bigger, unrelated rework: this table is
+   CSS Grid now, not native table layout at all, which sidesteps that bug
+   as a side effect of sidestepping table layout's other limits too (see
+   `.lxn-data-table-table`'s own comment below).
 
-   1. The `<thead>` is `position: sticky`, and a sticky element inside a
-      `border-collapse: collapse` table drops its cells' collapsed borders
-      once it starts stickying, in Chrome/Firefox. box-shadow was never
-      part of the collapsing model, so it isn't affected.
-   2. box-shadow also isn't DEDUPLICATED between adjacent cells the way a
-      collapsed border is — so an `inset 0 0 0 1px` on every side of every
-      cell drew every internal seam TWICE (once from each neighboring
-      cell). Fixed by drawing only the edges each divider actually needs
-      (left for a group boundary, bottom for the last header row) — every
-      seam is then drawn exactly once, by exactly one of its two neighbors.
+   `<table>`/`<thead>`/`<tbody>`/`<tr>`/`<th>`/`<td>` all keep their real
+   HTML tags — only their CSS `display` is overridden (`grid`/`contents`),
+   never the markup itself — specifically so the table keeps its native
+   ARIA table semantics (row/cell navigation, `aria-sort`, `scope="row"`)
+   for screen readers, the same as if it were still laid out as an actual
+   table. `display: contents` on every `<tr>` (2026-09-17) means a row's
+   own box doesn't exist anymore, which is why the zebra-stripe/hover
+   backgrounds below target `.lxn-data-table-row--stripe-a > *` (the row's
+   direct cell children) rather than the row itself. */
 
-   The group-boundary divider still uses a real `border-left` in the body
-   (never box-shadow there) so it lines up crisply under `border-collapse`
-   with the header's own box-shadow equivalent above it, the same
-   header/body split used for the divider's box-shadow-vs-border choice. */
-
+/* Thick light "matted" frame (2026-09-17, Figma node 2140:219 — the border
+   is the only current part of that frame; its row/header details predate
+   this file's own redesign above and aren't followed). The border's own
+   width reuses --space-3 rather than an arbitrary px value — thick enough
+   to read as a frame the table sits IN, not a stroke drawn around it, and
+   tying it to the spacing scale means it grows in step with the rest of
+   lxn-ui's spacing if that scale itself is ever retuned. Color is
+   --color-bg-app (2026-09-17, lightened one step from --color-border-subtle)
+   — the Figma frame's own #f6f7f7 IS --color-bg-sunken, the exact same fill
+   the odd-row stripe already uses, so wherever a stripe-b row landed
+   against the frame the boundary between "inside the table" and "the matte
+   around it" nearly vanished. --color-bg-app is lxn-ui's own page
+   background — one step lighter than --color-border-subtle, but still a
+   full step away from --color-bg-sunken, so the frame reads as "the table
+   sitting on the page" rather than a distinct decorative border, while
+   staying visibly distinct from both stripe colors. */
 .lxn-data-table {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  border: var(--space-3) solid var(--color-bg-app);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-bg-surface);
 }
 
+/* Also clips to the radius itself (`overflow: auto` clips to `border-radius`
+   just like `hidden` does), not just relying on the outer `.lxn-data-table`
+   wrapper above — belt-and-suspenders so the table's own corners (and the
+   sticky header's opaque fill) round off cleanly even in a browser that
+   resolves nested-scroll-container clipping against an ancestor's radius
+   less consistently. */
 .lxn-data-table-scroll {
   overflow: auto;
+  border-radius: inherit;
 }
 
+/* Bottom "there's more below" cue (2026-09-17; sized/darkened a few times
+   after, and — same day — corrected from a brief `position: absolute`
+   detour back to `position: sticky`: absolute seemed to work in Chrome
+   during testing but turned out to scroll away WITH the content in
+   Firefox, not stay pinned to the viewport edge like sticky reliably does
+   across browsers). DataTable.tsx toggles `opacity` based on real scroll
+   position (see its own comment on why a plain background layer can't
+   work here: opaque row content would hide it). Zero net height
+   (height cancelled by margin-top) so it never adds scrollable distance
+   of its own; `position: sticky; bottom: 0` keeps it pinned to the
+   CURRENT visible bottom edge, painted over whatever row is there, while
+   there's still more to scroll to. */
+.lxn-data-table-bottom-shadow {
+  position: sticky;
+  bottom: 0;
+  height: 6px;
+  margin-top: -6px;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(17, 19, 21, 0.06), transparent);
+  transition: opacity var(--motion-base) var(--ease-standard);
+}
+
+/* Top "there's more above" cue — no separate element at all: `<thead>` is
+   already `position: sticky` and already stacks above the body rows (its
+   own `z-index: 1`), so a conditional drop-shadow directly on it, toggled
+   by DataTable.tsx's `showTopShadow`, does the job with none of the
+   bottom shadow's positioning complexity. This is a `box-shadow` (there's
+   no `border` equivalent that extends OUTSIDE an element's own box the
+   way this needs to, down onto the rows beneath thead) — the ONE
+   remaining box-shadow in this file; every divider elsewhere is a real
+   `border` now (see the top comment). (The rule itself is below, merged
+   into thead's existing `position: sticky` block rather than duplicated
+   here.) */
+
+/* CSS Grid, not native table layout (2026-09-17) — `grid-template-columns`
+   itself is set inline by DataTable.tsx (it depends on how many measure
+   columns there are, and on `rowLabelColumnWidth`), a fixed track for the
+   row-label column then `minmax(min-content, 1fr)` for every measure
+   column: equal width by default, and ONLY a column whose own content
+   needs more than its equal share takes it (the rest still split whatever
+   space is left evenly). Table layout has no equivalent to this —
+   `table-layout: auto` (the old behavior) sizes every column proportional
+   to its own content regardless of the others; `fixed` would force equal
+   widths but just clip/overflow content that doesn't fit rather than
+   growing that one column. */
 .lxn-data-table-table {
+  display: grid;
   width: 100%;
-  border-collapse: collapse;
   white-space: nowrap;
+}
+
+/* `thead`/`tbody` each become their OWN nested grid, spanning every column
+   track of the outer grid (`grid-column: 1 / -1`) — `grid-template-
+   columns: subgrid` is what makes their inner columns share the outer
+   grid's exact track sizes, rather than each recomputing its own
+   (guaranteeing the header's dividers/columns line up with the body's,
+   by construction, not by keeping two separately-computed layouts in
+   sync). Each `<tr>` inside is `display: contents` (below) so its `<th>`/
+   `<td>` cells become direct items of THIS subgrid, one row per `<tr>`. */
+.lxn-data-table-table > thead,
+.lxn-data-table-table > tbody {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+}
+
+.lxn-data-table-table tr {
+  display: contents;
 }
 
 .lxn-data-table-table thead {
@@ -90,8 +193,15 @@
   z-index: 1;
   /* Opaque, not for its own look (it's the same white as the body's own
      stripe-a rows) but so a scrolled-under row never shows through the
-     pinned header — see the redesign note above. */
+     pinned header — see the redesign note above. Still works exactly as
+     before despite the grid rework: `thead` keeps a REAL box (only its
+     `<tr>` children are `display: contents`), so `position: sticky` on it
+     sticks the whole header block as one unit, the same as it always has. */
   background: var(--color-bg-surface);
+  transition: box-shadow var(--motion-base) var(--ease-standard);
+}
+.lxn-data-table-thead--shadow {
+  box-shadow: 0 3px 4px -2px rgba(17, 19, 21, 0.06);
 }
 
 .lxn-data-table-col-header {
@@ -111,21 +221,26 @@
    `lxn-l4` (the measure-column labels' own type class) defaults to
    `--color-fg-tertiary`, but this design wants every header label reading
    as full-strength black text, not the softer tertiary tone `lxn-l4` is
-   normally paired with elsewhere. */
+   normally paired with elsewhere.
+
+   NOT `width: 100%` (2026-09-17 fix) — that made the ENTIRE header cell
+   one giant click target, so clicking empty space nowhere near the label
+   still sorted the column, which read as unclear/accidental. Shrink-wrapped
+   to its own content instead, right-aligned by the parent `<th>`'s own
+   `text-align: right` (an inline-flex element still respects a text-align
+   set on its container). The button's own padding becomes a small, honest
+   overflow hitbox around the label — not the padding-to-cell-edge gap it
+   used to double as — since `.lxn-data-table-col-header` no longer relies
+   on this button to push its content to the cell's own edge. */
 .lxn-data-table-sort-btn {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  width: 100%;
-  justify-content: flex-end;
   padding: var(--space-2) var(--space-3);
   background: none;
   border: none;
   cursor: pointer;
   color: var(--color-fg-primary);
-}
-.lxn-data-table-col-header:first-of-type .lxn-data-table-sort-btn {
-  justify-content: flex-start;
 }
 
 .lxn-data-table-sort-icon {
@@ -133,9 +248,20 @@
 }
 
 .lxn-data-table-row-header-cell {
-  padding: var(--space-2) var(--space-3);
+  /* Row height (2026-09-17: bumped from --space-2 vertical to a uniform
+     --space-3) — only actually affects tbody: thead zeroes this back out
+     just below and gets its own height from its sort button's padding. */
+  padding: var(--space-3);
   text-align: left;
-  transition: color 120ms var(--ease-standard);
+  transition: color var(--motion-quick) var(--ease-standard);
+  /* This column is now a fixed width (DataTable.tsx's own inline
+     `gridTemplateColumns`, see `rowLabelColumnWidth`'s own comment) rather
+     than auto-sized to
+     content — `overflow: hidden` here is what actually enforces that at
+     the cell level; `.lxn-data-table-row-header-label` below is what
+     turns "clipped" into "ellipsis-truncated" for the label text
+     specifically, not the disclosure icon next to it. */
+  overflow: hidden;
 }
 thead .lxn-data-table-row-header-cell {
   padding: 0;
@@ -143,20 +269,34 @@ thead .lxn-data-table-row-header-cell {
 
 /* The thead row-label cell's own sort button — a dedicated class rather
    than reusing `.lxn-data-table-sort-btn`: that one is right-aligned for
-   the numeric measure columns, this one is left-aligned text with the
-   arrow pushed to the far end (`justify-content: space-between`). */
+   the numeric measure columns, this one is left-aligned. Shrink-wrapped to
+   its own content (2026-09-17 fix, same reasoning as `.lxn-data-table-sort-
+   btn`'s own comment) — no longer `width: 100%` / `justify-content:
+   space-between`, which stretched the click target across the whole
+   (often much wider) row-label column and pinned the icon to its far
+   right edge regardless of how short the label was. */
 .lxn-data-table-row-header-sort-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-2);
-  width: 100%;
   padding: var(--space-2) var(--space-3);
   background: none;
   border: none;
   cursor: pointer;
   color: var(--color-fg-primary);
   text-align: left;
+}
+
+/* Extra vertical padding on both sort-button flavors when the column-label
+   row is the ONLY header row (no summaryRow) — at the ordinary --space-2
+   inset, a single-row header read thin/cramped sitting directly above the
+   body, next to how much more presence a two-row header block (column
+   labels + "Avg.") has. Matches --space-3, the same row-height bump the
+   body rows and the summary row already got. */
+.lxn-data-table-header-row--tall .lxn-data-table-sort-btn,
+.lxn-data-table-header-row--tall .lxn-data-table-row-header-sort-btn {
+  padding-top: var(--space-3);
+  padding-bottom: var(--space-3);
 }
 
 /* The pinned summary row (e.g. "Avg.") — bold, but at the same `lxn-b2`
@@ -178,9 +318,23 @@ thead .lxn-data-table-row-header-cell {
    cell { padding: ... }` above still lost to that zeroing rule regardless
    of source order, and the label rendered flush against the left edge
    instead of aligned under "Year → Trim → Vehicle" above it. Two classes
-   here outrank the element+class selector it needs to beat. */
+   here outrank the element+class selector it needs to beat. Extra
+   `padding-top` (2026-09-17) gives the whole summary row a bit more room
+   from the column-label row directly above it — more than an ordinary
+   row's own top inset, since this one's the boundary between "the column
+   headers" and "the pinned average," not just row-to-row spacing. */
 thead .lxn-data-table-row-header-cell.lxn-data-table-summary-cell {
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-3);
+  padding-top: calc(var(--space-3) + var(--space-2));
+}
+
+/* Same extra top padding on the summary row's VALUE cells (the label
+   `<th>` above gets its own copy since it needs its other three sides
+   re-specified too, to beat the same zeroing rule) — two classes, still
+   beats plain `.lxn-data-table-cell`'s own padding regardless of the two
+   rules' source order. */
+.lxn-data-table-cell.lxn-data-table-summary-cell {
+  padding-top: calc(var(--space-3) + var(--space-2));
 }
 
 .lxn-data-table-row-header-inner {
@@ -190,10 +344,20 @@ thead .lxn-data-table-row-header-cell.lxn-data-table-summary-cell {
   width: 100%;
 }
 
+/* Flex items default to `min-width: auto`, which floors their shrink at
+   their own content's intrinsic width — without overriding that to `0`
+   here, this span would never actually shrink small enough for
+   `text-overflow: ellipsis` to kick in inside the flex row above. */
+.lxn-data-table-row-header-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
 .lxn-data-table-disclosure-icon {
   flex-shrink: 0;
   color: var(--color-fg-tertiary);
-  transition: transform 120ms var(--ease-standard);
+  transition: transform var(--motion-quick) var(--ease-standard);
 }
 
 /* Alternates strictly odd/even over every VISIBLE row (DataTable.tsx's own
@@ -202,10 +366,15 @@ thead .lxn-data-table-row-header-cell.lxn-data-table-summary-cell {
    than resetting to a fixed shade. --color-bg-sunken is lighter than the
    header's own fill (--color-bg-surface, since the redesign) so the header
    still reads as the more neutral surface of the two. */
-.lxn-data-table-row--stripe-a {
+/* `> *` (the row's direct cell children), not the row itself — `<tr>` is
+   `display: contents` now (see the top comment), so it has no box of its
+   own for `background` to paint onto; `cursor`, being an inherited
+   property, still cascades down to the cells fine without needing the
+   same treatment. */
+.lxn-data-table-row--stripe-a > * {
   background: var(--color-bg-surface);
 }
-.lxn-data-table-row--stripe-b {
+.lxn-data-table-row--stripe-b > * {
   background: var(--color-bg-sunken);
 }
 .lxn-data-table-row--interactive {
@@ -217,7 +386,7 @@ thead .lxn-data-table-row-header-cell.lxn-data-table-summary-cell {
    started on, not a neutral-ladder darken-by-one-step the way this used to
    work: that read as "row-specific" shading rather than the shared
    interactive-hover cue the rest of lxn-ui already trained people on. */
-.lxn-data-table-row--interactive:hover {
+.lxn-data-table-row--interactive:hover > * {
   background: var(--color-hover-accent-bg);
 }
 
@@ -235,7 +404,11 @@ thead .lxn-data-table-row-header-cell.lxn-data-table-summary-cell {
 }
 
 .lxn-data-table-cell {
-  padding: var(--space-2) var(--space-3);
+  /* Same --space-3 row-height bump as `.lxn-data-table-row-header-cell` —
+     also lands on the summary ("Avg.") row's own value cells, which is
+     fine: they're already the same visual row height as an ordinary body
+     row, just bold. */
+  padding: var(--space-3);
   text-align: right;
 }
 
@@ -248,13 +421,28 @@ thead .lxn-data-table-row-header-cell.lxn-data-table-summary-cell {
   color: var(--color-fg-primary);
 }
 
-/* The heavier divider before a measure-group's first column (e.g. "Units
-   Sold", "ACV", "Front Profit" — 8 measures reading as 3 groups) — real
-   `border`, not box-shadow, since tbody never sticks (see the top comment).
-   Runs the full body height column-by-column the same way the header's own
-   box-shadow equivalent does (DataTable.tsx's `headerCellDivider`), so the
-   two together read as one continuous line from the header through the
-   last row. */
-.lxn-data-table-cell--group-start {
-  border-left: 1px solid var(--color-border-strong);
+/* The group-boundary divider (before "Units", "ACV", "Front Profit") and
+   the header/body seam — real borders now, in BOTH thead and tbody alike
+   (2026-09-17, see the top comment's note on this table's CSS Grid layout).
+   `dividerClassName` in DataTable.tsx composes these onto whichever cells
+   need them; a cell needing both a vertical divider AND the header/body
+   seam (e.g. the summary row's "Units Sold" cell when there's no further
+   header row below it) just carries both classes at once — ordinary CSS
+   border composition, no special handling required the way combining two
+   box-shadow layers used to need.
+
+   Major (the first, leftmost divider) and the header/body seam are drawn
+   heavier than minor (every later divider) — matching the original Figma
+   spec's own outer-edge-vs-inner-seam distinction, which got lost for a
+   while chasing box-shadow rendering bugs. Safe to just set the width
+   plainly now that these are real borders: no more sub-pixel box-shadow
+   rasterization to fight, so "thicker" reliably means thicker. */
+.lxn-data-table-divider-major {
+  border-left: 1.5px solid var(--color-border-strong);
+}
+.lxn-data-table-divider-minor {
+  border-left: 0.5px solid var(--color-border-strong);
+}
+.lxn-data-table-divider-bottom {
+  border-bottom: 1.5px solid var(--color-border-strong);
 }
