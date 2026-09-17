@@ -9,12 +9,12 @@ export interface DataTableColumn {
   label: string;
 }
 
-/** A spanning header row above the individual column headers, e.g. "Sold" /
- * "Cost" / "Profit" grouping several measure columns — built for
- * appraisal-internals' detail tables, whose 8 measures read as 3 groups in
- * the legacy config this replaces. Also how two columns that would
- * otherwise share an identical label (e.g. two columns both titled "Total")
- * stay disambiguated, by group context rather than a re-worded label. */
+/** Groups measure columns for the sake of the heavier divider drawn before
+ * each group's first column (e.g. 8 measures reading as 3 groups — Sold /
+ * Cost / Profit) — `label` is kept for that grouping and for a consumer's
+ * own bookkeeping, but is no longer rendered as a spanning header row
+ * (2026-09-16 redesign, Figma node 2140:844): the group's own text label
+ * was dropped in favor of the divider alone plus the summary row below. */
 export interface DataTableColumnGroup {
   label: string;
   columns: DataTableColumn[];
@@ -49,11 +49,27 @@ export interface DataTableRow {
   children?: DataTableRow[];
 }
 
+/** A pinned summary row (e.g. "Avg.") rendered below the column headers,
+ * inside the sticky header block rather than as a sortable/expandable body
+ * row — it summarizes the whole result set, not one row of it, so it never
+ * takes part in sorting or the row tree. */
+export interface DataTableSummaryRow {
+  /** Row-identity label, e.g. "Avg." */
+  label: ReactNode;
+  /** One pre-formatted display value per column key declared across
+   * `columnGroups` — same "consumer owns its own vocabulary" rule as
+   * `DataTableCell.display`. */
+  cells: Record<string, ReactNode>;
+}
+
 export interface DataTableProps {
   /** Header label for the row-identity column, e.g. "Year → Trim", "Location". */
   rowLabelHeader: string;
   columnGroups: DataTableColumnGroup[];
   rows: DataTableRow[];
+  /** A pinned summary row (e.g. dataset-wide averages) shown below the
+   * column headers. Omit it and the header is just the one row of labels. */
+  summaryRow?: DataTableSummaryRow;
   /** Caps the table's height and scrolls vertically past it, header pinned
    * in place — replaced client-side pagination (2026-09-10): the full row
    * set renders at once and scrolls instead of windowing into pages, so a
@@ -90,72 +106,60 @@ function sortTree(list: DataTableRow[], sortColumnKey: string | null, sortDirect
   return sorted.map((row) => (row.children && row.children.length > 0 ? { ...row, children: sortTree(row.children, sortColumnKey, sortDirection) } : row));
 }
 
-type StripeClass = 'lxn-data-table-row--stripe-a' | 'lxn-data-table-row--stripe-b';
-
 interface FlatRow {
   row: DataTableRow;
   depth: number;
-  stripeClass: StripeClass;
-  /** True only on the top-level row that opens an expanded section (never
-   * on a collapsed top-level row, which has no descendants to bracket). */
-  sectionStart: boolean;
-  /** True on the last visible row of an expanded top-level section — the
-   * deepest last descendant, or the top-level row itself if none of its
-   * children are themselves expanded further. */
-  sectionEnd: boolean;
 }
 
 /** Depth-first flatten, descending into a row's children only while it's in
  * `expandedKeys` — a collapsed row's children simply aren't in the list, so
  * every visible row (at any depth) is just one more entry to render, with
- * no special "expanded panel" shape to reason about separately.
- *
- * Alternates `stripeClass` by index only among TOP-level siblings (when
- * `inheritedStripe` is unset); every descendant then inherits its
- * top-level ancestor's stripe unchanged, so a drilldown's children read as
- * the same color as their parent rather than continuing their own
- * odd/even count. */
-function flattenTree(list: DataTableRow[], expandedKeys: Set<string>, depth = 0, inheritedStripe?: StripeClass): Omit<FlatRow, 'sectionStart' | 'sectionEnd'>[] {
-  const out: Omit<FlatRow, 'sectionStart' | 'sectionEnd'>[] = [];
-  list.forEach((row, i) => {
-    const stripeClass: StripeClass = inheritedStripe ?? (i % 2 === 0 ? 'lxn-data-table-row--stripe-a' : 'lxn-data-table-row--stripe-b');
-    out.push({ row, depth, stripeClass });
+ * no special "expanded panel" shape to reason about separately. There are no
+ * row/cell borders anywhere in the body (Figma node 2140:844 draws none) —
+ * rows are told apart purely by an alternating background, which the caller
+ * assigns by each row's position in this flat list, not by anything
+ * computed here (depth included): a nested row continues the same
+ * strict odd/even alternation as its siblings-in-the-flattened-sense,
+ * rather than resetting or pinning to one color. */
+function flattenTree(list: DataTableRow[], expandedKeys: Set<string>, depth = 0): FlatRow[] {
+  const out: FlatRow[] = [];
+  list.forEach((row) => {
+    out.push({ row, depth });
     if (row.children && row.children.length > 0 && expandedKeys.has(row.key)) {
-      out.push(...flattenTree(row.children, expandedKeys, depth + 1, stripeClass));
+      out.push(...flattenTree(row.children, expandedKeys, depth + 1));
     }
   });
   return out;
 }
 
-/** One linear pass over the already-flattened list marking the first and
- * last visible row of every EXPANDED top-level section — every depth>0 row
- * only exists because its top-level ancestor is open, so "is this run open"
- * only needs re-checking each time a new depth-0 row is seen. Used to
- * bracket an expanded group in a slightly heavier top/bottom line than the
- * hairlines between its own rows, so the group reads as one unit rather
- * than blending into its neighbors. A collapsed top-level row (no run of
- * descendants to bracket) never gets either flag. */
-function markSectionEdges(flat: Omit<FlatRow, 'sectionStart' | 'sectionEnd'>[], expandedKeys: Set<string>): FlatRow[] {
-  let currentTopLevelOpen = false;
-  return flat.map((fr, i) => {
-    if (fr.depth === 0) {
-      currentTopLevelOpen = Boolean(fr.row.children && fr.row.children.length > 0 && expandedKeys.has(fr.row.key));
-    }
-    const nextStartsNewTopLevel = flat[i + 1] === undefined || flat[i + 1]?.depth === 0;
-    return {
-      ...fr,
-      sectionStart: fr.depth === 0 && currentTopLevelOpen,
-      sectionEnd: nextStartsNewTopLevel && currentTopLevelOpen,
-    };
-  });
+/** thead is `position: sticky`, and a sticky element inside a
+ * `border-collapse: collapse` table drops its cells' collapsed borders once
+ * it starts stickying (Chrome/Firefox) — so every header divider is drawn
+ * as `box-shadow`, never a `border` (same reasoning data-table.css's own
+ * top comment goes into for the header/body seam). `isGroupStart` draws the
+ * heavier divider before a measure-group's first column (e.g. before
+ * "Units", "ACV", "Front Profit" — 8 measures reading as 3 groups);
+ * `isBottomEdge` draws the line under the LAST header row, whichever row
+ * that is (the summary row if there is one, otherwise the column-label
+ * row) — never both rows at once, since nothing separates them from each
+ * other, only the header block as a whole from the body beneath it. */
+function headerCellDivider(isGroupStart: boolean, isBottomEdge: boolean): string | undefined {
+  const shadows: string[] = [];
+  if (isGroupStart) shadows.push('inset 1px 0 0 0 var(--color-border-strong)');
+  if (isBottomEdge) shadows.push('inset 0 -1px 0 0 var(--color-border-strong)');
+  return shadows.length > 0 ? shadows.join(', ') : undefined;
 }
 
 /** `sortColumnKey === null` means "sorted by the row-label column's own
  * (caller-supplied) drilldown order" — the default — rather than "no sort
  * indicator anywhere". Exactly one arrow is ever visible: on the row-label
  * column while `null`, or on whichever measure column was last clicked. */
-export function DataTable({ rowLabelHeader, columnGroups, rows, maxBodyHeight = 420, onLeafClick, className }: DataTableProps) {
+export function DataTable({ rowLabelHeader, columnGroups, rows, summaryRow, maxBodyHeight = 420, onLeafClick, className }: DataTableProps) {
   const columns = useMemo(() => columnGroups.flatMap((g) => g.columns), [columnGroups]);
+  const groupStartKeys = useMemo(
+    () => new Set(columnGroups.map((g) => g.columns[0]?.key).filter((key): key is string => Boolean(key))),
+    [columnGroups],
+  );
 
   const [sortColumnKey, setSortColumnKey] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -185,10 +189,7 @@ export function DataTable({ rowLabelHeader, columnGroups, rows, maxBodyHeight = 
   }
 
   const sortedRows = useMemo(() => sortTree(rows, sortColumnKey, sortDirection), [rows, sortColumnKey, sortDirection]);
-  const flatRows = useMemo(
-    () => markSectionEdges(flattenTree(sortedRows, expandedKeys), expandedKeys),
-    [sortedRows, expandedKeys],
-  );
+  const flatRows = useMemo(() => flattenTree(sortedRows, expandedKeys), [sortedRows, expandedKeys]);
 
   const classes = ['lxn-data-table', className || ''].filter(Boolean).join(' ');
 
@@ -198,16 +199,9 @@ export function DataTable({ rowLabelHeader, columnGroups, rows, maxBodyHeight = 
         <table className="lxn-data-table-table">
           <thead>
             <tr>
-              <th className="lxn-data-table-corner-header" aria-hidden="true" />
-              {columnGroups.map((group) => (
-                <th key={group.label} colSpan={group.columns.length} className="lxn-data-table-group-header lxn-eyebrow">
-                  {group.label}
-                </th>
-              ))}
-            </tr>
-            <tr>
               <th
                 className="lxn-data-table-row-header-cell"
+                style={{ boxShadow: headerCellDivider(false, !summaryRow) }}
                 aria-sort={sortColumnKey === null ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
               >
                 <button type="button" className="lxn-data-table-row-header-sort-btn lxn-l3" onClick={() => handleSort(null)}>
@@ -224,8 +218,13 @@ export function DataTable({ rowLabelHeader, columnGroups, rows, maxBodyHeight = 
               {columns.map((column) => {
                 const active = sortColumnKey === column.key;
                 return (
-                  <th key={column.key} className="lxn-data-table-col-header" aria-sort={active ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}>
-                    <button type="button" className="lxn-data-table-sort-btn lxn-l3" onClick={() => handleSort(column.key)}>
+                  <th
+                    key={column.key}
+                    className="lxn-data-table-col-header"
+                    style={{ boxShadow: headerCellDivider(groupStartKeys.has(column.key), !summaryRow) }}
+                    aria-sort={active ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
+                  >
+                    <button type="button" className="lxn-data-table-sort-btn lxn-l4" onClick={() => handleSort(column.key)}>
                       <span>{column.label}</span>
                       {active && (
                         <ChevronDownIcon
@@ -239,9 +238,25 @@ export function DataTable({ rowLabelHeader, columnGroups, rows, maxBodyHeight = 
                 );
               })}
             </tr>
+            {summaryRow && (
+              <tr>
+                <th className="lxn-data-table-row-header-cell lxn-data-table-summary-cell" style={{ boxShadow: headerCellDivider(false, true) }}>
+                  {summaryRow.label}
+                </th>
+                {columns.map((column) => (
+                  <td
+                    key={column.key}
+                    className="lxn-data-table-cell lxn-data-table-summary-cell lxn-num"
+                    style={{ boxShadow: headerCellDivider(groupStartKeys.has(column.key), true) }}
+                  >
+                    {summaryRow.cells[column.key]}
+                  </td>
+                ))}
+              </tr>
+            )}
           </thead>
           <tbody>
-            {flatRows.map(({ row, depth, stripeClass, sectionStart, sectionEnd }) => {
+            {flatRows.map(({ row, depth }, i) => {
               const isExpandable = Boolean(row.children && row.children.length > 0);
               const isOpen = isExpandable && expandedKeys.has(row.key);
               // A leaf only becomes interactive at all once `onLeafClick` is
@@ -250,13 +265,24 @@ export function DataTable({ rowLabelHeader, columnGroups, rows, maxBodyHeight = 
               const isLeafClickable = !isExpandable && Boolean(onLeafClick);
               const isInteractive = isExpandable || isLeafClickable;
               const activate = isExpandable ? () => toggleExpanded(row.key) : isLeafClickable ? () => onLeafClick!(row) : undefined;
+              // Depth 0 reads as the table's normal body copy; any nested
+              // level reads smaller/secondary (2026-09-16 redesign) —
+              // replacing the old "bump to medium while THIS branch is
+              // open" rule, which no longer applies once open branches stay
+              // at normal size and only depth distinguishes a row.
+              const textClass = depth === 0 ? 'lxn-b2' : 'lxn-l3';
+              // Strict odd/even alternation over EVERY visible row, nested
+              // or not (2026-09-16 redesign, corrected) — a row's shade
+              // never resets at a group boundary and never pins to one
+              // color at a given depth; it's purely "does this row's
+              // position in the visible list flip the shade from the row
+              // above it."
+              const stripeClass = i % 2 === 0 ? 'lxn-data-table-row--stripe-a' : 'lxn-data-table-row--stripe-b';
               const rowClasses = [
                 'lxn-data-table-row',
                 stripeClass,
                 isInteractive ? 'lxn-data-table-row--interactive' : '',
                 isLeafClickable ? 'lxn-data-table-row--leaf-clickable' : '',
-                sectionStart ? 'lxn-data-table-row--section-start' : '',
-                sectionEnd ? 'lxn-data-table-row--section-end' : '',
               ]
                 .filter(Boolean)
                 .join(' ');
@@ -282,8 +308,13 @@ export function DataTable({ rowLabelHeader, columnGroups, rows, maxBodyHeight = 
                 >
                   <th
                     scope="row"
-                    className={`lxn-data-table-row-header-cell ${isOpen ? 'lxn-b3' : 'lxn-b2'}`}
-                    style={{ paddingLeft: `calc(var(--space-3) * ${depth + 1})` }}
+                    className={`lxn-data-table-row-header-cell ${textClass}`}
+                    // Base padding (--space-3) matches every other cell's own
+                    // left inset at depth 0; each level beyond that adds a
+                    // full --space-5 step rather than repeating --space-3 —
+                    // the original step read as too subtle to tell depth
+                    // apart at a glance once there were 2-3 levels of it.
+                    style={{ paddingLeft: `calc(var(--space-3) + var(--space-5) * ${depth})` }}
                   >
                     <span className="lxn-data-table-row-header-inner">
                       {isExpandable && (
@@ -297,7 +328,17 @@ export function DataTable({ rowLabelHeader, columnGroups, rows, maxBodyHeight = 
                     </span>
                   </th>
                   {columns.map((column) => (
-                    <td key={column.key} className={`lxn-data-table-cell lxn-num ${isOpen ? 'lxn-b3' : 'lxn-b2'}`}>
+                    <td
+                      key={column.key}
+                      className={[
+                        'lxn-data-table-cell',
+                        groupStartKeys.has(column.key) ? 'lxn-data-table-cell--group-start' : '',
+                        'lxn-num',
+                        textClass,
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                    >
                       {row.cells[column.key]?.display}
                     </td>
                   ))}

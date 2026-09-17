@@ -40,6 +40,7 @@ import {
   DataTable,
   type DataTableColumnGroup,
   type DataTableRow,
+  type DataTableSummaryRow,
 } from '../src/index';
 import './sandbox.css';
 
@@ -1395,6 +1396,15 @@ function demoYearRow(year: number, seed: number): DataTableRow {
   return demoTableRow(`year-${year}`, `${year} · LE`, seed, trims);
 }
 
+// A dataset-wide average, pinned below the column headers rather than
+// sorted/drilled into like an ordinary row — appraisal-internals will
+// compute its own real average across the full (unpaginated) result set;
+// this demo just reuses one location's numbers as a stand-in.
+const DATA_TABLE_SUMMARY_ROW: DataTableSummaryRow = {
+  label: 'Avg.',
+  cells: Object.fromEntries(Object.entries(demoMeasures(6)).map(([key, cell]) => [key, cell.display])),
+};
+
 function DataTableSection() {
   const locationRows = [2024, 2023, 2022, 2021, 2020].map((year, i) => demoYearRow(year, i * 4));
   const orgRows = Array.from({ length: 23 }, (_, i) => demoTableRow(`org-${i}`, `Location ${i + 1}`, i));
@@ -1412,7 +1422,13 @@ function DataTableSection() {
     >
       <DemoSurface>
         <Subsection title="A Location table (click a branch row to drill down — Year → Trim → Vehicle; click a leaf Vehicle row to select it via onLeafClick, same trigger appraisal-internals uses to open its vehicle detail modal)">
-          <DataTable rowLabelHeader="Year → Trim → Vehicle" columnGroups={DATA_TABLE_GROUPS} rows={locationRows} onLeafClick={setSelectedLeaf} />
+          <DataTable
+            rowLabelHeader="Year → Trim → Vehicle"
+            columnGroups={DATA_TABLE_GROUPS}
+            rows={locationRows}
+            summaryRow={DATA_TABLE_SUMMARY_ROW}
+            onLeafClick={setSelectedLeaf}
+          />
           <p className="lxn-l4" style={{ marginTop: 8 }}>
             {selectedLeaf ? <>Selected leaf: {selectedLeaf.rowLabel}</> : 'No leaf row selected yet — expand a Year and Trim, then click a Stock # row.'}
           </p>

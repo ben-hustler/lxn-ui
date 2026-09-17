@@ -48,4 +48,5 @@ export type {
   DataTableColumnGroup,
   DataTableCell,
   DataTableRow,
+  DataTableSummaryRow,
 } from './components/data-table/DataTable';

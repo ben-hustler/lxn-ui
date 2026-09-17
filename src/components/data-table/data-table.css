@@ -15,17 +15,39 @@
    th/td are never given `display: flex` directly — that broke a `rowSpan`
    cell's participation in the table's column-track layout (a sibling cell
    in the next row landed in the wrong column). Icon+label pairs get their
-   own inner flex wrapper (`.lxn-data-table-row-header-inner`) instead, and
-   the row-label header no longer spans rows at all: it splits into a blank
-   corner cell (row 1, styled like the group headers) and the actual label
-   (row 2, alongside the measure column headers) — matching the Figma
-   source's own two-cell structure.
+   own inner flex wrapper (`.lxn-data-table-row-header-inner`) instead.
 
    A drilldown's children (2026-09-10) are ordinary rows, not a distinct
    "expanded panel" shape — a row with `children` just reveals more `<tr>`s
-   indented one step further, styled identically to any other row, so
-   nesting to arbitrary depth (Year → Trim → Vehicle) needs no CSS of its
-   own beyond the indent.
+   indented one step further, so nesting to arbitrary depth (Year → Trim →
+   Vehicle) needs no CSS of its own beyond the indent, though depth>0 rows
+   do get smaller `lxn-l3` type — see DataTable.tsx's `textClass`.
+
+   Redesign, 2026-09-16 (Figma node 2140:844), corrected 2026-09-17 — the
+   body has NO row or cell borders anywhere (Figma draws none): rows are
+   told apart purely by an alternating background, strictly odd/even over
+   every VISIBLE row regardless of depth or group boundary (a nested row
+   just continues the same alternation, never resets or pins to one shade
+   — see DataTable.tsx's `flattenTree` comment). An earlier pass here kept
+   a `border-bottom` hairline under every row AND pinned any depth>0 row to
+   one fixed shade — both wrong; this file no longer does either. The only
+   things that still count as "dividers" are:
+
+   1. The spanning group-label row ("Sold" / "Cost" / "Profit") is gone.
+      `columnGroups` still exists and still draws a heavier divider before
+      each group's first column, just without the text — see
+      DataTable.tsx's `headerCellDivider`.
+   2. The header no longer fills with `--color-border-subtle` — it's plain
+      `--color-bg-surface` (white) like the body, so `thead` needs its own
+      explicit background only so a pinned, sticky header still opaquely
+      covers scrolled-under rows, not because it reads as a distinct band
+      the way it used to.
+   3. Every column boundary used to get a hairline (a full grid). Now only
+      the 1-3 group-boundary dividers get a line at all — no line between
+      e.g. "Units Sold" and "Days to Sell" — drawn full-height (header
+      through body) in `--color-border-strong`, box-shadow in the (sticky)
+      header and a real `border-left` in the body, same split as the
+      header/body seam below.
 
    The thead draws its grid lines as `box-shadow`, never a `border`
    (2026-09-10). Two reasons, both learned the hard way:
@@ -37,24 +59,14 @@
    2. box-shadow also isn't DEDUPLICATED between adjacent cells the way a
       collapsed border is — so an `inset 0 0 0 1px` on every side of every
       cell drew every internal seam TWICE (once from each neighboring
-      cell). Fixed by drawing only the right + bottom edge of each cell:
-      every seam is then drawn exactly once, by exactly one of its two
-      neighbors.
+      cell). Fixed by drawing only the edges each divider actually needs
+      (left for a group boundary, bottom for the last header row) — every
+      seam is then drawn exactly once, by exactly one of its two neighbors.
 
-   tbody, however, went BACK to a real `border` (2026-09-11) — right+bottom
-   only, same "drawn once" rule, so the header/body seam still isn't
-   double-drawn (the header's own box-shadow bottom edge is the only thing
-   drawn there; tbody's first row adds no top border). tbody never sticks,
-   so it never hits reason 1 above, and `border-collapse: collapse` (still
-   set below) lets Chrome/Firefox snap every real collapsed border to one
-   crisp device pixel — box-shadow doesn't get that treatment. At a
-   fractional device-pixel-ratio (e.g. 150% Windows scaling), this table's
-   37px row height lands mid-physical-pixel, and a box-shadow inset there
-   rasterizes as a soft ~2-device-pixel blend on some rows and a crisp 1px
-   line on others: the same 1px line reading as "randomly" thicker/thinner
-   row to row. Verified with headless Chrome at forced 1.5x device-scale:
-   box-shadow hairlines blended on ~every seam; real borders under
-   border-collapse stayed a crisp single pixel on every one. */
+   The group-boundary divider still uses a real `border-left` in the body
+   (never box-shadow there) so it lines up crisply under `border-collapse`
+   with the header's own box-shadow equivalent above it, the same
+   header/body split used for the divider's box-shadow-vs-border choice. */
 
 .lxn-data-table {
   display: flex;
@@ -76,36 +88,14 @@
   position: sticky;
   top: 0;
   z-index: 1;
-}
-
-/* One consistent light header band (--color-border-subtle) across both
-   header rows, edged in --color-border-strong — the same "darker in the
-   header, lighter in the rows" pairing as the body's own (lighter) grid
-   lines further down. */
-.lxn-data-table-corner-header,
-.lxn-data-table-group-header,
-.lxn-data-table-col-header,
-thead .lxn-data-table-row-header-cell {
-  box-shadow:
-    inset -1px 0 0 0 var(--color-border-strong),
-    inset 0 -1px 0 0 var(--color-border-strong);
-}
-
-.lxn-data-table-corner-header {
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-border-subtle);
-}
-
-.lxn-data-table-group-header {
-  padding: var(--space-2) var(--space-3);
-  text-align: center;
-  background: var(--color-border-subtle);
-  color: var(--color-fg-primary);
+  /* Opaque, not for its own look (it's the same white as the body's own
+     stripe-a rows) but so a scrolled-under row never shows through the
+     pinned header — see the redesign note above. */
+  background: var(--color-bg-surface);
 }
 
 .lxn-data-table-col-header {
   padding: 0;
-  background: var(--color-border-subtle);
   text-align: right;
 }
 .lxn-data-table-col-header:first-of-type {
@@ -113,10 +103,15 @@ thead .lxn-data-table-row-header-cell {
 }
 
 /* `font` is deliberately NOT reset here (e.g. to `inherit`) — these buttons
-   always carry `.lxn-l3` alongside this class, and a same-specificity
-   `font: inherit` on this rule would win by source order over `.lxn-l3`'s
-   own `font` shorthand (both are single-class selectors), making the button
-   inherit its unstyled parent `<th>`'s font instead of using its own. */
+   always carry a type class (`lxn-l3`/`lxn-l4`) alongside this one, and a
+   same-specificity `font: inherit` on this rule would win by source order
+   over that class's own `font` shorthand (both are single-class
+   selectors), making the button inherit its unstyled parent `<th>`'s font
+   instead of using its own. Color IS overridden, to `--color-fg-primary` —
+   `lxn-l4` (the measure-column labels' own type class) defaults to
+   `--color-fg-tertiary`, but this design wants every header label reading
+   as full-strength black text, not the softer tertiary tone `lxn-l4` is
+   normally paired with elsewhere. */
 .lxn-data-table-sort-btn {
   display: inline-flex;
   align-items: center;
@@ -142,12 +137,7 @@ thead .lxn-data-table-row-header-cell {
   text-align: left;
   transition: color 120ms var(--ease-standard);
 }
-tbody .lxn-data-table-row-header-cell {
-  border-right: 1px solid var(--color-border-subtle);
-  border-bottom: 1px solid var(--color-border-subtle);
-}
 thead .lxn-data-table-row-header-cell {
-  background: var(--color-border-subtle);
   padding: 0;
 }
 
@@ -169,6 +159,30 @@ thead .lxn-data-table-row-header-cell {
   text-align: left;
 }
 
+/* The pinned summary row (e.g. "Avg.") — bold, but at the same `lxn-b2`
+   size/line-height as an ordinary depth-0 body row; lxn-ui's type scale
+   doesn't have a bold-weight body size (`lxn-b3` is medium, one step short
+   of this row's actual weight), so this is the one place in the component
+   that borrows a class for its metrics and overrides the property it
+   doesn't cover, the same way `.lxn-data-table-sort-btn` already overrides
+   color on top of its own type class. */
+.lxn-data-table-summary-cell {
+  font: var(--font-weight-bold) var(--font-size-b2) / var(--line-height-normal) var(--font-family-sans);
+  color: var(--color-fg-primary);
+}
+/* The row-label `<th>` needs its padding restored explicitly: `thead
+   .lxn-data-table-row-header-cell` (an element+class selector, so higher
+   specificity than a single class) zeroes padding out for the column-label
+   row, where a nested sort button supplies its own — but the summary row's
+   label has no such button, so a same-specificity `.lxn-data-table-summary-
+   cell { padding: ... }` above still lost to that zeroing rule regardless
+   of source order, and the label rendered flush against the left edge
+   instead of aligned under "Year → Trim → Vehicle" above it. Two classes
+   here outrank the element+class selector it needs to beat. */
+thead .lxn-data-table-row-header-cell.lxn-data-table-summary-cell {
+  padding: var(--space-2) var(--space-3);
+}
+
 .lxn-data-table-row-header-inner {
   display: flex;
   align-items: center;
@@ -182,13 +196,12 @@ thead .lxn-data-table-row-header-cell {
   transition: transform 120ms var(--ease-standard);
 }
 
-/* Alternates by TOP-level sibling index only — a drilldown's children
-   inherit their ancestor's stripe unchanged (see flattenTree's
-   `inheritedStripe`) rather than continuing their own odd/even count, so a
-   whole expanded group reads as one consistent color, not a second zebra
-   pattern nested inside the first. --color-bg-sunken is lighter than the
-   header's own fill (--color-border-subtle) so the header still reads as
-   the "heaviest" surface. */
+/* Alternates strictly odd/even over every VISIBLE row (DataTable.tsx's own
+   `i % 2` at render time) — depth plays no part in it, so a nested row
+   just continues the same alternation its ancestor was already in rather
+   than resetting to a fixed shade. --color-bg-sunken is lighter than the
+   header's own fill (--color-bg-surface, since the redesign) so the header
+   still reads as the more neutral surface of the two. */
 .lxn-data-table-row--stripe-a {
   background: var(--color-bg-surface);
 }
@@ -218,9 +231,9 @@ thead .lxn-data-table-row-header-cell {
    THIS row's click target opens something (e.g. appraisal-internals' vehicle
    detail modal) rather than just expanding the tree one level further; a
    branch row's label never gets this since it isn't `--leaf-clickable`.
-   Higher specificity (three classes/pseudo-class) beats `.lxn-b2`/`.lxn-b3`'s
-   own `color: var(--color-fg-primary)` on the same `<th>` without
-   `!important`. */
+   Higher specificity (three classes/pseudo-class) beats `.lxn-b2`/`.lxn-l3`'s
+   own `color: var(--color-fg-primary)`/`--color-fg-secondary` on the same
+   `<th>` without `!important`. */
 .lxn-data-table-row--leaf-clickable:hover .lxn-data-table-row-header-cell {
   color: var(--color-fg-accent);
 }
@@ -228,24 +241,24 @@ thead .lxn-data-table-row-header-cell {
 .lxn-data-table-cell {
   padding: var(--space-2) var(--space-3);
   text-align: right;
-  border-right: 1px solid var(--color-border-subtle);
-  border-bottom: 1px solid var(--color-border-subtle);
 }
 
-/* Brackets an expanded top-level section in a darker, very slightly heavier
-   (--color-border-strong, 1.5px vs. the hairline's 1px, 2026-09-11)
-   top/bottom line, so the group reads as one unit against its collapsed
-   siblings above/below rather than blending into them — DataTable.tsx's
-   `markSectionEdges` puts these classes only on the row that opens the
-   section and the last visible row inside it (however deep), never on a
-   collapsed top-level row. Real `border`, same as every other line here, so
-   `border-collapse` resolves the seam against a neighboring row's own
-   (lighter, thinner) border rather than double-drawing both. */
-.lxn-data-table-row--section-start .lxn-data-table-row-header-cell,
-.lxn-data-table-row--section-start .lxn-data-table-cell {
-  border-top: 1.5px solid var(--color-border-strong);
+/* A row's cells use `lxn-l3` for any depth>0 row (see DataTable.tsx) —
+   `lxn-l3` defaults to `--color-fg-secondary`, but this design wants every
+   cell reading as full-strength black text regardless of depth, same
+   reasoning as `.lxn-data-table-sort-btn`'s own color override above. */
+.lxn-data-table-row-header-cell.lxn-l3,
+.lxn-data-table-cell.lxn-l3 {
+  color: var(--color-fg-primary);
 }
-.lxn-data-table-row--section-end .lxn-data-table-row-header-cell,
-.lxn-data-table-row--section-end .lxn-data-table-cell {
-  border-bottom: 1.5px solid var(--color-border-strong);
+
+/* The heavier divider before a measure-group's first column (e.g. "Units
+   Sold", "ACV", "Front Profit" — 8 measures reading as 3 groups) — real
+   `border`, not box-shadow, since tbody never sticks (see the top comment).
+   Runs the full body height column-by-column the same way the header's own
+   box-shadow equivalent does (DataTable.tsx's `headerCellDivider`), so the
+   two together read as one continuous line from the header through the
+   last row. */
+.lxn-data-table-cell--group-start {
+  border-left: 1px solid var(--color-border-strong);
 }

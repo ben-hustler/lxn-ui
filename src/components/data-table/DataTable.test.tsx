@@ -23,15 +23,52 @@ function row(key: string, rowLabel: string, units: number, dts: number, acv: num
 }
 
 describe('<DataTable>', () => {
-  it('renders group headers, column headers, and row data', () => {
+  it('renders column headers and row data, without a spanning group-label row', () => {
     const rows = [row('r1', '2024 · XLE', 12, 45, 18000)];
     render(<DataTable rowLabelHeader="Year / Trim" columnGroups={COLUMN_GROUPS} rows={rows} />);
-    expect(screen.getByText('Sold')).toBeTruthy();
-    expect(screen.getByText('Cost')).toBeTruthy();
+    // The group label text itself is no longer rendered (2026-09-16 redesign)
+    // — `columnGroups` only drives the divider before each group's first column.
+    expect(screen.queryByText('Sold')).toBeNull();
+    expect(screen.queryByText('Cost')).toBeNull();
     expect(screen.getByText('Units')).toBeTruthy();
     expect(screen.getByText('2024 · XLE')).toBeTruthy();
     expect(screen.getByText('45 Days')).toBeTruthy();
     expect(screen.getByText('$18000')).toBeTruthy();
+  });
+
+  it("draws a divider before each group's first column, and none between columns within a group", () => {
+    const rows = [row('r1', 'A', 1, 2, 3)];
+    render(<DataTable rowLabelHeader="Row" columnGroups={COLUMN_GROUPS} rows={rows} />);
+    const unitsHeader = screen.getByText('Units').closest('th') as HTMLElement;
+    const dtsHeader = screen.getByText('Days to Sell').closest('th') as HTMLElement;
+    const acvHeader = screen.getByText('ACV').closest('th') as HTMLElement;
+    expect(unitsHeader.style.boxShadow).toContain('inset 1px 0 0 0');
+    // Days to Sell isn't a group-start column, so it gets no LEFT divider —
+    // it still carries the header block's own bottom edge, since there's no
+    // summary row here to push that divider down onto instead.
+    expect(dtsHeader.style.boxShadow).not.toContain('inset 1px 0 0 0');
+    expect(acvHeader.style.boxShadow).toContain('inset 1px 0 0 0');
+  });
+
+  it('renders a pinned summary row below the column headers when supplied', () => {
+    const rows = [row('r1', 'A', 1, 2, 3)];
+    render(
+      <DataTable
+        rowLabelHeader="Row"
+        columnGroups={COLUMN_GROUPS}
+        rows={rows}
+        summaryRow={{ label: 'Avg.', cells: { units: '5', dts: '34 Days', acv: '$16,900' } }}
+      />,
+    );
+    expect(screen.getByText('Avg.')).toBeTruthy();
+    expect(screen.getByText('34 Days')).toBeTruthy();
+    expect(screen.getByText('$16,900')).toBeTruthy();
+  });
+
+  it('omits the summary row entirely when not supplied', () => {
+    const rows = [row('r1', 'A', 1, 2, 3)];
+    render(<DataTable rowLabelHeader="Row" columnGroups={COLUMN_GROUPS} rows={rows} />);
+    expect(document.querySelector('.lxn-data-table-summary-cell')).toBeNull();
   });
 
   it('renders every row at once — no pagination', () => {
@@ -45,13 +82,16 @@ describe('<DataTable>', () => {
     const rows = [row('r1', 'A', 100, 0, 0), row('r2', 'B', 2, 0, 0), row('r3', 'C', 30, 0, 0)];
     render(<DataTable rowLabelHeader="Row" columnGroups={COLUMN_GROUPS} rows={rows} />);
     fireEvent.click(screen.getByText('Units'));
-    const cellsAfterDesc = screen.getAllByRole('row').slice(2).map((r) => r.textContent);
+    // thead is a single header row now (no spanning group-label row — see
+    // the redesign note on DataTableColumnGroup), so only its one <tr> is
+    // sliced off ahead of the body rows.
+    const cellsAfterDesc = screen.getAllByRole('row').slice(1).map((r) => r.textContent);
     expect(cellsAfterDesc[0]).toContain('A');
     expect(cellsAfterDesc[1]).toContain('C');
     expect(cellsAfterDesc[2]).toContain('B');
 
     fireEvent.click(screen.getByText('Units'));
-    const cellsAfterAsc = screen.getAllByRole('row').slice(2).map((r) => r.textContent);
+    const cellsAfterAsc = screen.getAllByRole('row').slice(1).map((r) => r.textContent);
     expect(cellsAfterAsc[0]).toContain('B');
     expect(cellsAfterAsc[2]).toContain('A');
   });
@@ -97,32 +137,26 @@ describe('<DataTable>', () => {
     expect(labelsAfter[2]).toContain('A');
   });
 
-  it('alternates background only by top-level position, and children keep their ancestor\'s color', () => {
+  it('alternates strictly odd/even over every VISIBLE row, nested rows included — never resetting or pinning at a group boundary', () => {
     const rows = [
+      row('r0', 'B', 2, 0, 0),
       row('r1', 'A', 1, 0, 0, [row('r1-child-1', 'A-child-1', 0, 0, 0), row('r1-child-2', 'A-child-2', 0, 0, 0)]),
-      row('r2', 'B', 2, 0, 0),
-      row('r3', 'C', 3, 0, 0),
+      row('r2', 'C', 3, 0, 0),
     ];
     render(<DataTable rowLabelHeader="Row" columnGroups={COLUMN_GROUPS} rows={rows} />);
     fireEvent.click(screen.getByText('A'));
 
-    const stripeOf = (text: string) =>
-      screen
-        .getByText(text)
-        .closest('.lxn-data-table-row')
-        ?.className.match(/lxn-data-table-row--stripe-\w/)?.[0];
-
-    const aStripe = stripeOf('A');
-    const bStripe = stripeOf('B');
-    const cStripe = stripeOf('C');
-
-    // Top-level rows alternate (A and C share a stripe; B, in between, differs).
-    expect(aStripe).toBe(cStripe);
-    expect(aStripe).not.toBe(bStripe);
-
-    // Both of A's children inherit A's own stripe rather than alternating themselves.
-    expect(stripeOf('A-child-1')).toBe(aStripe);
-    expect(stripeOf('A-child-2')).toBe(aStripe);
+    // Visible order once A is expanded: B, A, A-child-1, A-child-2, C — five
+    // rows in a row (2026-09-17 correction), each one flipping shade from
+    // the row directly above it, with no reset at A's own boundary.
+    const stripes = ['B', 'A', 'A-child-1', 'A-child-2', 'C'].map(
+      (text) =>
+        screen
+          .getByText(text)
+          .closest('.lxn-data-table-row')
+          ?.className.match(/lxn-data-table-row--stripe-(\w)/)?.[1],
+    );
+    expect(stripes).toEqual(['a', 'b', 'a', 'b', 'a']);
   });
 
   it('is not expandable, and shows no disclosure chevron, for a row with no children', () => {
