@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ChevronDownIcon } from '../icons/icons';
 import './data-table.css';
 
@@ -72,19 +72,25 @@ export interface DataTableProps {
    * own drilldown-building logic already knows precisely (which levels it
    * kept vs. skipped), not hand-typed prose duplicating that decision. */
   rowLabelHeader: string[];
-  /** Fixed width (px) of the row-identity column — NOT just a starting
-   * point for auto-sizing. A drilldown's deeper rows get more `paddingLeft`
-   * (see the depth-based inline style below), and letting the browser
-   * auto-size this column to content meant that padding could grow the
-   * column itself once a deep enough row became visible, shifting every
-   * later column by a sub-pixel amount — which was enough to flip the
-   * group-boundary divider (drawn as `box-shadow`, not a real border,
-   * since the sticky header can't use real borders) between rendering
-   * crisp and rendering visibly thicker, depending on expand/collapse
-   * state (2026-09-17 fix). Longer content than fits truncates with an
-   * ellipsis rather than growing the column — the real behavior change
-   * this fix trades for pixel-stable dividers. Default 196, matching the
-   * Figma source's own row-label column width (node 2140:844). */
+  /** Fixed width (px) of the row-identity column — an explicit override,
+   * not a starting point for auto-sizing. Leave it unset (the default,
+   * 2026-09-21) and DataTable measures the header's row-label SORT CONTROL
+   * (the "Year → Trim" button, plus the arrow's own reserved slot) AND every
+   * TOP-LEVEL row's own label (`rows` itself — depth 0, exactly what's on
+   * screen before any drilldown expansion), and pins the column to whichever
+   * of those actually needs the most room. Deeper rows — a drilldown's own
+   * `children`, only ever on screen after an expand — are NEVER part of that
+   * measurement: they get more `paddingLeft` the deeper they go (see the
+   * depth-based inline style below) and can carry far longer leaf labels
+   * than anything visible at the top, and letting either of those size or
+   * grow the column would shift the group-boundary divider (a real
+   * `border-left` off this same grid track) every time a row expanded or a
+   * long leaf label scrolled into view. Longer row content than the
+   * measured width still truncates with an ellipsis rather than growing the
+   * column, exactly as before (2026-09-17 fix) — only WHERE the width comes
+   * from changed, not that behavior. Pass this prop explicitly to pin a
+   * literal width instead of measuring (still constant across drilldown
+   * depth, same as always). */
   rowLabelColumnWidth?: number;
   columnGroups: DataTableColumnGroup[];
   rows: DataTableRow[];
@@ -195,7 +201,7 @@ function dividerClassName(weight: DividerWeight, isBottomEdge: boolean): string 
  * column while `null`, or on whichever measure column was last clicked. */
 export function DataTable({
   rowLabelHeader,
-  rowLabelColumnWidth = 196,
+  rowLabelColumnWidth,
   columnGroups,
   rows,
   summaryRow,
@@ -203,6 +209,54 @@ export function DataTable({
   onLeafClick,
   className,
 }: DataTableProps) {
+  const rowLabelHeaderText = rowLabelHeader.join(' → ');
+  const rowLabelMeasureRef = useRef<HTMLSpanElement>(null);
+  const rowLabelRowsMeasureRef = useRef<HTMLDivElement>(null);
+  const [measuredRowLabelWidth, setMeasuredRowLabelWidth] = useState<number | null>(null);
+
+  /** Measures the row-label column's required width off TWO hidden clones —
+   * never the real header button or real body cells, both of which are
+   * deliberately capped/clipped to whatever the column already is and would
+   * just report that back. The result is the wider of:
+   *
+   * 1. The header's own sort control (`.lxn-data-table-row-header-sort-btn
+   *    --measure` below) — label + the arrow's own reserved slot. The clone
+   *    always renders the arrow (same as the real button), so switching
+   *    which column is sorted, which only ever toggles that icon's
+   *    `visibility`, never needs more room than what's already measured in.
+   * 2. Every TOP-LEVEL row's own label (`.lxn-data-table-row-label-measure`
+   *    below, one per `rows` entry — depth 0 only, exactly what's on screen
+   *    before any drilldown expansion) — so a typical, unexpanded view of
+   *    the table doesn't needlessly truncate a row label just because the
+   *    header itself happened to be short (e.g. "Location").
+   *
+   * Deliberately NOT any row's `children` — those only come on screen after
+   * an expand, and sizing off them would defeat the entire point of this
+   * measurement being fixed in the first place: reopening the same "no
+   * layout shift on drilldown" problem this whole scheme exists to avoid.
+   *
+   * Runs before paint (`useLayoutEffect`, not `useEffect`) so the first
+   * PAINTED frame is already at the corrected width — nothing here should
+   * ever visibly flash at the 196px fallback below. Skipped entirely once a
+   * caller pins `rowLabelColumnWidth` explicitly. */
+  useLayoutEffect(() => {
+    if (rowLabelColumnWidth != null) return;
+    const headerEl = rowLabelMeasureRef.current;
+    if (!headerEl) return;
+    let widest = headerEl.getBoundingClientRect().width;
+    const rowClones = rowLabelRowsMeasureRef.current?.children ?? [];
+    for (const clone of Array.from(rowClones)) {
+      widest = Math.max(widest, clone.getBoundingClientRect().width);
+    }
+    setMeasuredRowLabelWidth(Math.ceil(widest));
+  }, [rowLabelHeaderText, rows, rowLabelColumnWidth]);
+
+  // Last-resort fallback for the one render before measurement lands (or an
+  // environment with no real layout engine at all) — not a default meant to
+  // describe any particular table's own content width anymore; see
+  // `rowLabelColumnWidth`'s own doc comment.
+  const effectiveRowLabelColumnWidth = rowLabelColumnWidth ?? measuredRowLabelWidth ?? 196;
+
   const columns = useMemo(() => columnGroups.flatMap((g) => g.columns), [columnGroups]);
   // The first group's own first column (e.g. "Units") gets the 'major'
   // weight; every later group's first column (e.g. "ACV", "Front Profit")
@@ -289,16 +343,17 @@ export function DataTable({
           // A CSS Grid table (2026-09-17 — see data-table.css's own comment
           // on `.lxn-data-table-table` for why `<table>`/`<thead>`/`<tbody>`/
           // `<tr>` keep their real tags despite the `display` override): the
-          // row-label column stays a hard fixed width (`rowLabelColumnWidth`,
-          // unchanged from before), but every measure column is now
-          // `minmax(min-content, 1fr)` — equal width by default, and ONLY a
-          // column whose own content genuinely needs more than its equal
-          // share takes it, with the rest still splitting whatever's left
-          // evenly. Native table auto-layout has no equivalent to this
+          // row-label column stays a hard fixed width (`effectiveRowLabelColumnWidth`
+          // — measured from the header's own sort control by default, see
+          // `rowLabelColumnWidth`'s doc comment), but every measure column is
+          // now `minmax(min-content, 1fr)` — equal width by default, and
+          // ONLY a column whose own content genuinely needs more than its
+          // equal share takes it, with the rest still splitting whatever's
+          // left evenly. Native table auto-layout has no equivalent to this
           // (`table-layout: fixed` would just clip long content instead of
           // growing that one column; `auto` is the old "size everything
           // proportional to its own content" behavior this replaces).
-          style={{ gridTemplateColumns: `${rowLabelColumnWidth}px repeat(${columns.length}, minmax(min-content, 1fr))` }}
+          style={{ gridTemplateColumns: `${effectiveRowLabelColumnWidth}px repeat(${columns.length}, minmax(min-content, 1fr))` }}
         >
           <thead className={showTopShadow ? 'lxn-data-table-thead--shadow' : undefined}>
             {/* Taller when this is the ONLY header row (no summaryRow) — a
@@ -310,7 +365,7 @@ export function DataTable({
                 aria-sort={sortColumnKey === null ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
               >
                 <button type="button" className="lxn-data-table-row-header-sort-btn lxn-l3" onClick={() => handleSort(null)}>
-                  <span>{rowLabelHeader.join(' → ')}</span>
+                  <span className="lxn-data-table-row-header-sort-label">{rowLabelHeaderText}</span>
                   <ChevronDownIcon
                     size={14}
                     className="lxn-data-table-sort-icon"
@@ -486,6 +541,67 @@ export function DataTable({
          * `showBottomShadow` is what actually hides it there — the sticky
          * mechanics alone don't make it disappear, they just stop moving. */}
         <div className="lxn-data-table-bottom-shadow" style={{ opacity: showBottomShadow ? 1 : 0 }} aria-hidden="true" />
+      </div>
+      {/* Hidden clone of the row-label sort control, existing purely to be
+       * MEASURED (see the `useLayoutEffect` above) — a sibling of the
+       * scroll container, deliberately outside `<table>`/`<tr>` so it can
+       * never itself become a grid item and shift the real column tracks.
+       * Always renders the arrow icon unconditionally, same as the real
+       * button, so the measured width already reserves its slot regardless
+       * of which column is currently sorted.
+       *
+       * The label itself is a `data-label` attribute rendered via
+       * `content: attr(data-label)` (the CSS below), not a real text child
+       * — a `::before` pseudo-element still lays out as an ordinary flex
+       * item and sizes this span's `getBoundingClientRect()` exactly as a
+       * real text node would, but it's never part of the DOM's actual
+       * `textContent`. Without that indirection this clone's label would be
+       * a second copy of the exact same visible text as the real header
+       * button (e.g. "Row"), which every OTHER test/consumer in this file
+       * already finds via `getByText` — that duplicate silently turned a
+       * single-match query into a "found 2 elements" failure. Same reason
+       * the icon below carries its own `--measure` class rather than the
+       * real `lxn-data-table-sort-icon` one: this icon's `visibility` never
+       * toggles (it's always meant to occupy space, sort state or not), so
+       * anything counting/asserting on real sort icons via that class —
+       * correctly, since only the real header icons ever change
+       * `visibility` — would otherwise pick up this one too. */}
+      <span
+        ref={rowLabelMeasureRef}
+        className="lxn-data-table-row-header-sort-btn lxn-data-table-row-header-sort-btn--measure lxn-l3"
+        aria-hidden="true"
+        data-label={rowLabelHeaderText}
+      >
+        <ChevronDownIcon size={14} className="lxn-data-table-sort-icon--measure" />
+      </span>
+      {/* One hidden clone per TOP-LEVEL row (`rows` itself, depth 0 only —
+       * see the `useLayoutEffect` above), so the column is also sized to fit
+       * whatever's actually on screen before any drilldown expansion, not
+       * just the header. Only a STRING `rowLabel` gets a clone — `rowLabel`
+       * is typed as `ReactNode` generally, but the `data-label`/`::before`
+       * trick (same reasoning as the header clone above, avoiding a second
+       * query-able copy of the row's own visible text) only works for a
+       * plain string; an arbitrary ReactNode label just doesn't contribute
+       * to this measurement rather than risking a duplicate live copy of
+       * whatever markup it actually is. Same reason the disclosure icon
+       * below carries its own `--measure` class: a real
+       * `.lxn-data-table-disclosure-icon` count is meaningful (exactly one
+       * per currently-expanded branch) and this clone's icon, which never
+       * expands anything, would otherwise inflate it. */}
+      <div ref={rowLabelRowsMeasureRef} className="lxn-data-table-row-label-measure-container" aria-hidden="true">
+        {rows
+          .filter((row): row is DataTableRow & { rowLabel: string } => typeof row.rowLabel === 'string')
+          .map((row) => (
+            <span
+              key={row.key}
+              className="lxn-data-table-row-label-measure lxn-b2"
+              data-label={row.rowLabel}
+            >
+              {row.children && row.children.length > 0 && (
+                <ChevronDownIcon size={14} className="lxn-data-table-disclosure-icon--measure" />
+              )}
+            </span>
+          ))}
       </div>
     </div>
   );

@@ -79,25 +79,100 @@ describe('<DataTable>', () => {
     expect(unitsBodyCell.className).toContain('lxn-data-table-divider-major');
   });
 
-  it("fixes the row-label column's grid track to a literal width (default 196px, matching the Figma source) rather than leaving it to auto-size, and keeps it constant across drilldown depth", () => {
+  it("fixes the row-label column's grid track to its sort control's own measured width (label + reserved arrow) rather than leaving it to auto-size off rendered rows, and keeps it constant across drilldown depth", () => {
+    const getBoundingClientRectSpy = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockReturnValue({ width: 150.4 } as unknown as DOMRect);
+
     const rows = [row('parent', 'A', 1, 0, 0, [row('child', 'A deeply nested child label that is much longer than any top-level row', 2, 0, 0)])];
     const { rerender } = render(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} />);
     const gridTemplateColumns = () => (document.querySelector('.lxn-data-table-table') as HTMLElement).style.gridTemplateColumns;
 
-    expect(gridTemplateColumns()).toBe('196px repeat(3, minmax(min-content, 1fr))');
+    // Ceil'd from the hidden measurer clone's own 150.4px — never a
+    // hard-coded default.
+    expect(gridTemplateColumns()).toBe('151px repeat(3, minmax(min-content, 1fr))');
 
     // Expanding to reveal the deep, indented, much-longer child label must
-    // NOT change the row-label track — unlike the old <colgroup>-based
-    // version of this fix, the grid template is computed purely from
-    // `rowLabelColumnWidth` and the column COUNT, never from rendered row
-    // content at all, so there's nothing here for drilldown depth to shift
-    // in the first place.
+    // NOT change the row-label track — the width comes from measuring the
+    // header's own sort control (a hidden clone, off in its own corner of
+    // the DOM), never from rendered row content at all, so there's nothing
+    // here for drilldown depth to shift in the first place.
     fireEvent.click(screen.getByText('A'));
     expect(screen.getByText(/deeply nested child/)).toBeTruthy();
-    expect(gridTemplateColumns()).toBe('196px repeat(3, minmax(min-content, 1fr))');
+    expect(gridTemplateColumns()).toBe('151px repeat(3, minmax(min-content, 1fr))');
 
+    // An explicit override still pins a literal width and skips measurement
+    // entirely, same as before this fix.
     rerender(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} rowLabelColumnWidth={240} />);
     expect(gridTemplateColumns()).toBe('240px repeat(3, minmax(min-content, 1fr))');
+
+    getBoundingClientRectSpy.mockRestore();
+  });
+
+  it('re-measures the row-label column when the header text itself changes (e.g. a deeper drilldown level), not on every render', () => {
+    const widthByHeaderText: Record<string, number> = { Row: 100, 'Row → Sub': 180 };
+    const getBoundingClientRectSpy = vi
+      .spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+      .mockImplementation(function (this: HTMLElement) {
+        return { width: widthByHeaderText[this.getAttribute('data-label') ?? ''] ?? 0 } as unknown as DOMRect;
+      });
+
+    const rows = [row('r1', 'A', 1, 0, 0)];
+    const { rerender } = render(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} />);
+    const gridTemplateColumns = () => (document.querySelector('.lxn-data-table-table') as HTMLElement).style.gridTemplateColumns;
+    expect(gridTemplateColumns()).toBe('100px repeat(3, minmax(min-content, 1fr))');
+
+    rerender(<DataTable rowLabelHeader={["Row", "Sub"]} columnGroups={COLUMN_GROUPS} rows={rows} />);
+    expect(gridTemplateColumns()).toBe('180px repeat(3, minmax(min-content, 1fr))');
+
+    getBoundingClientRectSpy.mockRestore();
+  });
+
+  function mockMeasureWidths(opts: { headerWidth: number }) {
+    return vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains('lxn-data-table-row-header-sort-btn--measure')) {
+        return { width: opts.headerWidth } as unknown as DOMRect;
+      }
+      if (this.classList.contains('lxn-data-table-row-label-measure')) {
+        return { width: (this.getAttribute('data-label') ?? '').length * 10 } as unknown as DOMRect;
+      }
+      return { width: 0 } as unknown as DOMRect;
+    });
+  }
+
+  it("sizes the row-label column to the widest TOP-LEVEL row label when it needs more room than the header's own sort control", () => {
+    const getBoundingClientRectSpy = mockMeasureWidths({ headerWidth: 60 });
+
+    const rows = [row('r1', 'A short one', 1, 0, 0), row('r2', 'A much longer top-level row label', 2, 0, 0)];
+    render(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} />);
+    const gridTemplateColumns = () => (document.querySelector('.lxn-data-table-table') as HTMLElement).style.gridTemplateColumns;
+
+    // "A much longer top-level row label" is 33 chars -> mocked at 330px,
+    // wider than the header's own mocked 60px.
+    expect(gridTemplateColumns()).toBe('330px repeat(3, minmax(min-content, 1fr))');
+
+    getBoundingClientRectSpy.mockRestore();
+  });
+
+  it("never sizes off a row's own CHILDREN — only the top-level rows passed in — even after expanding to reveal a much longer nested label", () => {
+    const getBoundingClientRectSpy = mockMeasureWidths({ headerWidth: 60 });
+
+    const rows = [row('parent', 'A', 1, 0, 0, [row('child', 'A deeply nested child label that is much longer than any top-level row', 2, 0, 0)])];
+    render(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} />);
+    const gridTemplateColumns = () => (document.querySelector('.lxn-data-table-table') as HTMLElement).style.gridTemplateColumns;
+
+    // Top-level row's own label, "A", is 1 char -> mocked at 10px, narrower
+    // than the header's own mocked 60px — the header wins.
+    expect(gridTemplateColumns()).toBe('60px repeat(3, minmax(min-content, 1fr))');
+
+    fireEvent.click(screen.getByText('A'));
+    expect(screen.getByText(/deeply nested child/)).toBeTruthy();
+    // Expanding to reveal the much-longer CHILD label must not change it —
+    // that row was never in `rows` itself, only in "A"'s own `children`,
+    // which never gets its own measurer clone.
+    expect(gridTemplateColumns()).toBe('60px repeat(3, minmax(min-content, 1fr))');
+
+    getBoundingClientRectSpy.mockRestore();
   });
 
   it('gives every measure column an equal minmax(min-content, 1fr) track — equal width by default, only yielding to a column whose own content needs more', () => {

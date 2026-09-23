@@ -100,7 +100,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  border: var(--space-3) solid var(--color-bg-app);
+  border: 1px solid var(--color-bg-app);
   border-radius: var(--radius-sm);
   overflow: hidden;
   background: var(--color-bg-surface);
@@ -197,11 +197,12 @@
      before despite the grid rework: `thead` keeps a REAL box (only its
      `<tr>` children are `display: contents`), so `position: sticky` on it
      sticks the whole header block as one unit, the same as it always has. */
+  background: var(--color-bg-app);
   background: var(--color-bg-surface);
   transition: box-shadow var(--motion-base) var(--ease-standard);
 }
 .lxn-data-table-thead--shadow {
-  box-shadow: 0 3px 4px -2px rgba(17, 19, 21, 0.06);
+  box-shadow: 0 5px 4px -2px rgba(17, 19, 21, 0.06);
 }
 
 .lxn-data-table-col-header {
@@ -247,6 +248,14 @@
   flex-shrink: 0;
 }
 
+/* The measurer clone's own icon (DataTable.tsx's own comment on why it's a
+   dedicated class, not `.lxn-data-table-sort-icon` itself) — needs the
+   exact same `flex-shrink: 0` so it reserves the same width in the clone's
+   layout as the real icon does in the real button. */
+.lxn-data-table-sort-icon--measure {
+  flex-shrink: 0;
+}
+
 .lxn-data-table-row-header-cell {
   /* Row height (2026-09-17: bumped from --space-2 vertical to a uniform
      --space-3) — only actually affects tbody: thead zeroes this back out
@@ -279,12 +288,109 @@ thead .lxn-data-table-row-header-cell {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  /* Capped to the (fixed-width) row-label column itself, unlike
+     `.lxn-data-table-sort-btn`'s measure columns — those size to
+     `minmax(min-content, 1fr)`, so their own min-content already accounts
+     for the button's full nowrap content and the arrow can never get
+     pushed out. This column doesn't grow with content (see
+     `rowLabelColumnWidth`'s own comment in DataTable.tsx), so without a
+     cap here a long `rowLabelHeader` (e.g. a multi-level "Year → Trim →
+     Vehicle") could overflow the button past the cell's own
+     `overflow: hidden` edge — and since the sort arrow sits AFTER the
+     label, it's what silently got clipped off, not the text. Capping the
+     button lets its label shrink (below) while the icon, `flex-shrink: 0`,
+     always keeps its own reserved slot. */
+  max-width: 100%;
   padding: var(--space-2) var(--space-3);
   background: none;
   border: none;
   cursor: pointer;
   color: var(--color-fg-primary);
   text-align: left;
+}
+
+/* Truncates with an ellipsis once `.lxn-data-table-row-header-sort-btn`'s
+   own `max-width: 100%` forces the button to shrink below its content's
+   natural width — `min-width: 0` overrides the flex-item default floor
+   (content's own intrinsic width) that would otherwise block shrinking
+   here, same reasoning as `.lxn-data-table-row-header-label` below, kept
+   as its own class rather than reusing that one so this header label and
+   the body rows' own labels stay two independently queryable elements. */
+.lxn-data-table-row-header-sort-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* The hidden measurer clone (DataTable.tsx's own `rowLabelMeasureRef`) —
+   `position: absolute` takes it out of flow entirely, so it can never grow
+   the page or introduce a stray scrollbar, and the large negative
+   offset just keeps it well off whatever positioned ancestor it resolves
+   against. `max-width: none` overrides this same selector's own
+   `.lxn-data-table-row-header-sort-btn` rule (`max-width: 100%`) — that cap
+   exists to keep the REAL button from overflowing the column once it's been
+   sized; the clone's entire purpose is reporting how wide it would be
+   WITHOUT that cap, so measuring it while still capped would just report
+   back whatever width the column already was. */
+.lxn-data-table-row-header-sort-btn--measure {
+  position: absolute;
+  top: -9999px;
+  left: -9999px;
+  max-width: none;
+  pointer-events: none;
+}
+
+/* The measurer's own label, rendered as generated content off its
+   `data-label` attribute (DataTable.tsx's own comment on why) rather than a
+   real text child — still an ordinary flex item here (generated content
+   participates in its parent's layout exactly like a real child would), so
+   it sizes the clone's total width the same way the real label span would,
+   just without duplicating a query-able copy of the visible header text. */
+.lxn-data-table-row-header-sort-btn--measure::before {
+  content: attr(data-label);
+}
+
+/* Off-screen container for the top-level row-label clones (DataTable.tsx's
+   own `rowLabelRowsMeasureRef`) — only the CONTAINER needs to be taken out
+   of flow; each clone inside it is measured individually via its own
+   `getBoundingClientRect()`, so how they'd actually stack against each
+   other doesn't matter. */
+.lxn-data-table-row-label-measure-container {
+  position: absolute;
+  top: -9999px;
+  left: -9999px;
+  pointer-events: none;
+}
+
+/* One clone per top-level row (DataTable.tsx's own comment on why only a
+   STRING `rowLabel` gets one) — `padding` matches `.lxn-data-table-row-
+   header-cell`'s own (the real `<th>` this is standing in for) and `gap`
+   matches `.lxn-data-table-row-header-inner`'s own, so the clone's total
+   width equals what that real cell would need. `content: attr(data-label)`
+   below, not a real text child, for the same "don't duplicate a query-able
+   copy of the visible row text" reason as the header clone above. Order
+   inside the clone (label content first, the icon after, since `::before`
+   always inserts before real children) is reversed from the real markup's
+   icon-then-label — harmless here, since only the TOTAL width is ever read
+   off this element, never its layout order. */
+.lxn-data-table-row-label-measure {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  white-space: nowrap;
+}
+.lxn-data-table-row-label-measure::before {
+  content: attr(data-label);
+}
+
+/* The row clone's own disclosure-icon stand-in — needs `.lxn-data-table-
+   disclosure-icon`'s own `flex-shrink: 0` so it reserves the same width in
+   the clone's layout, but under its own class (not that one) so it's never
+   picked up by a real `.lxn-data-table-disclosure-icon` count — this icon
+   never toggles or expands anything. */
+.lxn-data-table-disclosure-icon--measure {
+  flex-shrink: 0;
 }
 
 /* Extra vertical padding on both sort-button flavors when the column-label
