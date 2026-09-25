@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { CheckIcon } from '../icons/icons';
+import { useTouchTap } from '../touch-tap/useTouchTap';
 import { SelectTriggerChrome } from '../select-trigger-chrome/SelectTriggerChrome';
 import './multi-select.css';
 
@@ -143,6 +144,20 @@ export function MultiSelect({
   // :hover takes it from there), and the next arrow-key press starts fresh
   // from the top rather than resuming wherever the keyboard last left off.
   const [highlightedIndex, setHighlightedIndex] = useState<number | null>(0);
+  // Whether the current interaction is touch-driven — set from the
+  // pointerType of each pointerdown on the trigger/panel (SingleSelect's
+  // same field). Two things key off it (2026-09-25, iOS):
+  //  - no default/re-anchored highlight: a touch user has no arrow keys or
+  //    Enter to act on it, so it just reads as a stray pre-selection;
+  //  - no explicit input focus() from a tap handler: on iOS a focus() inside
+  //    a user gesture raises the keyboard, so every option tap / clear-X
+  //    would pop it even though opening deliberately doesn't.
+  // A hardware keyboard's ArrowDown still picks the highlight up from null.
+  const touchRef = useRef(false);
+  // Option rows toggle on touch release, not click — see useTouchTap for the
+  // iOS fast-tap misrouting it works around.
+  const optionTap = useTouchTap();
+  const defaultHighlight = () => (touchRef.current ? null : 0);
   const triggerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -214,7 +229,7 @@ export function MultiSelect({
   useEffect(() => {
     if (!open) return;
     setQuery('');
-    setHighlightedIndex(0);
+    setHighlightedIndex(defaultHighlight());
     const raf = requestAnimationFrame(() => inputRef.current?.focus());
     return () => cancelAnimationFrame(raf);
   }, [open]);
@@ -262,9 +277,11 @@ export function MultiSelect({
   // the caret is guaranteed to keep flashing there until the dropdown
   // actually closes. Scoped to inside the trigger/panel only, so it never
   // fights the outside-click-close handler above.
+  // Skipped for touch — see touchRef.
   useEffect(() => {
     if (!open) return;
     function onFocusIn(e: FocusEvent) {
+      if (touchRef.current) return;
       const target = e.target as Node;
       if (target === inputRef.current) return;
       if (triggerRef.current?.contains(target) || panelRef.current?.contains(target)) {
@@ -281,19 +298,31 @@ export function MultiSelect({
     const panel = panelRef.current;
     if (!trigger || !panel) return;
 
+    // `position: absolute` against the containing block (body or the
+    // enclosing <dialog>), not `position: fixed`, and always below — see
+    // SingleSelect.tsx's own reposition() for the iOS keyboard/scroll-rate
+    // reasoning (2026-09-25).
     const reposition = () => {
       const rect = trigger.getBoundingClientRect();
       const width = Math.max(rect.width, MIN_PANEL_WIDTH);
       const maxLeft = Math.max(EDGE_MARGIN, window.innerWidth - EDGE_MARGIN - width);
       const left = Math.min(Math.max(rect.left, EDGE_MARGIN), maxLeft);
+      const top = rect.bottom + ANCHOR_GAP;
 
-      const fitsBelow = rect.bottom + ANCHOR_GAP + panel.offsetHeight <= window.innerHeight - EDGE_MARGIN;
-      const top = fitsBelow
-        ? rect.bottom + ANCHOR_GAP
-        : Math.max(EDGE_MARGIN, rect.top - ANCHOR_GAP - panel.offsetHeight);
+      // Viewport coords -> the containing block's own coords. A static
+      // offsetParent (the usual plain <body>) means the initial containing
+      // block, i.e. the document origin.
+      const container = panel.offsetParent as HTMLElement | null;
+      let originX = -window.scrollX;
+      let originY = -window.scrollY;
+      if (container && getComputedStyle(container).position !== 'static') {
+        const cRect = container.getBoundingClientRect();
+        originX = cRect.left + container.clientLeft - container.scrollLeft;
+        originY = cRect.top + container.clientTop - container.scrollTop;
+      }
 
       panel.style.width = `${width}px`;
-      panel.style.transform = `translate3d(${snapToDevicePixel(left)}px, ${snapToDevicePixel(top)}px, 0)`;
+      panel.style.transform = `translate3d(${snapToDevicePixel(left - originX)}px, ${snapToDevicePixel(top - originY)}px, 0)`;
     };
 
     reposition();
@@ -313,6 +342,16 @@ export function MultiSelect({
 
   function toggleOpen() {
     if (disabled || saving) return;
+    // Touch, already open: a tap anywhere on the box (the greyed selection
+    // text, the field label, the padding) means "let me type", not "close"
+    // — focus the search input from inside the tap so iOS raises the
+    // keyboard. Otherwise only a tap landing exactly on the input itself
+    // did (2026-09-25). An outside tap still closes. Skipped with
+    // renderTrigger (no in-box input to focus), which keeps its toggle.
+    if (open && touchRef.current && inputRef.current) {
+      inputRef.current.focus();
+      return;
+    }
     setOpen((v) => !v);
   }
 
@@ -326,7 +365,7 @@ export function MultiSelect({
     // a cascading Make -> Model list recomputed inline, unmemoized, on
     // every parent re-render) — keying off identity there stomped the
     // "hide the highlight" reset below right after an Enter-driven pick.
-    setHighlightedIndex(0);
+    setHighlightedIndex(defaultHighlight());
     onSearch?.(q);
   }
 
@@ -335,7 +374,8 @@ export function MultiSelect({
     // Keep the highlight on whatever was just picked (mouse or keyboard),
     // so subsequent arrow presses continue from there instead of from
     // whatever stale index was last set.
-    setHighlightedIndex(options.findIndex((o) => o.id === id));
+    // Not for touch — see touchRef.
+    setHighlightedIndex(touchRef.current ? null : options.findIndex((o) => o.id === id));
     // Clear the typed query once a pick is made (mouse or keyboard), but
     // ONLY when the search had narrowed the list down to exactly one result
     // — the "type camr, camry's the only option left, hit Enter (or click
@@ -356,8 +396,8 @@ export function MultiSelect({
     // own onMouseDown already stops the browser from shifting focus to it in
     // the first place; this is the guaranteed fallback (also what makes the
     // behavior assertable from a test, since jsdom doesn't fully replicate
-    // real browser click-focus semantics).
-    inputRef.current?.focus();
+    // real browser click-focus semantics). Skipped for touch — see touchRef.
+    if (!touchRef.current) inputRef.current?.focus();
   }
 
   // Red X that takes over the chevron's own slot while open AND something
@@ -374,7 +414,7 @@ export function MultiSelect({
   function clearSelection(e: ReactMouseEvent) {
     e.stopPropagation();
     onChange([]);
-    inputRef.current?.focus();
+    if (!touchRef.current) inputRef.current?.focus();
   }
 
   function handleOptionKeyDown(e: ReactKeyboardEvent<HTMLDivElement>, id: string) {
@@ -431,6 +471,7 @@ export function MultiSelect({
     if (disabled || saving) return;
     if (!open && (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown')) {
       e.preventDefault();
+      touchRef.current = false;
       setOpen(true);
     }
   }
@@ -523,6 +564,9 @@ export function MultiSelect({
       ref={triggerRef}
       className={['lxn-multi-select', className].filter(Boolean).join(' ')}
       onClick={(e) => e.stopPropagation()}
+      onPointerDownCapture={(e) => {
+        touchRef.current = e.pointerType === 'touch';
+      }}
     >
       {trigger}
       {open &&
@@ -564,7 +608,7 @@ export function MultiSelect({
                       // The mouse taking over the highlight, in the flesh —
                       // see the highlightedIndex state comment above.
                       onMouseEnter={() => setHighlightedIndex(null)}
-                      onClick={() => toggleOption(o.id)}
+                      {...optionTap.bind(() => toggleOption(o.id))}
                       onKeyDown={(e) => handleOptionKeyDown(e, o.id)}
                     >
                       <span className="lxn-multi-select-option-checkbox" aria-hidden="true">

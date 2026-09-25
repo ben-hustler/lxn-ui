@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { DateRangePicker, formatDateRangeLabel, resolveRelativeRange } from './DateRangePicker';
 
 afterEach(() => cleanup());
@@ -526,5 +526,93 @@ describe('<DateRangePicker>', () => {
     );
     expect(screen.getByText('Lookback')).toBeTruthy();
     expect(screen.getByText('Last month')).toBeTruthy();
+  });
+});
+
+describe('<DateRangePicker> — touch device (hover: none, pointer: coarse)', () => {
+  const realMatchMedia = window.matchMedia;
+  beforeEach(() => {
+    window.matchMedia = ((query: string) => ({
+      matches: query === '(hover: none) and (pointer: coarse)',
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    })) as unknown as typeof window.matchMedia;
+  });
+  afterEach(() => {
+    window.matchMedia = realMatchMedia;
+  });
+
+  const VALUE = { kind: 'custom' as const, from: '2026-09-05', to: '2026-09-08' };
+
+  it('focusing a date input is type-first — it does NOT open the calendar', () => {
+    render(<DateRangePicker value={VALUE} onChange={vi.fn()} />);
+    fireEvent.focus(screen.getByRole('textbox', { name: 'From date' }));
+    expect(screen.queryByRole('dialog')).toBeFalsy();
+  });
+
+  it('the calendar button toggles the calendar open and closed', () => {
+    render(<DateRangePicker value={VALUE} onChange={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Open calendar' }));
+    expect(screen.queryByRole('dialog')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Close calendar' }));
+    expect(screen.queryByRole('dialog')).toBeFalsy();
+  });
+
+  it('desktop (no match) keeps the plain icon — no calendar button', () => {
+    window.matchMedia = realMatchMedia;
+    render(<DateRangePicker value={VALUE} onChange={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: 'Open calendar' })).toBeFalsy();
+  });
+});
+
+describe('<DateRangePicker> — touch device entry point', () => {
+  const realMatchMedia = window.matchMedia;
+  beforeEach(() => {
+    window.matchMedia = ((query: string) => ({
+      matches: query === '(hover: none) and (pointer: coarse)',
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    })) as unknown as typeof window.matchMedia;
+  });
+  afterEach(() => {
+    window.matchMedia = realMatchMedia;
+  });
+
+  it('tapping straight onto To when not yet typing lands focus on From instead', () => {
+    render(<DateRangePicker value={{ kind: 'custom', from: '2026-09-05', to: '2026-09-08' }} onChange={vi.fn()} />);
+    screen.getByRole('textbox', { name: 'To date' }).focus();
+    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'From date' }));
+  });
+
+  it('a tap that focuses From and whose click then lands on the trigger box (row shifted as the preset half hid) stays on From', () => {
+    render(<DateRangePicker value={{ kind: 'custom', from: '2026-09-05', to: '2026-09-08' }} onChange={vi.fn()} />);
+    const from = screen.getByRole('textbox', { name: 'From date' });
+    from.focus();
+    // Right half of the box — the old code sent this to To.
+    fireEvent.click(screen.getByRole('group', { name: 'Date range' }), { clientX: 9999 });
+    expect(document.activeElement).toBe(from);
+  });
+
+  it('leaving text entry (keyboard Done) drops the raw typed draft so the formatted committed date shows', async () => {
+    render(<DateRangePicker value={{ kind: 'custom', from: '2026-09-05', to: '2026-09-08' }} onChange={vi.fn()} />);
+    const from = screen.getByRole('textbox', { name: 'From date' }) as HTMLInputElement;
+    from.focus();
+    fireEvent.change(from, { target: { value: 'september 5' } });
+    expect(from.value).toBe('september 5');
+    await act(async () => {
+      from.blur();
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+    });
+    expect(from.value).toBe('');
+  });
+
+  it('once typing in From, To can be focused directly (the hop)', () => {
+    render(<DateRangePicker value={{ kind: 'custom', from: '2026-09-05', to: '2026-09-08' }} onChange={vi.fn()} />);
+    screen.getByRole('textbox', { name: 'From date' }).focus();
+    const to = screen.getByRole('textbox', { name: 'To date' });
+    to.focus();
+    expect(document.activeElement).toBe(to);
   });
 });

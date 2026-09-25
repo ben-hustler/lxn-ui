@@ -23,3 +23,20 @@ new one.
   it's `--color-error`) and a KPI tile hand-rolling `font-size: 28px; font-weight: 700`
   instead of `.lxn-n1`. If nothing semantic fits, stop and ask the user rather than
   going custom.
+
+- **Floating panels on iOS: anchor in document coordinates, open below, don't
+  focus() from taps.** (2026-09-25, found on-device with SingleSelect/MultiSelect/
+  DateRangePicker.) A `position: fixed` panel that JS keeps moving on scroll
+  drifts off its trigger once the iOS keyboard opens, and lags behind touch
+  scrolling. Use `position: absolute` against the containing block and always
+  open below (see SingleSelect.tsx's `reposition()`). An input `focus()` called
+  inside a tap handler raises the keyboard; one called from a rAF doesn't. Pick
+  deliberately, and skip "keep focus in the input" refocusing on touch.
+
+- **Lists people tap through quickly: use `useTouchTap`, not `onClick`.** On
+  iOS, a fast second tap on a neighbouring row gets its compatibility click
+  sent to the *previous* row (confirmed with an on-device event log;
+  `touch-action: manipulation` doesn't fix it). `useTouchTap`
+  (src/components/touch-tap) fires on touch release and drops the stray click.
+  Also: no default "highlight the first row" on touch. With no arrow keys it
+  just reads as a stray pre-selection.

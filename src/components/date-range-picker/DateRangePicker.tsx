@@ -4,12 +4,15 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
   type RefObject,
 } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDownIcon, CheckIcon, BackArrowIcon, CalendarIcon } from '../icons/icons';
+import { useTouchTap } from '../touch-tap/useTouchTap';
 import './date-range-picker.css';
 
 // Position math copied from SearchSelect.tsx (see that component's own
@@ -30,13 +33,26 @@ function positionPanel(trigger: HTMLElement, panel: HTMLElement, minWidth: numbe
   const maxLeft = Math.max(EDGE_MARGIN, window.innerWidth - EDGE_MARGIN - width);
   const left = Math.min(Math.max(rect.left, EDGE_MARGIN), maxLeft);
 
-  const fitsBelow = rect.bottom + ANCHOR_GAP + panel.offsetHeight <= window.innerHeight - EDGE_MARGIN;
-  const top = fitsBelow
-    ? rect.bottom + ANCHOR_GAP
-    : Math.max(EDGE_MARGIN, rect.top - ANCHOR_GAP - panel.offsetHeight);
+  // Always below, and `position: absolute` against the containing block
+  // (body or the enclosing <dialog>) rather than `position: fixed` — see
+  // SingleSelect.tsx's own reposition() for the iOS keyboard/scroll-rate
+  // reasoning (2026-09-25).
+  const top = rect.bottom + ANCHOR_GAP;
+
+  // Viewport coords -> the containing block's own coords. A static
+  // offsetParent (the usual plain <body>) means the initial containing
+  // block, i.e. the document origin.
+  const container = panel.offsetParent as HTMLElement | null;
+  let originX = -window.scrollX;
+  let originY = -window.scrollY;
+  if (container && getComputedStyle(container).position !== 'static') {
+    const cRect = container.getBoundingClientRect();
+    originX = cRect.left + container.clientLeft - container.scrollLeft;
+    originY = cRect.top + container.clientTop - container.scrollTop;
+  }
 
   panel.style.width = `${width}px`;
-  panel.style.transform = `translate3d(${snapToDevicePixel(left)}px, ${snapToDevicePixel(top)}px, 0)`;
+  panel.style.transform = `translate3d(${snapToDevicePixel(left - originX)}px, ${snapToDevicePixel(top - originY)}px, 0)`;
 }
 
 // Shared by both the preset and the calendar panel below — same anchor/flip
@@ -72,6 +88,26 @@ function useFloatingPanel(
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, minWidth, sizeDep]);
+}
+
+// Touch-first device (phones/tablets) — decides the calendar trigger's mode
+// up front, at render, since the calendar button has to LOOK different
+// before anyone touches it (a per-interaction pointerType, like touchRef
+// below, can't drive that). Same query as the CSS in
+// date-range-picker.css.
+const TOUCH_DEVICE_QUERY = '(hover: none) and (pointer: coarse)';
+function subscribeTouchDevice(onChange: () => void) {
+  if (typeof window === 'undefined' || !window.matchMedia) return () => {};
+  const mql = window.matchMedia(TOUCH_DEVICE_QUERY);
+  mql.addEventListener('change', onChange);
+  return () => mql.removeEventListener('change', onChange);
+}
+function useIsTouchDevice(): boolean {
+  return useSyncExternalStore(
+    subscribeTouchDevice,
+    () => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia(TOUCH_DEVICE_QUERY).matches,
+    () => false,
+  );
 }
 
 export type DateRangeValue =
@@ -451,6 +487,34 @@ export function DateRangePicker({
   // on-focus of either one, read by the two guards below. Not React state:
   // it drives no render, only which ref a focus-correction call reaches for.
   const activeCalendarFieldRef = useRef<'from' | 'to'>('from');
+  // Whether the current interaction is touch-driven — set from the
+  // pointerType of each pointerdown anywhere in the picker (SingleSelect's
+  // same field, 2026-09-25, iOS). Touch gets no default preset highlight (no
+  // arrow keys/Enter to act on it).
+  const touchRef = useRef(false);
+  // Touch-device calendar mode (2026-09-25): the from/to inputs are
+  // type-first — focusing one never opens the calendar — and the calendar
+  // icon becomes a real button that toggles it. Nothing calls focus() on the
+  // inputs from a calendar tap either, since on iOS that raises the
+  // keyboard over the grid. Desktop keeps focus-opens-calendar.
+  const isTouchDevice = useIsTouchDevice();
+  // Touch device, a from/to input focused: the preset half is hidden so the
+  // two date inputs get the whole row while typing (2026-09-25).
+  const [typingDates, setTypingDatesState] = useState(false);
+  // Synchronous mirror, read by the focus/click handlers — state can lag a
+  // render behind between two quick focus changes.
+  const typingDatesRef = useRef(false);
+  function setTypingDates(next: boolean) {
+    typingDatesRef.current = next;
+    setTypingDatesState(next);
+  }
+  // Day buttons fire on touch release, not click — see useTouchTap (a quick
+  // second day tap was otherwise re-clicking the first day on iOS).
+  const dayTap = useTouchTap();
+  const defaultHighlight = () => (touchRef.current ? null : 0);
+  function handlePointerDownCapture(e: ReactPointerEvent) {
+    touchRef.current = e.pointerType === 'touch';
+  }
 
   useEffect(() => {
     if (!openPanel) return;
@@ -485,7 +549,7 @@ export function DateRangePicker({
   // inputs was last active, on the same tick — so the caret keeps flashing
   // there until the panel actually closes.
   useEffect(() => {
-    if (openPanel !== 'calendar') return;
+    if (openPanel !== 'calendar' || isTouchDevice) return;
     function onFocusIn(e: FocusEvent) {
       const target = e.target as Node;
       if (target === fromInputRef.current || target === toInputRef.current) return;
@@ -495,12 +559,12 @@ export function DateRangePicker({
     }
     document.addEventListener('focusin', onFocusIn);
     return () => document.removeEventListener('focusin', onFocusIn);
-  }, [openPanel]);
+  }, [openPanel, isTouchDevice]);
 
   useEffect(() => {
     if (openPanel !== 'preset') return;
     setQuery('');
-    setHighlightedIndex(0);
+    setHighlightedIndex(defaultHighlight());
     const raf = requestAnimationFrame(() => presetInputRef.current?.focus());
     return () => cancelAnimationFrame(raf);
   }, [openPanel]);
@@ -553,12 +617,80 @@ export function DateRangePicker({
   // "active", so the focus-guard effect above (and handleDayClick's own
   // explicit refocus) know which input to return the caret to.
   function handleDateInputFocus(field: 'from' | 'to') {
+    // Touch device, not already typing: entering text entry always starts
+    // at From, wherever the tap landed (even directly on To) — redirected
+    // from inside the same tap so iOS still raises the keyboard. Once
+    // typing, tapping To hops there normally.
+    if (isTouchDevice && field === 'to' && !typingDatesRef.current) {
+      fromInputRef.current?.focus();
+      return;
+    }
     activeCalendarFieldRef.current = field;
+    // Touch device: type-first, the calendar button is the only way in.
+    if (isTouchDevice) {
+      setTypingDates(true);
+      return;
+    }
     setOpenPanel('calendar');
   }
 
+  // Deferred a frame: hopping From -> To blurs one input before focusing the
+  // other, and un-hiding the preset half for that instant would shift the
+  // row out from under the tap.
+  function handleDateInputBlur() {
+    if (!isTouchDevice) return;
+    requestAnimationFrame(() => {
+      const root = rootRef.current?.getRootNode() as Document | ShadowRoot | undefined;
+      const active = root?.activeElement;
+      if (active !== fromInputRef.current && active !== toInputRef.current) {
+        setTypingDates(false);
+        // Leaving text entry (keyboard Done, tapping away) normalizes the
+        // display the same way closing the calendar does on desktop: drop
+        // the raw typed draft so the committed date shows in its formatted
+        // placeholder ("september 5" -> "Sep 5, 2026"). Desktop gets this
+        // from the calendar-close effect; on touch the calendar was never
+        // open to close.
+        setFromText('');
+        setToText('');
+      }
+    });
+  }
+
+  // iOS doesn't paint the caret in an input that moved after it took focus
+  // — and focusing one hides the preset half, sliding both inputs left
+  // (2026-09-25: "first tap cursor doesn't show"). Re-setting the selection
+  // once the new layout is in forces a caret repaint.
+  useLayoutEffect(() => {
+    if (!typingDates) return;
+    const raf = requestAnimationFrame(() => {
+      const root = rootRef.current?.getRootNode() as Document | ShadowRoot | undefined;
+      const active = root?.activeElement;
+      if (active === fromInputRef.current || active === toInputRef.current) {
+        const input = active as HTMLInputElement;
+        const end = input.value.length;
+        input.setSelectionRange(end, end);
+      }
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [typingDates]);
+
   function refocusActiveCalendarInput() {
+    if (isTouchDevice) return;
     (activeCalendarFieldRef.current === 'from' ? fromInputRef : toInputRef).current?.focus();
+  }
+
+  // Touch-device calendar button. stopPropagation keeps the tap from also
+  // reaching handleCalendarTriggerClick (which would focus an input and
+  // raise the keyboard).
+  //
+  // Also blurs a focused from/to input first: opening the calendar with the
+  // keyboard still up left iOS scrolling the page somewhere unrelated, and a
+  // calendar under a keyboard isn't usable anyway.
+  function handleCalendarButtonClick(e: ReactMouseEvent<HTMLButtonElement>) {
+    e.stopPropagation();
+    fromInputRef.current?.blur();
+    toInputRef.current?.blur();
+    setOpenPanel((p) => (p === 'calendar' ? null : 'calendar'));
   }
 
   // Widens the from/to inputs' own hitbox out to the WHOLE trigger — the
@@ -569,11 +701,24 @@ export function DateRangePicker({
   // trigger's own width was clicked, left for From and right for To — same
   // "decide which side based on where you clicked" split as the visible
   // From/To layout itself.
+  //
+  // Touch device, an input already focused: do nothing. Focusing an input
+  // hides the preset half (typingDates), which shifts the row mid-tap, so
+  // the SAME tap's click can land on this container instead of the input
+  // it just focused — without this guard it then refocused whichever half
+  // the finger now sat over, bouncing a From tap onto To (confirmed with an
+  // on-device event log, 2026-09-25).
   function handleCalendarTriggerClick(e: ReactMouseEvent<HTMLDivElement>) {
     const target = e.target as Node;
     if (fromInputRef.current === target || toInputRef.current === target) return;
+    if (isTouchDevice) {
+      const active = (rootRef.current?.getRootNode() as Document | ShadowRoot | undefined)?.activeElement;
+      if (active === fromInputRef.current || active === toInputRef.current) return;
+    }
     const rect = e.currentTarget.getBoundingClientRect();
-    const nearer = e.clientX - rect.left < rect.width / 2 ? fromInputRef : toInputRef;
+    // Touch device entering text entry: always From (see handleDateInputFocus).
+    const nearer =
+      isTouchDevice && !typingDatesRef.current ? fromInputRef : e.clientX - rect.left < rect.width / 2 ? fromInputRef : toInputRef;
     nearer.current?.focus();
   }
 
@@ -623,13 +768,15 @@ export function DateRangePicker({
   function handlePresetQueryChange(q: string) {
     setQuery(q);
     // Reset to the top result on every keystroke, same reasoning (and same
-    // deliberate non-dependence on `filteredPresets` itself) as SingleSelect.
-    setHighlightedIndex(0);
+    // deliberate non-dependence on `filteredPresets` itself) as SingleSelect —
+    // or stays un-highlighted for touch, see touchRef.
+    setHighlightedIndex(defaultHighlight());
   }
 
   function handlePresetTriggerKeyDown(e: ReactKeyboardEvent<HTMLDivElement>) {
     if (openPanel !== 'preset' && (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown')) {
       e.preventDefault();
+      touchRef.current = false;
       setOpenPanel('preset');
     }
   }
@@ -726,7 +873,10 @@ export function DateRangePicker({
   const portalTarget = openPanel ? (rootRef.current?.closest('dialog') ?? document.body) : null;
 
   return (
-    <div ref={rootRef} className={['lxn-date-range', className].filter(Boolean).join(' ')} onClick={(e) => e.stopPropagation()}>
+    <div ref={rootRef} className={['lxn-date-range', typingDates ? 'lxn-date-range--typing' : '', className].filter(Boolean).join(' ')}
+      onClick={(e) => e.stopPropagation()}
+      onPointerDownCapture={handlePointerDownCapture}
+    >
       <div className="lxn-date-range-row">
         <div
           ref={presetTriggerRef}
@@ -769,7 +919,20 @@ export function DateRangePicker({
           aria-expanded={openPanel === 'calendar'}
           onClick={handleCalendarTriggerClick}
         >
-          <CalendarIcon size={16} className="lxn-date-range-calendar-icon" />
+          {isTouchDevice ? (
+            <button
+              type="button"
+              className="lxn-date-range-calendar-button"
+              aria-label={openPanel === 'calendar' ? 'Close calendar' : 'Open calendar'}
+              aria-expanded={openPanel === 'calendar'}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={handleCalendarButtonClick}
+            >
+              <CalendarIcon size={16} />
+            </button>
+          ) : (
+            <CalendarIcon size={16} className="lxn-date-range-calendar-icon" />
+          )}
           <input
             ref={fromInputRef}
             type="text"
@@ -778,6 +941,7 @@ export function DateRangePicker({
             placeholder={fromPlaceholder}
             aria-label="From date"
             onFocus={() => handleDateInputFocus('from')}
+            onBlur={handleDateInputBlur}
             onChange={(e) => handleFromInputChange(e.target.value)}
           />
           <span className="lxn-l1 lxn-date-range-calendar-dash" aria-hidden="true">
@@ -791,6 +955,7 @@ export function DateRangePicker({
             placeholder={toPlaceholder}
             aria-label="To date"
             onFocus={() => handleDateInputFocus('to')}
+            onBlur={handleDateInputBlur}
             onChange={(e) => handleToInputChange(e.target.value)}
           />
         </div>
@@ -904,7 +1069,7 @@ export function DateRangePicker({
                         .filter(Boolean)
                         .join(' ')}
                       onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => handleDayClick(cell.iso)}
+                      {...dayTap.bind(() => handleDayClick(cell.iso))}
                       onMouseEnter={() => pendingStart !== null && setHoverDate(cell.iso)}
                     >
                       {cell.day}

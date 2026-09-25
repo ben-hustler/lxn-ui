@@ -169,11 +169,55 @@
   color: var(--color-fg-tertiary);
 }
 
+/* Touch-device calendar button (2026-09-25) — replaces the plain icon on
+   touch devices only (DateRangePicker.tsx's isTouchDevice, same query as
+   below), where the from/to inputs are type-first and this is the only way
+   to open the calendar, so it has to read as tappable: bordered, sunken,
+   and filled accent while the calendar is open. */
+.lxn-date-range-calendar-button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-sunken);
+  color: var(--color-fg-primary);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background var(--motion-quick) var(--ease-standard), border-color var(--motion-quick) var(--ease-standard);
+}
+.lxn-date-range-calendar-button[aria-expanded='true'] {
+  background: var(--color-hover-accent-bg);
+  border-color: var(--color-fg-accent);
+}
+/* Touch device, typing into from/to — the preset half is hidden entirely so
+   the date inputs get the full row (DateRangePicker.tsx's typingDates). */
+.lxn-date-range--typing .lxn-date-range-preset-trigger {
+  display: none;
+}
+
+/* Type-first on touch — the box's own hover tint would otherwise stick
+   after a tap (iOS sticky :hover). */
+@media (hover: none) and (pointer: coarse) {
+  .lxn-date-range-calendar-trigger:hover {
+    background: transparent;
+  }
+}
+
 /* ---- Preset panel — portalled and positioned via an inline transform
    computed from the trigger's live rect, same technique as MultiSelect's
    own panel. */
 .lxn-date-range-preset-panel {
-  position: fixed;
+  /* No double-tap-to-zoom gesture here (iOS, 2026-09-25): two quick taps on
+     neighbouring rows were being read as one double-tap, and the second
+     tap's click landed on the FIRST row — un-toggling it instead of
+     picking the new one. `manipulation` keeps pan/pinch, drops double-tap. */
+  touch-action: manipulation;
+  /* absolute, not fixed — see DateRangePicker.tsx's positionPanel() (iOS
+     keyboard / scroll-rate drift). */
+  position: absolute;
   top: 0;
   left: 0;
   background: var(--color-bg-surface);
@@ -225,7 +269,11 @@
 
 /* ---- Calendar panel. */
 .lxn-date-range-calendar-panel {
-  position: fixed;
+  /* See the panel's own touch-action comment. */
+  touch-action: manipulation;
+  /* absolute, not fixed — see DateRangePicker.tsx's positionPanel() (iOS
+     keyboard / scroll-rate drift). */
+  position: absolute;
   top: 0;
   left: 0;
   display: flex;

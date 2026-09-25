@@ -37,6 +37,14 @@ html {
   background: var(--color-bg-surface);
   border-bottom: 1px solid var(--color-border);
 }
+/* Not sticky on touch devices: with the iOS keyboard up the page scrolls
+   the focused field up under this bar, and taps meant for the field hit a
+   nav link and jump the page (2026-09-25, DateRangePicker testing). */
+@media (hover: none) and (pointer: coarse) {
+  .lxn-sandbox-nav {
+    position: static;
+  }
+}
 .lxn-sandbox-nav-group {
   display: flex;
   align-items: center;

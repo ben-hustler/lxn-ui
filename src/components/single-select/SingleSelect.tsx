@@ -151,6 +151,14 @@ export function SingleSelect({
   // picked-or-not state) — see MultiSelect.tsx's own comment on this same
   // field, byte-for-byte the same reasoning here.
   const [highlightedIndex, setHighlightedIndex] = useState<number | null>(0);
+  // Whether the current interaction is touch-driven — set from the
+  // pointerType of each pointerdown on the trigger/panel. A touch user has no
+  // arrow keys/Enter to act on the default top-row highlight, so it just
+  // reads as a stray pre-selection (reported 2026-09-25); touch starts (and
+  // stays, per keystroke) un-highlighted instead. A hardware keyboard's
+  // ArrowDown still picks it up from null, same as after a mouse hover.
+  const touchRef = useRef(false);
+  const defaultHighlight = () => (touchRef.current ? null : 0);
   const triggerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -198,7 +206,7 @@ export function SingleSelect({
   useEffect(() => {
     if (!open) return;
     setQuery('');
-    setHighlightedIndex(0);
+    setHighlightedIndex(defaultHighlight());
     const raf = requestAnimationFrame(() => inputRef.current?.focus());
     return () => cancelAnimationFrame(raf);
   }, [open]);
@@ -238,19 +246,42 @@ export function SingleSelect({
     const panel = panelRef.current;
     if (!trigger || !panel) return;
 
+    // `position: absolute` against the panel's own containing block (body,
+    // or the enclosing <dialog>), NOT `position: fixed` — on iOS Safari a
+    // fixed panel is pinned to the layout viewport, so (a) once the keyboard
+    // opens and the visual viewport pans, the panel drifts off the trigger,
+    // and (b) during a touch/momentum scroll the page moves on the
+    // compositor while this JS repositions a frame (or several) behind,
+    // reading as the panel scrolling at a different rate (reported
+    // 2026-09-25). Anchored in document coordinates, an ordinary page scroll
+    // carries the panel along natively; the scroll listener below still
+    // handles a nested scroll container moving the trigger.
     const reposition = () => {
       const rect = trigger.getBoundingClientRect();
       const width = Math.max(rect.width, MIN_PANEL_WIDTH);
       const maxLeft = Math.max(EDGE_MARGIN, window.innerWidth - EDGE_MARGIN - width);
       const left = Math.min(Math.max(rect.left, EDGE_MARGIN), maxLeft);
 
-      const fitsBelow = rect.bottom + ANCHOR_GAP + panel.offsetHeight <= window.innerHeight - EDGE_MARGIN;
-      const top = fitsBelow
-        ? rect.bottom + ANCHOR_GAP
-        : Math.max(EDGE_MARGIN, rect.top - ANCHOR_GAP - panel.offsetHeight);
+      // Always below — no flip-above when space runs out. The old
+      // space-aware choice measured against a viewport height that iOS
+      // doesn't shrink for the keyboard, and flipping mid-interaction read as
+      // the panel jumping around (2026-09-25). Below-only is predictable.
+      const top = rect.bottom + ANCHOR_GAP;
+
+      // Viewport coords -> the containing block's own coords. A static
+      // offsetParent (the usual plain <body>) means the initial containing
+      // block, i.e. the document origin.
+      const container = panel.offsetParent as HTMLElement | null;
+      let originX = -window.scrollX;
+      let originY = -window.scrollY;
+      if (container && getComputedStyle(container).position !== 'static') {
+        const cRect = container.getBoundingClientRect();
+        originX = cRect.left + container.clientLeft - container.scrollLeft;
+        originY = cRect.top + container.clientTop - container.scrollTop;
+      }
 
       panel.style.width = `${width}px`;
-      panel.style.transform = `translate3d(${snapToDevicePixel(left)}px, ${snapToDevicePixel(top)}px, 0)`;
+      panel.style.transform = `translate3d(${snapToDevicePixel(left - originX)}px, ${snapToDevicePixel(top - originY)}px, 0)`;
     };
 
     reposition();
@@ -270,14 +301,25 @@ export function SingleSelect({
 
   function toggleOpen() {
     if (disabled || saving) return;
+    // Touch, already open: a tap anywhere on the box (the greyed selection
+    // text, the field label, the padding) means "let me type", not "close"
+    // — focus the search input from inside the tap so iOS raises the
+    // keyboard. Otherwise only a tap landing exactly on the input itself
+    // did (2026-09-25). An outside tap still closes. Skipped with
+    // renderTrigger (no in-box input to focus), which keeps its toggle.
+    if (open && touchRef.current && inputRef.current) {
+      inputRef.current.focus();
+      return;
+    }
     setOpen((v) => !v);
   }
 
   function handleQueryChange(q: string) {
     setQuery(q);
     // Reset to the top result on every keystroke, same reasoning (and same
-    // deliberate non-dependence on `options` itself) as MultiSelect.
-    setHighlightedIndex(0);
+    // deliberate non-dependence on `options` itself) as MultiSelect — or
+    // stays un-highlighted for touch, see touchRef.
+    setHighlightedIndex(defaultHighlight());
     onSearch?.(q);
   }
 
@@ -303,10 +345,16 @@ export function SingleSelect({
   // to the trigger's own onClick (re-toggling `open`); onMouseDown
   // preventDefault keeps focus on the search input the same way the option
   // rows do.
+  //
+  // Deliberately no focus() here: the clear button's own onMouseDown
+  // preventDefault already keeps focus wherever it was. An explicit focus()
+  // inside this click handler counts as a user gesture on iOS and raises the
+  // keyboard — even when the input was already (keyboard-less) focused by
+  // the open effect's rAF focus() — which made the X the one path that
+  // unexpectedly popped it (reported 2026-09-25).
   function clearSelection(e: ReactMouseEvent) {
     e.stopPropagation();
     onChange(null);
-    inputRef.current?.focus();
   }
 
   function handleInputKeyDown(e: ReactKeyboardEvent<HTMLInputElement>) {
@@ -329,6 +377,7 @@ export function SingleSelect({
     if (disabled || saving) return;
     if (!open && (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown')) {
       e.preventDefault();
+      touchRef.current = false;
       setOpen(true);
     }
   }
@@ -410,6 +459,9 @@ export function SingleSelect({
       ref={triggerRef}
       className={['lxn-single-select', className].filter(Boolean).join(' ')}
       onClick={(e) => e.stopPropagation()}
+      onPointerDownCapture={(e) => {
+        touchRef.current = e.pointerType === 'touch';
+      }}
     >
       {trigger}
       {open &&
