@@ -359,7 +359,7 @@ export function DataTable({
             {/* Taller when this is the ONLY header row (no summaryRow) — a
              * lone column-label row read thin/cramped next to a two-row
              * header block; see `.lxn-data-table-header-row--tall`. */}
-            <tr className={!summaryRow ? 'lxn-data-table-header-row--tall' : undefined}>
+            <tr className={summaryRow ? 'lxn-data-table-header-row--labels' : 'lxn-data-table-header-row--tall'}>
               <th
                 className={`lxn-data-table-row-header-cell ${dividerClassName('none', !summaryRow)}`}
                 aria-sort={sortColumnKey === null ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
