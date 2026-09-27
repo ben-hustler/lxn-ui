@@ -192,19 +192,21 @@ describe('<DataTable>', () => {
     expect(label.textContent).toContain('A very long row label');
   });
 
-  it('renders a pinned summary row below the column headers when supplied', () => {
+  it('renders a pinned summary row below the column headers when supplied, its label shown only while collapsed', () => {
     const rows = [row('r1', 'A', 1, 2, 3)];
-    render(
-      <DataTable
-        rowLabelHeader={["Row"]}
-        columnGroups={COLUMN_GROUPS}
-        rows={rows}
-        summaryRow={{ label: 'Avg.', cells: { units: '5', dts: '34 Days', acv: '$16,900' } }}
-      />,
-    );
-    expect(screen.getByText('Avg.')).toBeTruthy();
+    const summaryRow = { label: 'Brightwater Toyota', cells: { units: '5', dts: '34 Days', acv: '$16,900' } };
+    const { rerender } = render(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} summaryRow={summaryRow} />);
     expect(screen.getByText('34 Days')).toBeTruthy();
     expect(screen.getByText('$16,900')).toBeTruthy();
+    // Expanded: the row-label column's own header names it — no label cell text.
+    expect(screen.queryByText('Brightwater Toyota')).toBeNull();
+
+    rerender(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} summaryRow={summaryRow} expanded={false} />);
+    // Collapsed: the faint label replaces the row-label header, spanning both header rows.
+    const label = screen.getByText('Brightwater Toyota');
+    expect(label.className).toContain('lxn-data-table-summary-label-faint');
+    expect(label.closest('th')?.className).toContain('lxn-data-table-summary-label-overlay');
+    expect(screen.queryByText('Row')).toBeNull();
   });
 
   it('omits the summary row entirely when not supplied', () => {
@@ -290,19 +292,29 @@ describe('<DataTable>', () => {
     expect(document.querySelectorAll('.lxn-data-table-sort-icon')).toHaveLength(4);
   });
 
-  it('re-toggling the row-label column actually reverses row order, not just its arrow', () => {
-    const rows = [row('r1', 'A', 1, 0, 0), row('r2', 'B', 2, 0, 0), row('r3', 'C', 3, 0, 0)];
+  it('sorts the row-label column by label text (numeric-aware), descending by default, and re-toggling reverses it', () => {
+    const rows = [row('r1', 'Location 9', 1, 0, 0), row('r2', 'Location 12', 2, 0, 0), row('r3', 'Location 10', 3, 0, 0)];
     render(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} />);
 
     const labelsBefore = Array.from(document.querySelectorAll('.lxn-data-table-row')).map((r) => r.textContent);
-    expect(labelsBefore[0]).toContain('A');
-    expect(labelsBefore[2]).toContain('C');
+    expect(labelsBefore[0]).toContain('Location 12');
+    expect(labelsBefore[2]).toContain('Location 9');
 
     // Same column (row-label, already active by default) clicked again toggles direction.
     fireEvent.click(screen.getByText('Row'));
     const labelsAfter = Array.from(document.querySelectorAll('.lxn-data-table-row')).map((r) => r.textContent);
-    expect(labelsAfter[0]).toContain('C');
-    expect(labelsAfter[2]).toContain('A');
+    expect(labelsAfter[0]).toContain('Location 9');
+    expect(labelsAfter[1]).toContain('Location 10');
+    expect(labelsAfter[2]).toContain('Location 12');
+  });
+
+  it('starts from `defaultSort` when given', () => {
+    const rows = [row('r1', 'A', 1, 0, 0), row('r2', 'B', 30, 0, 0), row('r3', 'C', 2, 0, 0)];
+    render(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} defaultSort={{ columnKey: 'units', direction: 'desc' }} />);
+    const labels = Array.from(document.querySelectorAll('.lxn-data-table-row')).map((r) => r.textContent);
+    expect(labels[0]).toContain('B');
+    expect(labels[2]).toContain('A');
+    expect(screen.getByText('Units').closest('button')?.className).toContain('is-active');
   });
 
   it('alternates strictly odd/even over every VISIBLE row, nested rows included — never resetting or pinning at a group boundary', () => {
@@ -311,13 +323,14 @@ describe('<DataTable>', () => {
       row('r1', 'A', 1, 0, 0, [row('r1-child-1', 'A-child-1', 0, 0, 0), row('r1-child-2', 'A-child-2', 0, 0, 0)]),
       row('r2', 'C', 3, 0, 0),
     ];
-    render(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} />);
+    render(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} defaultSort={{ columnKey: 'units', direction: 'desc' }} />);
     fireEvent.click(screen.getByText('A'));
 
-    // Visible order once A is expanded: B, A, A-child-1, A-child-2, C — five
-    // rows in a row (2026-09-17 correction), each one flipping shade from
-    // the row directly above it, with no reset at A's own boundary.
-    const stripes = ['B', 'A', 'A-child-1', 'A-child-2', 'C'].map(
+    // Visible order once A is expanded (units desc): C, B, A, A-child-1,
+    // A-child-2 — five rows in a row (2026-09-17 correction), each one
+    // flipping shade from the row directly above it, with no reset at A's
+    // own boundary.
+    const stripes = ['C', 'B', 'A', 'A-child-1', 'A-child-2'].map(
       (text) =>
         screen
           .getByText(text)
@@ -475,5 +488,69 @@ describe('<DataTable>', () => {
     const leafRow = screen.getByText('B').closest('[role="button"]') as HTMLElement;
     fireEvent.keyDown(leafRow, { key: 'Enter' });
     expect(onLeafClick).toHaveBeenCalledTimes(1);
+  });
+
+  describe('expanded / onExpandedChange', () => {
+    const summaryRow = { label: '', cells: { units: '5', dts: '48 Days', acv: '$15548' } };
+
+    it('renders only the header block (no body rows) while collapsed, and disables sorting', () => {
+      const rows = [row('r1', 'A', 1, 2, 3)];
+      render(<DataTable rowLabelHeader={['Row']} columnGroups={COLUMN_GROUPS} rows={rows} summaryRow={summaryRow} expanded={false} />);
+      expect(screen.getByText('48 Days')).toBeTruthy();
+      expect(screen.queryByText('A')).toBeNull();
+      expect((screen.getByText('Units').closest('button') as HTMLButtonElement).disabled).toBe(true);
+      // No toggle without onExpandedChange — a header-only table with no way in.
+      expect(screen.queryByRole('button', { name: 'Show rows' })).toBeNull();
+    });
+
+    it('makes the whole collapsed table a click target that asks to expand — never to collapse', () => {
+      const onExpandedChange = vi.fn();
+      const rows = [row('r1', 'A', 1, 2, 3)];
+      const { rerender, container } = render(
+        <DataTable rowLabelHeader={['Row']} columnGroups={COLUMN_GROUPS} rows={rows} summaryRow={summaryRow} expanded={false} onExpandedChange={onExpandedChange} />,
+      );
+      const root = container.querySelector('.lxn-data-table') as HTMLElement;
+      expect(root.className).toContain('lxn-data-table--expandable');
+      // No in-table toggle control — the consumer owns the persistent button.
+      expect(screen.queryByRole('button', { name: /rows/ })).toBeNull();
+      // Collapsed: every group divider is the light weight.
+      expect((screen.getByText('Units').closest('th') as HTMLElement).className).toContain('lxn-data-table-divider-minor');
+
+      fireEvent.click(screen.getByText('48 Days'));
+      expect(onExpandedChange).toHaveBeenCalledTimes(1);
+      expect(onExpandedChange).toHaveBeenLastCalledWith(true);
+
+      rerender(
+        <DataTable rowLabelHeader={['Row']} columnGroups={COLUMN_GROUPS} rows={rows} summaryRow={summaryRow} expanded onExpandedChange={onExpandedChange} />,
+      );
+      expect(root.className).not.toContain('lxn-data-table--expandable');
+      expect((screen.getByText('Units').closest('th') as HTMLElement).className).toContain('lxn-data-table-divider-major');
+      fireEvent.click(screen.getByText('A'));
+      fireEvent.click(screen.getByText('48 Days'));
+      expect(onExpandedChange).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows emptyState across the body only while expanded with no rows', () => {
+      const { rerender } = render(
+        <DataTable rowLabelHeader={['Row']} columnGroups={COLUMN_GROUPS} rows={[]} summaryRow={summaryRow} expanded emptyState="Loading…" />,
+      );
+      expect(screen.getByText('Loading…')).toBeTruthy();
+      rerender(<DataTable rowLabelHeader={['Row']} columnGroups={COLUMN_GROUPS} rows={[]} summaryRow={summaryRow} expanded={false} emptyState="Loading…" />);
+      expect(screen.queryByText('Loading…')).toBeNull();
+    });
+  });
+
+  it('applies won/lost tone classes to summary cells named in `tones`, and nothing to the rest', () => {
+    render(
+      <DataTable
+        rowLabelHeader={['Row']}
+        columnGroups={COLUMN_GROUPS}
+        rows={[]}
+        summaryRow={{ label: '', cells: { units: '5', dts: '48 Days', acv: '$1' }, tones: { dts: 'lost', acv: 'won' } }}
+      />,
+    );
+    expect(screen.getByText('48 Days').className).toContain('lxn-data-table-summary-cell--lost');
+    expect(screen.getByText('$1').className).toContain('lxn-data-table-summary-cell--won');
+    expect(screen.getByText('5').className).not.toMatch(/summary-cell--(won|lost)/);
   });
 });

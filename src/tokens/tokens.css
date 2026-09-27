@@ -98,6 +98,7 @@
   --color-fg-on-inverse: var(--lxn-white);
   --color-fg-link:       var(--lxn-accent-teal);
   --color-fg-accent:     var(--lxn-accent-teal);
+  --color-fg-accent-subtle: var(--lxn-accent-light-teal); /* hover tint on already-faint text — same lightness, accent hue */
 
   --color-border-strong: var(--lxn-neutral-300);
   --color-border:        var(--lxn-neutral-200);

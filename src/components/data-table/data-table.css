@@ -256,6 +256,9 @@
 }
 
 .lxn-data-table-row-header-cell {
+  /* Positioning context for the collapsed summary-label overlay's
+     absolutely positioned label (2026-09-27). */
+  position: relative;
   /* Row height (2026-09-17: bumped from --space-2 vertical to a uniform
      --space-3) — only actually affects tbody: thead zeroes this back out
      just below and gets its own height from its sort button's padding. */
@@ -304,8 +307,13 @@ thead .lxn-data-table-row-header-cell {
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--color-fg-primary);
+  color: var(--color-fg-secondary);
   text-align: left;
+}
+/* The sorted column's label (either button flavor) reads full-strength. */
+.lxn-data-table-row-header-sort-btn.is-active,
+.lxn-data-table-sort-btn.is-active {
+  color: var(--color-fg-primary);
 }
 
 /* Truncates with an ellipsis once `.lxn-data-table-row-header-sort-btn`'s
@@ -383,15 +391,6 @@ thead .lxn-data-table-row-header-cell {
   content: attr(data-label);
 }
 
-/* The row clone's own disclosure-icon stand-in — needs `.lxn-data-table-
-   disclosure-icon`'s own `flex-shrink: 0` so it reserves the same width in
-   the clone's layout, but under its own class (not that one) so it's never
-   picked up by a real `.lxn-data-table-disclosure-icon` count — this icon
-   never toggles or expands anything. */
-.lxn-data-table-disclosure-icon--measure {
-  flex-shrink: 0;
-}
-
 /* Extra vertical padding on both sort-button flavors when the column-label
    row is the ONLY header row (no summaryRow) — at the ordinary --space-2
    inset, a single-row header read thin/cramped sitting directly above the
@@ -453,6 +452,92 @@ thead .lxn-data-table-row-header-cell.lxn-data-table-summary-cell {
 .lxn-data-table-cell.lxn-data-table-summary-cell {
   padding-top: 0;
   padding-bottom: var(--space-6);
+}
+
+/* Won/lost summary values (2026-09-26) — the same data-viz outcome pair as
+   KpiTile's `valueTone`. Two classes, so it beats `.lxn-data-table-summary-
+   cell`'s own `color` regardless of source order. */
+.lxn-data-table-summary-cell.lxn-data-table-summary-cell--won {
+  color: var(--color-data-won);
+}
+.lxn-data-table-summary-cell.lxn-data-table-summary-cell--lost {
+  color: var(--color-data-lost);
+}
+
+/* Collapsed (2026-09-27, "Option H"): a bordered white card of just the
+   column labels + KPI values — no header fill, and DataTable.tsx draws
+   every group divider at the light weight. Expanding brings the full table
+   treatment back (grey header, heavier first divider, striped body). */
+.lxn-data-table--collapsed {
+  border-color: var(--color-border-strong);
+}
+.lxn-data-table--collapsed .lxn-data-table-table thead {
+  background: var(--color-bg-surface);
+}
+/* Nothing inside a collapsed table takes a click of its own — the disabled
+   sort buttons would otherwise swallow clicks meant for the table itself
+   (see `--expandable` below). */
+.lxn-data-table--collapsed .lxn-data-table-sort-btn,
+.lxn-data-table--collapsed .lxn-data-table-row-header-sort-btn {
+  pointer-events: none;
+}
+
+/* The summary label while collapsed: one cell spanning both header rows,
+   with the label absolutely positioned inside so a long name wraps (then
+   clips) within the rows' height rather than growing them. Faint — it's
+   context, not data. Two classes on the label rules so they beat any type
+   class a consumer's label node might carry. */
+.lxn-data-table-summary-label-overlay {
+  grid-row: span 2;
+}
+.lxn-data-table-summary-label-overlay .lxn-data-table-summary-label-faint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-5);
+  overflow: hidden;
+  font: var(--font-weight-bold) var(--font-size-h6) / var(--line-height-tight) var(--font-family-sans);
+  color: var(--color-fg-disabled);
+  white-space: normal;
+  transition: color var(--motion-quick) var(--ease-standard);
+}
+
+/* `onExpandedChange` on a collapsed table: the whole card is the click
+   target to expand. Hover tints the card and shifts the faint label's hue
+   (not its weight) as the "this opens" cue. */
+.lxn-data-table--expandable {
+  cursor: pointer;
+  transition: background var(--motion-quick) var(--ease-standard);
+}
+.lxn-data-table--expandable:hover,
+.lxn-data-table--expandable:hover .lxn-data-table-table thead {
+  background: var(--color-hover-accent-bg);
+}
+.lxn-data-table--expandable:hover .lxn-data-table-summary-label-overlay .lxn-data-table-summary-label-faint {
+  color: var(--color-fg-accent-subtle);
+}
+
+/* Sort buttons while collapsed — disabled (no rows to sort), so no pointer. */
+.lxn-data-table-sort-btn:disabled,
+.lxn-data-table-row-header-sort-btn:disabled {
+  cursor: default;
+}
+
+/* `emptyState` — one cell spanning every column track of the grid. */
+.lxn-data-table-empty {
+  grid-column: 1 / -1;
+  padding: var(--space-3);
+  text-align: left;
+}
+
+/* The row clone's own disclosure-icon stand-in — needs `.lxn-data-table-
+   disclosure-icon`'s own `flex-shrink: 0` so it reserves the same width in
+   the clone's layout, but under its own class (not that one) so it's never
+   picked up by a real `.lxn-data-table-disclosure-icon` count — this icon
+   never toggles or expands anything. */
+.lxn-data-table-disclosure-icon--measure {
+  flex-shrink: 0;
 }
 
 .lxn-data-table-row-header-inner {
@@ -556,7 +641,7 @@ thead .lxn-data-table-row-header-cell.lxn-data-table-summary-cell {
    plainly now that these are real borders: no more sub-pixel box-shadow
    rasterization to fight, so "thicker" reliably means thicker. */
 .lxn-data-table-divider-major {
-  border-left: 1.5px solid var(--color-border-strong);
+  border-left: 2.5px solid var(--color-border-strong);
 }
 .lxn-data-table-divider-minor {
   border-left: 0.5px solid var(--color-border-strong);

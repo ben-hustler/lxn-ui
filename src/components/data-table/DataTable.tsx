@@ -2,6 +2,24 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode }
 import { ChevronDownIcon } from '../icons/icons';
 import './data-table.css';
 
+/** Filled ▼ sort indicator (2026-09-27, replacing a chevron) — always
+ * mounted so toggling which column shows it never reflows the header;
+ * `visible` just flips its visibility. Points up when ascending. */
+function SortTriangle({ visible, ascending, className }: { visible: boolean; ascending: boolean; className?: string }) {
+  return (
+    <svg
+      className={className ?? 'lxn-data-table-sort-icon'}
+      width={8}
+      height={6}
+      viewBox="0 0 8 6"
+      aria-hidden="true"
+      style={{ visibility: visible ? 'visible' : 'hidden', transform: ascending ? 'rotate(180deg)' : undefined }}
+    >
+      <path d="M0 0 H8 L4 6 Z" fill="currentColor" />
+    </svg>
+  );
+}
+
 export interface DataTableColumn {
   /** Unique key — also the key each row's `cells` record is looked up by. */
   key: string;
@@ -54,13 +72,24 @@ export interface DataTableRow {
  * row — it summarizes the whole result set, not one row of it, so it never
  * takes part in sorting or the row tree. */
 export interface DataTableSummaryRow {
-  /** Row-identity label, e.g. "Avg." */
+  /** Row-identity label (2026-09-27: e.g. the dealership name a KPI row
+   * describes). Shown only while collapsed — faint, spanning both header
+   * rows, wrapping without making the header taller — and hidden once
+   * expanded, where the row-label column's own sortable header takes over. */
   label: ReactNode;
   /** One pre-formatted display value per column key declared across
    * `columnGroups` — same "consumer owns its own vocabulary" rule as
    * `DataTableCell.display`. */
   cells: Record<string, ReactNode>;
+  /** Optional favorable/unfavorable coloring per column key (2026-09-26) —
+   * the same --color-data-won/--color-data-lost pair KpiTile's `valueTone`
+   * uses, for a summary row standing in for a row of KPI tiles. The consumer
+   * decides which tone applies (thresholds are its own vocabulary); omitted
+   * keys render in the default color. */
+  tones?: Record<string, DataTableSummaryTone>;
 }
+
+export type DataTableSummaryTone = 'default' | 'won' | 'lost';
 
 export interface DataTableProps {
   /** Row-identity column header, as one label per nesting level in
@@ -110,26 +139,52 @@ export interface DataTableProps {
    * as it did before this prop existed. Leaf rows only become
    * clickable/focusable at all once this is supplied. */
   onLeafClick?: (row: DataTableRow) => void;
+  /** Controlled body visibility (2026-09-26) — `false` renders only the
+   * header block (column labels + `summaryRow`), no body rows, so a summary
+   * row can stand on its own as a row of KPIs. Omit it and the body is
+   * always shown, same as before this prop existed. */
+  expanded?: boolean;
+  /** Supplying this makes the whole collapsed table a click target that
+   * calls back with `true` (2026-09-27) — an explicit expand, never a
+   * toggle. There's no collapse control inside the table: the consumer
+   * renders its own persistent expand/collapse button (which is also the
+   * keyboard-accessible path, since the click target is mouse-only), and
+   * owns `expanded`, so it can e.g. defer fetching `rows` until the first
+   * expand. Omit it with `expanded={false}` for a header-only table with no
+   * way to expand. */
+  onExpandedChange?: (expanded: boolean) => void;
+  /** Initial sort (2026-09-27) — a measure column's key, or `null` for the
+   * row-label column. Defaults to `{ columnKey: null, direction: 'desc' }`. */
+  defaultSort?: { columnKey: string | null; direction: SortDirection };
+  /** Shown across the full table width in place of body rows while
+   * expanded and `rows` is empty — e.g. a loading, error, or "no results"
+   * message. Omit it and an empty expanded body renders nothing. */
+  emptyState?: ReactNode;
   className?: string;
 }
 
-type SortDirection = 'asc' | 'desc';
+export type SortDirection = 'asc' | 'desc';
+
+const labelCollator = new Intl.Collator('en-US', { numeric: true, sensitivity: 'base' });
 
 /** Sorts every level of the tree by the same column/direction, recursively —
  * a drilldown's children are rows just like any other, so they sort the
- * same way their siblings-of-parents do. `sortColumnKey === null` has no
- * `sortValue` to compare (a row's label is a free-form `ReactNode`), but
- * `sortDirection` still has to mean something when the row-label column is
- * re-toggled — `desc` keeps the caller-supplied order, `asc` reverses it —
- * otherwise clicking that arrow flips its icon without changing anything,
- * which reads as "sort is broken". */
+ * same way their siblings-of-parents do. `sortColumnKey === null` sorts by
+ * the row label (2026-09-27): string labels compare as text with numeric
+ * awareness (years, "Location 9" before "Location 12"); a non-string
+ * `ReactNode` label has no text to compare, so a list containing one falls
+ * back to the caller's order (`desc`) or its reverse (`asc`) — still a
+ * visible change on re-toggle, so the arrow never flips over nothing. */
 function sortTree(list: DataTableRow[], sortColumnKey: string | null, sortDirection: SortDirection): DataTableRow[] {
   const dir = sortDirection === 'asc' ? 1 : -1;
+  const allStringLabels = list.every((r) => typeof r.rowLabel === 'string');
   const sorted = sortColumnKey
     ? [...list].sort((a, b) => ((a.cells[sortColumnKey]?.sortValue ?? 0) - (b.cells[sortColumnKey]?.sortValue ?? 0)) * dir)
-    : sortDirection === 'asc'
-      ? [...list].reverse()
-      : list;
+    : allStringLabels
+      ? [...list].sort((a, b) => labelCollator.compare(a.rowLabel as string, b.rowLabel as string) * dir)
+      : sortDirection === 'asc'
+        ? [...list].reverse()
+        : list;
   return sorted.map((row) => (row.children && row.children.length > 0 ? { ...row, children: sortTree(row.children, sortColumnKey, sortDirection) } : row));
 }
 
@@ -207,8 +262,14 @@ export function DataTable({
   summaryRow,
   maxBodyHeight = 420,
   onLeafClick,
+  expanded,
+  onExpandedChange,
+  emptyState,
+  defaultSort,
   className,
 }: DataTableProps) {
+  const isExpanded = expanded ?? true;
+  const canExpand = !isExpanded && Boolean(onExpandedChange);
   const rowLabelHeaderText = rowLabelHeader.join(' → ');
   const rowLabelMeasureRef = useRef<HTMLSpanElement>(null);
   const rowLabelRowsMeasureRef = useRef<HTMLDivElement>(null);
@@ -270,8 +331,8 @@ export function DataTable({
     return map;
   }, [columnGroups]);
 
-  const [sortColumnKey, setSortColumnKey] = useState<string | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [sortColumnKey, setSortColumnKey] = useState<string | null>(defaultSort?.columnKey ?? null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(defaultSort?.direction ?? 'desc');
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
 
   /** `columnKey === null` re-selects the row-label column (see the note
@@ -326,12 +387,30 @@ export function DataTable({
 
   useEffect(() => {
     if (scrollRef.current) checkScrollShadows(scrollRef.current);
-  }, [flatRows]);
+  }, [flatRows, isExpanded]);
 
-  const classes = ['lxn-data-table', className || ''].filter(Boolean).join(' ');
+  // Collapsed (2026-09-27, "Option H"): a bordered white card holding just
+  // the column labels + KPI row — see data-table.css. Every group divider is
+  // the light (minor) weight while collapsed; the heavier first one only
+  // returns with the full table.
+  const classes = [
+    'lxn-data-table',
+    !isExpanded ? 'lxn-data-table--collapsed' : '',
+    canExpand ? 'lxn-data-table--expandable' : '',
+    className || '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const headerDividerWeight = (key: string): DividerWeight => {
+    const weight = dividerWeightByKey.get(key) ?? 'none';
+    return !isExpanded && weight !== 'none' ? 'minor' : weight;
+  };
+  // Collapsed with a summary row: one cell spans both header rows in the
+  // row-label column, holding the faint summary label (see below).
+  const collapsedSummary = !isExpanded && summaryRow;
 
   return (
-    <div className={classes}>
+    <div className={classes} onClick={canExpand ? () => onExpandedChange!(true) : undefined}>
       <div
         className="lxn-data-table-scroll"
         style={{ maxHeight: maxBodyHeight }}
@@ -360,50 +439,58 @@ export function DataTable({
              * lone column-label row read thin/cramped next to a two-row
              * header block; see `.lxn-data-table-header-row--tall`. */}
             <tr className={summaryRow ? 'lxn-data-table-header-row--labels' : 'lxn-data-table-header-row--tall'}>
+              {collapsedSummary ? (
+                // Spans both header rows but adds no height of its own: the
+                // label inside is absolutely positioned, so the row is only
+                // as tall as the column-label + KPI cells, and a long name
+                // wraps (then clips) within that box instead of growing it.
+                <th className="lxn-data-table-row-header-cell lxn-data-table-summary-label-overlay">
+                  <span className="lxn-data-table-summary-label-faint">{collapsedSummary.label}</span>
+                </th>
+              ) : (
               <th
-                className={`lxn-data-table-row-header-cell ${dividerClassName('none', !summaryRow)}`}
+                className={`lxn-data-table-row-header-cell ${dividerClassName('none', !summaryRow && isExpanded)}`}
                 aria-sort={sortColumnKey === null ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
               >
-                <button type="button" className="lxn-data-table-row-header-sort-btn lxn-l3" onClick={() => handleSort(null)}>
+                {/* Disabled while collapsed (2026-09-26) — there are no
+                 * visible rows to sort, and an arrow flipping over nothing
+                 * reads as broken. Sort state itself is kept, not reset. */}
+                <button
+                  type="button"
+                  className={`lxn-data-table-row-header-sort-btn lxn-l3${sortColumnKey === null && isExpanded ? ' is-active' : ''}`}
+                  onClick={() => handleSort(null)}
+                  disabled={!isExpanded}
+                >
                   <span className="lxn-data-table-row-header-sort-label">{rowLabelHeaderText}</span>
-                  <ChevronDownIcon
-                    size={14}
-                    className="lxn-data-table-sort-icon"
-                    // Always mounted, at a fixed slot immediately right of
-                    // the label — visibility (not conditional rendering)
-                    // toggles which column's arrow shows, so activating a
-                    // sort never shifts anything else in the row (2026-09-17
-                    // CLS fix; an earlier pass only mounted the icon for the
-                    // active column, which reflowed the whole button).
-                    style={{
-                      visibility: sortColumnKey === null ? 'visible' : 'hidden',
-                      transform: sortDirection === 'asc' ? 'rotate(180deg)' : undefined,
-                    }}
-                  />
+                  {/* Always mounted, at a fixed slot immediately right of
+                   * the label — visibility (not conditional rendering)
+                   * toggles which column's arrow shows, so activating a
+                   * sort never shifts anything else in the row (2026-09-17
+                   * CLS fix). */}
+                  <SortTriangle visible={sortColumnKey === null && isExpanded} ascending={sortDirection === 'asc'} />
                 </button>
               </th>
+              )}
               {columns.map((column) => {
                 const active = sortColumnKey === column.key;
                 return (
                   <th
                     key={column.key}
-                    className={['lxn-data-table-col-header', dividerClassName(dividerWeightByKey.get(column.key) ?? 'none', !summaryRow)].filter(Boolean).join(' ')}
+                    className={['lxn-data-table-col-header', dividerClassName(headerDividerWeight(column.key), !summaryRow && isExpanded)].filter(Boolean).join(' ')}
                     aria-sort={active ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
                   >
-                    <button type="button" className="lxn-data-table-sort-btn lxn-l4" onClick={() => handleSort(column.key)}>
+                    <button
+                      type="button"
+                      className={`lxn-data-table-sort-btn lxn-l4${active && isExpanded ? ' is-active' : ''}`}
+                      onClick={() => handleSort(column.key)}
+                      disabled={!isExpanded}
+                    >
                       {/* Icon BEFORE the label (immediately to its left) —
                        * mirrors the row-label button's icon-after-label
                        * order for the opposite (right) text alignment.
                        * Always mounted, fixed slot, visibility toggled —
                        * same CLS fix as the row-label button above. */}
-                      <ChevronDownIcon
-                        size={14}
-                        className="lxn-data-table-sort-icon"
-                        style={{
-                          visibility: active ? 'visible' : 'hidden',
-                          transform: sortDirection === 'asc' ? 'rotate(180deg)' : undefined,
-                        }}
-                      />
+                      <SortTriangle visible={active && isExpanded} ascending={sortDirection === 'asc'} />
                       <span>{column.label}</span>
                     </button>
                   </th>
@@ -412,28 +499,41 @@ export function DataTable({
             </tr>
             {summaryRow && (
               <tr>
-                <th className={['lxn-data-table-row-header-cell', 'lxn-data-table-summary-cell', dividerClassName('none', true)].filter(Boolean).join(' ')}>
-                  {summaryRow.label}
-                </th>
-                {columns.map((column) => (
-                  <td
-                    key={column.key}
-                    className={[
-                      'lxn-data-table-cell',
-                      'lxn-data-table-summary-cell',
-                      'lxn-num',
-                      dividerClassName(dividerWeightByKey.get(column.key) ?? 'none', true),
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                  >
-                    {summaryRow.cells[column.key]}
-                  </td>
-                ))}
+                {/* Expanded: an empty cell (the row-label column's header
+                 * above names the column). Collapsed: no cell at all — the
+                 * overlay in the row above spans down into this row. */}
+                {isExpanded ? (
+                  <th className={['lxn-data-table-row-header-cell', 'lxn-data-table-summary-cell', dividerClassName('none', true)].filter(Boolean).join(' ')} />
+                ) : null}
+                {columns.map((column) => {
+                  const tone = summaryRow.tones?.[column.key] ?? 'default';
+                  return (
+                    <td
+                      key={column.key}
+                      className={[
+                        'lxn-data-table-cell',
+                        'lxn-data-table-summary-cell',
+                        tone !== 'default' ? `lxn-data-table-summary-cell--${tone}` : '',
+                        'lxn-num',
+                        dividerClassName(headerDividerWeight(column.key), isExpanded),
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                    >
+                      {summaryRow.cells[column.key]}
+                    </td>
+                  );
+                })}
               </tr>
             )}
           </thead>
+          {isExpanded && (
           <tbody>
+            {flatRows.length === 0 && emptyState != null && (
+              <tr className="lxn-data-table-row lxn-data-table-row--stripe-a">
+                <td className="lxn-data-table-empty lxn-l4">{emptyState}</td>
+              </tr>
+            )}
             {flatRows.map(({ row, depth }, i) => {
               const isExpandable = Boolean(row.children && row.children.length > 0);
               const isOpen = isExpandable && expandedKeys.has(row.key);
@@ -530,6 +630,7 @@ export function DataTable({
               );
             })}
           </tbody>
+          )}
         </table>
         {/* A later sibling of `<table>`, not a background layer, so it
          * paints ON TOP of the last row's own opaque background —
@@ -572,7 +673,7 @@ export function DataTable({
         aria-hidden="true"
         data-label={rowLabelHeaderText}
       >
-        <ChevronDownIcon size={14} className="lxn-data-table-sort-icon--measure" />
+        <SortTriangle visible={false} ascending={false} className="lxn-data-table-sort-icon--measure" />
       </span>
       {/* One hidden clone per TOP-LEVEL row (`rows` itself, depth 0 only —
        * see the `useLayoutEffect` above), so the column is also sized to fit
