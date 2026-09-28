@@ -5,13 +5,18 @@ interface TooltipProps {
   text: string;
   children: ReactNode;
   className?: string;
+  /** Default true. Pass false when `children` is already focusable (e.g. a
+   * button), so the anchor doesn't add a second tab stop around it —
+   * React's onFocus bubbles, so keyboard focus on the child still shows the
+   * tooltip (2026-09-28, DataTable's sort headers). */
+  focusable?: boolean;
 }
 
 // Generic hover/focus tooltip anchor. Wrap any element — an info icon, a
 // stale pill, a status dot — the anchor's own markup is untouched; the
 // tooltip itself is an imperatively managed DOM node outside React (see
 // tooltip-core.ts), not a per-hover portal mount/unmount.
-export function Tooltip({ text, children, className }: TooltipProps) {
+export function Tooltip({ text, children, className, focusable = true }: TooltipProps) {
   // One controller per <Tooltip> instance — cheap (just three DOM nodes,
   // lazily created on first show()), and avoids cross-instance show/hide
   // races that a single page-wide singleton would have on rapid hover.
@@ -33,7 +38,7 @@ export function Tooltip({ text, children, className }: TooltipProps) {
   return (
     <span
       className={className}
-      tabIndex={0}
+      tabIndex={focusable ? 0 : undefined}
       onMouseEnter={(e) => controller.show(e.currentTarget, text)}
       onMouseLeave={() => controller.hide()}
       onFocus={(e) => {
@@ -48,9 +53,12 @@ export function Tooltip({ text, children, className }: TooltipProps) {
         // :focus-visible is false here; tabbing to it keeps it true, so
         // keyboard users still see the tooltip exactly as before.
         const el = e.currentTarget;
+        // The element that actually took focus — the anchor itself, or (with
+        // `focusable={false}`) the focusable child whose focus bubbled here.
+        const focused = e.target as Element;
         let isKeyboardFocus = true;
         try {
-          isKeyboardFocus = el.matches(":focus-visible");
+          isKeyboardFocus = focused.matches(":focus-visible");
         } catch {
           // Unsupported selector (older engine) — fail open to the
           // pre-existing show-on-any-focus behavior.

@@ -50,4 +50,5 @@ export type {
   DataTableRow,
   DataTableSummaryRow,
   DataTableSummaryTone,
+  DataTableSummarySecondary,
 } from './components/data-table/DataTable';

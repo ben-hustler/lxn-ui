@@ -421,6 +421,16 @@ thead .lxn-data-table-row-header-cell {
   padding-top: var(--space-6);
   padding-bottom: 0;
 }
+/* ...except the measure columns' top inset lives on the <th>, not the button
+   (2026-09-28): the button is the "Sort by …" tooltip's anchor, and 24px of
+   empty padding above the label left the tooltip floating well above the
+   text it names. Same layout either way. */
+.lxn-data-table-header-row--labels .lxn-data-table-col-header {
+  padding-top: var(--space-6);
+}
+.lxn-data-table-header-row--labels .lxn-data-table-col-header .lxn-data-table-sort-btn {
+  padding-top: 0;
+}
 
 /* Bold header labels (2026-09-24) — `font-weight` only, on top of each
    button's own type class (`lxn-l3`/`lxn-l4`) for size/line-height. The
@@ -482,30 +492,71 @@ thead .lxn-data-table-row-header-cell.lxn-data-table-summary-cell {
   pointer-events: none;
 }
 
-/* The summary label while collapsed: one cell spanning both header rows,
-   with the label absolutely positioned inside so a long name wraps (then
-   clips) within the rows' height rather than growing them. Faint — it's
-   context, not data. Two classes on the label rules so they beat any type
-   class a consumer's label node might carry. */
-.lxn-data-table-summary-label-overlay {
+/* The summary label cell (2026-09-28, "Option I"): one cell spanning both
+   header rows, collapsed and expanded, holding the summary label with (once
+   expanded) the row-label column's sort button beneath it. In the flow, so a
+   two-line label grows the band rather than clipping; the same --space-6
+   top/bottom inset as the column labels above / values below, and the body
+   rows' own --space-3 left inset so the label lines up with the row labels.
+   Beats `thead .lxn-data-table-row-header-cell { padding: 0 }` by coming
+   later at the same specificity. */
+thead .lxn-data-table-summary-label-cell {
   grid-row: span 2;
-}
-.lxn-data-table-summary-label-overlay .lxn-data-table-summary-label-faint {
-  position: absolute;
-  inset: 0;
+  /* Vertically centered — the band is often taller than the label (e.g.
+     summary `secondaryCells` lines), and a top-pinned label read as
+     floating. */
   display: flex;
   align-items: center;
-  padding: 0 var(--space-5);
+  padding: var(--space-6) var(--space-3);
+}
+.lxn-data-table-summary-label-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  min-width: 0;
+}
+/* Bold, full-strength, ellipsis past two lines. Two classes so it beats any
+   type class a consumer's label node might carry. */
+.lxn-data-table-summary-label-stack .lxn-data-table-summary-label {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  max-width: 100%;
   overflow: hidden;
   font: var(--font-weight-bold) var(--font-size-h6) / var(--line-height-tight) var(--font-family-sans);
-  color: var(--color-fg-disabled);
+  color: var(--color-fg-primary);
   white-space: normal;
-  transition: color var(--motion-quick) var(--ease-standard);
+}
+/* The "Sort by …" tooltip anchor around each sort button while expanded —
+   shrink-wraps the button like the button does its content, and passes the
+   row-label column's width cap through so a long header still truncates. */
+.lxn-data-table-sort-tooltip {
+  display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* The sort button under the label brings no inset of its own — the cell's
+   padding already places it. */
+.lxn-data-table-summary-label-stack .lxn-data-table-row-header-sort-btn {
+  padding: 0;
+}
+
+/* With a summary row, the column labels sit at the BOTTOM of their row and
+   the values at the top of theirs (a <td>'s default), so when a wrapping
+   summary label makes the band taller the label/value pairs stay together
+   and the extra room goes above the labels and below the values. Flex on
+   the <th> itself is safe now that this is CSS Grid (the old rowSpan
+   caveat in the top comment applied to native table layout). */
+.lxn-data-table-header-row--labels .lxn-data-table-col-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
 }
 
 /* `onExpandedChange` on a collapsed table: the whole card is the click
-   target to expand. Hover tints the card and shifts the faint label's hue
-   (not its weight) as the "this opens" cue. */
+   target to expand. Hover tints the card as the "this opens" cue. */
 .lxn-data-table--expandable {
   cursor: pointer;
   transition: background var(--motion-quick) var(--ease-standard);
@@ -514,8 +565,30 @@ thead .lxn-data-table-row-header-cell.lxn-data-table-summary-cell {
 .lxn-data-table--expandable:hover .lxn-data-table-table thead {
   background: var(--color-hover-accent-bg);
 }
-.lxn-data-table--expandable:hover .lxn-data-table-summary-label-overlay .lxn-data-table-summary-label-faint {
-  color: var(--color-fg-accent-subtle);
+
+/* Unsorted columns' triangles (2026-09-28, "Option I") — present but greyed
+   out, darkening with the label on hover as a "click to sort" cue. */
+.lxn-data-table-sort-icon.is-inactive {
+  color: var(--color-fg-disabled);
+}
+.lxn-data-table-sort-btn:hover .lxn-data-table-sort-icon.is-inactive,
+.lxn-data-table-row-header-sort-btn:hover .lxn-data-table-sort-icon.is-inactive {
+  color: var(--color-fg-secondary);
+}
+
+/* A summary value with a secondary line under it (`secondaryCells`, e.g. a
+   benchmark %). In the flow, so the band keeps its full bottom inset below
+   the secondary line; values stay level with columns that have none, which
+   just get more room underneath. */
+.lxn-data-table-summary-value {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.lxn-data-table-summary-value .lxn-data-table-summary-secondary {
+  margin-top: 2px;
+  font: var(--font-weight-medium) var(--font-size-l3) / var(--line-height-tight) var(--font-family-sans);
+  color: var(--color-fg-secondary);
 }
 
 /* Sort buttons while collapsed — disabled (no rows to sort), so no pointer. */

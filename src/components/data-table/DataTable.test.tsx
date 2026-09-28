@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { DataTable, type DataTableColumnGroup, type DataTableRow } from './DataTable';
+import { TooltipController } from '../tooltip/tooltip-core';
 
 afterEach(() => cleanup());
 
@@ -192,21 +193,39 @@ describe('<DataTable>', () => {
     expect(label.textContent).toContain('A very long row label');
   });
 
-  it('renders a pinned summary row below the column headers when supplied, its label shown only while collapsed', () => {
+  it('renders a pinned summary row below the column headers when supplied, its label shown in both states (sort header beneath it once expanded)', () => {
     const rows = [row('r1', 'A', 1, 2, 3)];
     const summaryRow = { label: 'Brightwater Toyota', cells: { units: '5', dts: '34 Days', acv: '$16,900' } };
     const { rerender } = render(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} summaryRow={summaryRow} />);
     expect(screen.getByText('34 Days')).toBeTruthy();
     expect(screen.getByText('$16,900')).toBeTruthy();
-    // Expanded: the row-label column's own header names it — no label cell text.
-    expect(screen.queryByText('Brightwater Toyota')).toBeNull();
+    // Expanded: label and the row-label sort header share one spanning cell,
+    // label first.
+    const label = screen.getByText('Brightwater Toyota');
+    const cell = label.closest('th') as HTMLElement;
+    expect(cell.className).toContain('lxn-data-table-summary-label-cell');
+    expect(cell.querySelector('.lxn-data-table-row-header-sort-btn')?.textContent).toContain('Row');
+    expect(label.compareDocumentPosition(screen.getByText('Row')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     rerender(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} summaryRow={summaryRow} expanded={false} />);
-    // Collapsed: the faint label replaces the row-label header, spanning both header rows.
-    const label = screen.getByText('Brightwater Toyota');
-    expect(label.className).toContain('lxn-data-table-summary-label-faint');
-    expect(label.closest('th')?.className).toContain('lxn-data-table-summary-label-overlay');
+    // Collapsed: the label alone in the same spanning cell — no sort header.
+    expect(screen.getByText('Brightwater Toyota').closest('th')?.className).toContain('lxn-data-table-summary-label-cell');
     expect(screen.queryByText('Row')).toBeNull();
+  });
+
+  it('renders a secondary line (with tooltip anchor) under a summary value when `secondaryCells` has that column', () => {
+    const rows = [row('r1', 'A', 1, 2, 3)];
+    const summaryRow = {
+      label: 'X',
+      cells: { units: '5', dts: '34 Days', acv: '$16,900' },
+      secondaryCells: { acv: { display: '84.5%', tooltip: 'Percentage of retail' } },
+    };
+    render(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} summaryRow={summaryRow} />);
+    const secondary = screen.getByText('84.5%');
+    expect(secondary.className).toContain('lxn-data-table-summary-secondary');
+    expect(secondary.closest('td')?.textContent).toBe('$16,90084.5%');
+    // Columns without one render the value alone.
+    expect(screen.getByText('34 Days').closest('td')?.querySelector('.lxn-data-table-summary-secondary')).toBeNull();
   });
 
   it('omits the summary row entirely when not supplied', () => {
@@ -240,37 +259,71 @@ describe('<DataTable>', () => {
     expect(cellsAfterAsc[2]).toContain('A');
   });
 
-  // Every header's sort icon is mounted at all times now (2026-09-17 CLS
-  // fix) — only `visibility` toggles which one shows, so activating a sort
-  // never shifts a header's label. "Shown" below means visibility !== hidden.
-  function visibleSortIcons(): Element[] {
-    return Array.from(document.querySelectorAll('.lxn-data-table-sort-icon')).filter((el) => (el as HTMLElement).style.visibility !== 'hidden');
+  // Every header's sort icon is mounted and visible while expanded
+  // (2026-09-28, "Option I") — the sorted column's at full strength, every
+  // other one greyed out (`is-inactive`).
+  function activeSortIcons(): Element[] {
+    return Array.from(document.querySelectorAll('.lxn-data-table-sort-icon')).filter(
+      (el) => (el as HTMLElement).style.visibility !== 'hidden' && !el.classList.contains('is-inactive'),
+    );
   }
+  const rowLabelIcon = () => screen.getByText('Row').closest('th')?.querySelector('.lxn-data-table-sort-icon') as HTMLElement;
 
-  it('shows exactly one sort arrow at all times, defaulting to the leftmost (row-label) column', () => {
+  it('shows an arrow on every column, exactly one of them active, defaulting to the leftmost (row-label) column', () => {
     const rows = [row('r1', 'A', 1, 0, 0)];
     render(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} />);
-    // Default state: sorted by the row-label column's own order, arrow shown there.
-    expect(visibleSortIcons()).toHaveLength(1);
-    expect(screen.getByText('Row').closest('th')?.querySelector('.lxn-data-table-sort-icon')).toBe(visibleSortIcons()[0]);
+    const icons = Array.from(document.querySelectorAll('.lxn-data-table-sort-icon')) as HTMLElement[];
+    expect(icons.every((el) => el.style.visibility === 'visible')).toBe(true);
+    // Default state: sorted by the row-label column's own order.
+    expect(activeSortIcons()).toHaveLength(1);
+    expect(rowLabelIcon()).toBe(activeSortIcons()[0]);
+    expect(document.querySelectorAll('.lxn-data-table-sort-icon.is-inactive')).toHaveLength(3);
 
     fireEvent.click(screen.getByText('Units'));
-    expect(visibleSortIcons()).toHaveLength(1);
-    expect(screen.getByText('Row').closest('th')?.querySelector('.lxn-data-table-sort-icon')).not.toBe(visibleSortIcons()[0]);
+    expect(activeSortIcons()).toHaveLength(1);
+    expect(rowLabelIcon().classList.contains('is-inactive')).toBe(true);
 
     fireEvent.click(screen.getByText('Days to Sell'));
-    expect(visibleSortIcons()).toHaveLength(1);
+    expect(activeSortIcons()).toHaveLength(1);
+  });
+
+  it('gives every sort header a "Sort by <header>" tooltip while expanded, without adding a tab stop, and none while collapsed', () => {
+    const rows = [row('r1', 'A', 1, 0, 0)];
+    const { rerender } = render(<DataTable rowLabelHeader={['Year', 'Trim']} columnGroups={COLUMN_GROUPS} rows={rows} />);
+    const unitsAnchor = screen.getByText('Units').closest('button')?.parentElement as HTMLElement;
+    expect(unitsAnchor.className).toContain('lxn-data-table-sort-tooltip');
+    expect(unitsAnchor.hasAttribute('tabindex')).toBe(false);
+    expect(document.querySelectorAll('.lxn-data-table-sort-tooltip')).toHaveLength(4);
+
+    // jsdom can't lay out/animate the real bubble — check what it's asked to show.
+    const show = vi.spyOn(TooltipController.prototype, 'show').mockImplementation(() => {});
+    fireEvent.mouseEnter(unitsAnchor);
+    expect(show).toHaveBeenLastCalledWith(unitsAnchor, 'Sort by Units');
+    fireEvent.mouseEnter(screen.getByText('Year → Trim').closest('button')?.parentElement as HTMLElement);
+    expect(show).toHaveBeenLastCalledWith(expect.anything(), 'Sort by Year → Trim');
+    show.mockRestore();
+
+    rerender(<DataTable rowLabelHeader={['Year', 'Trim']} columnGroups={COLUMN_GROUPS} rows={rows} expanded={false} />);
+    expect(document.querySelectorAll('.lxn-data-table-sort-tooltip')).toHaveLength(0);
+  });
+
+  it('hides every arrow while collapsed', () => {
+    const rows = [row('r1', 'A', 1, 0, 0)];
+    render(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} expanded={false} />);
+    const icons = Array.from(document.querySelectorAll('.lxn-data-table-sort-icon')) as HTMLElement[];
+    expect(icons.length).toBeGreaterThan(0);
+    expect(icons.every((el) => el.style.visibility === 'hidden')).toBe(true);
   });
 
   it('can be re-selected as the sort column after a measure column was picked', () => {
     const rows = [row('r1', 'A', 1, 0, 0)];
     render(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} />);
     fireEvent.click(screen.getByText('Units'));
-    expect((screen.getByText('Row').closest('th')?.querySelector('.lxn-data-table-sort-icon') as HTMLElement).style.visibility).toBe('hidden');
+    expect(rowLabelIcon().classList.contains('is-inactive')).toBe(true);
 
     fireEvent.click(screen.getByText('Row'));
-    expect((screen.getByText('Row').closest('th')?.querySelector('.lxn-data-table-sort-icon') as HTMLElement).style.visibility).toBe('visible');
-    expect((document.querySelector('.lxn-data-table-col-header .lxn-data-table-sort-icon') as HTMLElement).style.visibility).toBe('hidden');
+    expect(rowLabelIcon().classList.contains('is-inactive')).toBe(false);
+    expect(document.querySelector('.lxn-data-table-col-header .lxn-data-table-sort-icon')?.classList.contains('is-inactive')).toBe(true);
   });
 
   it("mounts every column's sort icon at a fixed position so activating sort never shifts the label (no CLS)", () => {
@@ -292,20 +345,21 @@ describe('<DataTable>', () => {
     expect(document.querySelectorAll('.lxn-data-table-sort-icon')).toHaveLength(4);
   });
 
-  it('sorts the row-label column by label text (numeric-aware), descending by default, and re-toggling reverses it', () => {
+  it('sorts the row-label column by label text (numeric-aware), A→Z by default (its "descending"), and re-toggling reverses it', () => {
     const rows = [row('r1', 'Location 9', 1, 0, 0), row('r2', 'Location 12', 2, 0, 0), row('r3', 'Location 10', 3, 0, 0)];
     render(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} />);
 
     const labelsBefore = Array.from(document.querySelectorAll('.lxn-data-table-row')).map((r) => r.textContent);
-    expect(labelsBefore[0]).toContain('Location 12');
-    expect(labelsBefore[2]).toContain('Location 9');
+    expect(labelsBefore[0]).toContain('Location 9');
+    expect(labelsBefore[1]).toContain('Location 10');
+    expect(labelsBefore[2]).toContain('Location 12');
+    expect(screen.getByText('Row').closest('th')?.getAttribute('aria-sort')).toBe('descending');
 
     // Same column (row-label, already active by default) clicked again toggles direction.
     fireEvent.click(screen.getByText('Row'));
     const labelsAfter = Array.from(document.querySelectorAll('.lxn-data-table-row')).map((r) => r.textContent);
-    expect(labelsAfter[0]).toContain('Location 9');
-    expect(labelsAfter[1]).toContain('Location 10');
-    expect(labelsAfter[2]).toContain('Location 12');
+    expect(labelsAfter[0]).toContain('Location 12');
+    expect(labelsAfter[2]).toContain('Location 9');
   });
 
   it('starts from `defaultSort` when given', () => {

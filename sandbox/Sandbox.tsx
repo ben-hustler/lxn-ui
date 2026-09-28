@@ -1340,14 +1340,7 @@ const DATA_TABLE_GROUPS: DataTableColumnGroup[] = [
     columns: [
       { key: 'units', label: 'Units' },
       { key: 'dts', label: 'Days to Sell' },
-    ],
-  },
-  {
-    label: 'Cost',
-    columns: [
-      { key: 'acv', label: 'ACV' },
-      { key: 'total_cost', label: 'Total' },
-      { key: 'recon', label: 'Recon' },
+      { key: 'retail', label: 'Retail' },
     ],
   },
   {
@@ -1365,12 +1358,12 @@ function demoMeasures(seed: number) {
   const dts = 20 + ((seed * 7) % 90);
   const acv = 15000 + seed * 137;
   const recon = 800 + seed * 23;
+  // No Cost group in the demo columns — ACV/Recon only feed Retail.
+  const retail = acv + recon + 2000 - seed * 11;
   return {
     units: { sortValue: units, display: String(units) },
     dts: { sortValue: dts, display: `${dts} Days` },
-    acv: { sortValue: acv, display: `$${acv.toLocaleString()}` },
-    total_cost: { sortValue: acv + recon, display: `$${(acv + recon).toLocaleString()}` },
-    recon: { sortValue: recon, display: `$${recon.toLocaleString()}` },
+    retail: { sortValue: retail, display: `$${retail.toLocaleString()}` },
     front: { sortValue: 2000 - seed * 11, display: `$${(2000 - seed * 11).toLocaleString()}` },
     fi: { sortValue: 400 + seed * 3, display: `$${(400 + seed * 3).toLocaleString()}` },
     total_profit: { sortValue: 2400 - seed * 8, display: `$${(2400 - seed * 8).toLocaleString()}` },
@@ -1396,14 +1389,40 @@ function demoYearRow(year: number, seed: number): DataTableRow {
   return demoTableRow(`year-${year}`, `${year} · LE`, seed, trims);
 }
 
-// A dataset-wide average, pinned below the column headers rather than
-// sorted/drilled into like an ordinary row — appraisal-internals will
-// compute its own real average across the full (unpaginated) result set;
-// this demo just reuses one location's numbers as a stand-in.
-const DATA_TABLE_SUMMARY_ROW: DataTableSummaryRow = {
-  label: 'Avg.',
-  cells: Object.fromEntries(Object.entries(demoMeasures(6)).map(([key, cell]) => [key, cell.display])),
-};
+// A scope-wide KPI row, pinned below the column headers rather than
+// sorted/drilled into like an ordinary row, labelled with the dealership/org
+// it describes — appraisal-internals fills it from its own KPI query; this
+// demo just reuses one location's numbers as a stand-in. `tones` and
+// `secondaryCells` mirror internals' own buildKpiSummaryRow: Days to Sell /
+// Front colored against a threshold, and every profit KPI carrying a
+// "% of Retail" benchmark under its value.
+const BENCHMARK_KEYS = ['front', 'fi', 'total_profit'];
+
+function demoSummaryRow(label: string, seed: number): DataTableSummaryRow {
+  const measures = demoMeasures(seed);
+  const retail = measures.retail.sortValue;
+  return {
+    label,
+    cells: Object.fromEntries(Object.entries(measures).map(([key, cell]) => [key, cell.display])),
+    tones: {
+      dts: measures.dts.sortValue >= 60 ? 'lost' : 'won',
+      front: measures.front.sortValue <= 0 ? 'lost' : 'won',
+    },
+    secondaryCells: Object.fromEntries(
+      BENCHMARK_KEYS.map((key) => [
+        key,
+        { display: `${((measures[key as keyof typeof measures].sortValue / retail) * 100).toFixed(1)}%`, tooltip: 'Percentage of retail' },
+      ]),
+    ),
+  };
+}
+
+const DATA_TABLE_SUMMARY_ROW = demoSummaryRow('Downtown Honda', 6);
+const DATA_TABLE_ORG_SUMMARY_ROW = demoSummaryRow('Lexen Auto Group', 3);
+
+// Pinned wider than DataTable's auto-measured width so the summary label
+// (dealership/org name) and drilldown labels have room.
+const DATA_TABLE_ROW_LABEL_WIDTH = 240;
 
 function DataTableSection() {
   const locationRows = [2024, 2023, 2022, 2021, 2020].map((year, i) => demoYearRow(year, i * 4));
@@ -1424,6 +1443,7 @@ function DataTableSection() {
         <Subsection title="A Location table (click a branch row to drill down — Year → Trim → Vehicle; click a leaf Vehicle row to select it via onLeafClick, same trigger appraisal-internals uses to open its vehicle detail modal)">
           <DataTable
             rowLabelHeader={['Year', 'Trim', 'Vehicle']}
+            rowLabelColumnWidth={DATA_TABLE_ROW_LABEL_WIDTH}
             columnGroups={DATA_TABLE_GROUPS}
             rows={locationRows}
             summaryRow={DATA_TABLE_SUMMARY_ROW}
@@ -1434,8 +1454,15 @@ function DataTableSection() {
           </p>
         </Subsection>
 
+        <Subsection title="Collapsed vs expanded — the same Organization table in each state. Collapsed (expanded={false}) shows only the column labels and the KPI summary row, sort arrows hidden; expanded adds the sortable row-label header under the name and the body rows beneath. Neither passes onExpandedChange here, so neither can be toggled — in appraisal-internals the consumer owns `expanded` and renders its own expand/collapse button">
+          <p className="lxn-l3" style={{ marginBottom: 8 }}>Collapsed</p>
+          <DataTable rowLabelHeader={['Location']} rowLabelColumnWidth={DATA_TABLE_ROW_LABEL_WIDTH} columnGroups={DATA_TABLE_GROUPS} rows={orgRows} summaryRow={DATA_TABLE_ORG_SUMMARY_ROW} expanded={false} />
+          <p className="lxn-l3" style={{ margin: '16px 0 8px' }}>Expanded</p>
+          <DataTable rowLabelHeader={['Location']} rowLabelColumnWidth={DATA_TABLE_ROW_LABEL_WIDTH} columnGroups={DATA_TABLE_GROUPS} rows={orgRows} summaryRow={DATA_TABLE_ORG_SUMMARY_ROW} expanded maxBodyHeight={240} />
+        </Subsection>
+
         <Subsection title="An Organization table (23 rows — scrolls past a capped height instead of paginating; click a column header to sort; no onLeafClick here, so every row is a plain, non-interactive leaf)">
-          <DataTable rowLabelHeader={['Location']} columnGroups={DATA_TABLE_GROUPS} rows={orgRows} />
+          <DataTable rowLabelHeader={['Location']} rowLabelColumnWidth={DATA_TABLE_ROW_LABEL_WIDTH} columnGroups={DATA_TABLE_GROUPS} rows={orgRows} />
         </Subsection>
       </DemoSurface>
     </Section>
