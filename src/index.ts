@@ -23,6 +23,8 @@ export {
   WarningIcon,
   CloseIcon,
   AutoFixHighIcon,
+  PrintIcon,
+  CheckCircleIcon,
   CalendarIcon,
   SlidersIcon,
 } from './components/icons/icons';

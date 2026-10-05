@@ -21,6 +21,8 @@ import {
   ResetIcon,
   WarningIcon,
   CloseIcon,
+  PrintIcon,
+  CheckCircleIcon,
   CalendarIcon,
   StatusBadge,
   PulseDots,
@@ -497,6 +499,8 @@ const ICONS: { Icon: (props: IconProps) => ReactNode; name: string; source: stri
   { Icon: ResetIcon, name: 'ResetIcon', source: 'Lucide rotate-ccw' },
   { Icon: WarningIcon, name: 'WarningIcon', source: 'Lucide circle-alert' },
   { Icon: CloseIcon, name: 'CloseIcon', source: 'Material close (filled)' },
+  { Icon: PrintIcon, name: 'PrintIcon', source: 'Material local_printshop (filled)' },
+  { Icon: CheckCircleIcon, name: 'CheckCircleIcon', source: 'Material Rounded check_circle' },
   { Icon: CalendarIcon, name: 'CalendarIcon', source: 'Lucide calendar' },
 ];
 

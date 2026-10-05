@@ -238,6 +238,32 @@ export function AutoFixHighIcon(props: SVGProps<SVGSVGElement> & { size?: number
   );
 }
 
+/** Success/confirmed status glyph — Google Material Icons Rounded'
+   `check_circle` glyph, verbatim (path as exported from the Appraisal
+   Webcomps Figma, node 71:683). Filled with currentColor, so the caller sets
+   the color. First use: appraisal-offer's "Accepted Offer" heading. */
+export function CheckCircleIcon(props: SVGProps<SVGSVGElement> & { size?: number }) {
+  const { size = 24, ...rest } = props;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...rest}>
+      <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM9.29 16.29L5.7 12.7C5.31 12.31 5.31 11.68 5.7 11.29C6.09 10.9 6.72 10.9 7.11 11.29L10 14.17L16.88 7.29C17.27 6.9 17.9 6.9 18.29 7.29C18.68 7.68 18.68 8.31 18.29 8.7L10.7 16.29C10.32 16.68 9.68 16.68 9.29 16.29Z" />
+    </svg>
+  );
+}
+
+/** Print glyph — Google Material Icons' filled `local_printshop` glyph,
+   verbatim. Same printer lxn-pdf-generator's offer sheet (and lxn-doc-viewer)
+   already use for their own Print/Download actions. First use:
+   appraisal-offer's accepted-state "Print Offer" button. */
+export function PrintIcon(props: SVGProps<SVGSVGElement> & { size?: number }) {
+  const { size = 24, ...rest } = props;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...rest}>
+      <path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z" />
+    </svg>
+  );
+}
+
 /** DateRangePicker's date-display trigger glyph — Lucide's `calendar` glyph,
    verbatim. */
 export function CalendarIcon(props: IconProps) {
