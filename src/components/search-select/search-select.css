@@ -90,7 +90,7 @@
 }
 .lxn-search-select-option:hover,
 .lxn-search-select-option:focus-visible {
-  background: var(--lxn-accent-tint);
+  background: var(--color-bg-accent-subtle);
   outline: none;
 }
 .lxn-search-select-option-icon {

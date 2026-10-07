@@ -21,10 +21,10 @@
   display: inline-flex;
   align-items: center;
   padding: 6px 10px;
-  border: 1px solid var(--lxn-accent-light-teal);
+  border: 1px solid var(--color-border-accent);
   border-radius: var(--radius-sm);
-  background: var(--lxn-accent-tint);
-  color: var(--lxn-accent-deep-teal);
+  background: var(--color-bg-accent-subtle);
+  color: var(--color-fg-accent-strong);
   font: var(--font-weight-medium) var(--font-size-l2) / var(--line-height-snug) var(--font-family-sans);
   white-space: nowrap;
 }
@@ -40,7 +40,7 @@
   background: var(--color-hover-accent-bg);
 }
 .lxn-filter-chip--removable:focus-visible {
-  outline: 2px solid var(--lxn-accent-deep-teal);
+  outline: 2px solid var(--color-fg-accent-strong);
   outline-offset: 1px;
 }
 

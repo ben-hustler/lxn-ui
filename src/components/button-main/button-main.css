@@ -81,11 +81,11 @@
 }
 
 .lxn-btn-main--secondary {
-  background: var(--lxn-accent-teal);
+  background: var(--color-action-secondary);
   color: var(--lxn-white);
 }
 .lxn-btn-main--secondary:hover:not(:disabled) {
-  background: var(--lxn-accent-deep-teal);
+  background: var(--color-action-secondary-hover);
 }
 
 .lxn-btn-main--tertiary {
@@ -134,14 +134,14 @@
    FilterChip are the two accented surfaces this header introduces, so they
    read as one consistent look rather than two different teals. */
 .lxn-btn-main--tertiary.lxn-btn-main--pressed {
-  background: var(--lxn-accent-tint);
-  border-color: var(--lxn-accent-light-teal);
-  color: var(--lxn-accent-deep-teal);
+  background: var(--color-bg-accent-subtle);
+  border-color: var(--color-border-accent);
+  color: var(--color-fg-accent-strong);
 }
 .lxn-btn-main--tertiary.lxn-btn-main--pressed:hover:not(:disabled) {
   background: var(--color-hover-accent-bg);
-  border-color: var(--lxn-accent-light-teal);
-  color: var(--lxn-accent-deep-teal);
+  border-color: var(--color-border-accent);
+  color: var(--color-fg-accent-strong);
 }
 .lxn-btn-main--pressed:not(.lxn-btn-main--tertiary) {
   filter: brightness(0.92);

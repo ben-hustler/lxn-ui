@@ -2,7 +2,7 @@
    className (fixed/top/right + responsive tiers are layout-specific, see
    CloseButton.tsx's own comment). Relies on tokens.css already being
    imported by the consumer for --radius-sm/--shadow-sm/--ease-standard/
-   --color-fg-secondary/--color-hover-accent-bg/--lxn-accent-muted-teal. */
+   --color-fg-secondary/--color-hover-accent-bg/--color-hover-accent-fg. */
 .lxn-close-btn {
   width: 36px;
   height: 36px;
@@ -19,5 +19,5 @@
 }
 .lxn-close-btn:hover {
   background: var(--color-hover-accent-bg);
-  color: var(--lxn-accent-muted-teal);
+  color: var(--color-hover-accent-fg);
 }

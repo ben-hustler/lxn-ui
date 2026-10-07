@@ -235,6 +235,7 @@ function TokensColorsSection() {
           <ColorSwatch token="--color-bg-sunken" value="#F6F7F7" hint="Recessed / inset panel" />
           <ColorSwatch token="--color-bg-inverse" value="#191919" hint="Dark side panel" />
           <ColorSwatch token="--color-bg-overlay" value="rgba(17,19,21,.40)" hint="Modal scrim" />
+          <ColorSwatch token="--color-bg-accent-subtle" value="#EFFCFF" hint="Selected / active-filter fill" />
         </div>
       </Subsection>
 
@@ -248,6 +249,9 @@ function TokensColorsSection() {
           <TextSwatch token="--color-fg-on-inverse" value="#FFFFFF — on --color-bg-inverse" sampleBg="var(--color-bg-inverse)" />
           <TextSwatch token="--color-fg-link" value="#0F8F8F — links" />
           <TextSwatch token="--color-fg-accent" value="#0F8F8F — accent / active state" />
+          <TextSwatch token="--color-fg-accent-strong" value="#006073 — dark teal highlight, on an accented surface" sampleBg="var(--color-bg-accent-subtle)" />
+          <TextSwatch token="--color-fg-accent-subtle" value="#7FB8C3 — hover tint on faint text" />
+          <TextSwatch token="--color-hover-accent-fg" value="#398190 — on --color-hover-accent-bg" sampleBg="var(--color-hover-accent-bg)" />
         </div>
       </Subsection>
 
@@ -256,15 +260,18 @@ function TokensColorsSection() {
           <BorderSwatch token="--color-border-strong" value="#C7CFCF" />
           <BorderSwatch token="--color-border" value="#D4D8DB — default" />
           <BorderSwatch token="--color-border-subtle" value="#E2E5E5 — hairlines / dividers" />
+          <BorderSwatch token="--color-border-accent" value="#7FB8C3 — accented surface outline" />
         </div>
       </Subsection>
 
-      <Subsection title="Action (ButtonMain primary states)">
+      <Subsection title="Action (ButtonMain primary / secondary states)">
         <div className="lxn-swatch-grid">
           <ColorSwatch token="--color-action-primary" value="#219C88" hint="Resting" />
           <ColorSwatch token="--color-action-primary-hover" value="#35BA9B" hint="Hover" />
           <ColorSwatch token="--color-action-primary-press" value="#00A17B" hint="Press" />
           <ColorSwatch token="--color-action-primary-disabled" value="#D4D8DB" hint="Disabled" />
+          <ColorSwatch token="--color-action-secondary" value="#0F8F8F" hint="Secondary resting" />
+          <ColorSwatch token="--color-action-secondary-hover" value="#006073" hint="Secondary hover" />
           <ColorSwatch token="--color-hover-accent-bg" value="#D9F0F7" hint="Icon-button hover tint" />
         </div>
       </Subsection>

@@ -89,6 +89,7 @@
   --color-bg-sunken:     var(--lxn-neutral-50);
   --color-bg-inverse:    var(--lxn-neutral-800);  /* dark side panel */
   --color-bg-overlay:    rgba(17,19,21,0.40);
+  --color-bg-accent-subtle: var(--lxn-accent-tint);     /* selected / active-filter / option-hover fill */
 
   --color-fg-primary:    var(--lxn-neutral-900);
   --color-fg-secondary:  var(--lxn-neutral-500);
@@ -99,10 +100,17 @@
   --color-fg-link:       var(--lxn-accent-teal);
   --color-fg-accent:     var(--lxn-accent-teal);
   --color-fg-accent-subtle: var(--lxn-accent-light-teal); /* hover tint on already-faint text — same lightness, accent hue */
+  /* Dark-teal highlight — text/icons on an accented "on" surface (pressed
+     toggle, FilterChip). Matches the legacy Bubble chip's rgb(0,96,115);
+     deliberately darker than --color-fg-accent, which stays the generic
+     interactive-emphasis teal. Pair with --color-bg-accent-subtle and
+     --color-border-accent. */
+  --color-fg-accent-strong: var(--lxn-accent-deep-teal);
 
   --color-border-strong: var(--lxn-neutral-300);
   --color-border:        var(--lxn-neutral-200);
   --color-border-subtle: var(--lxn-neutral-150);
+  --color-border-accent: var(--lxn-accent-light-teal);  /* outline of an accented "on" surface */
 
   /* Fixed 2026-08-11 — this was wired to -900 ("press", the darkest shade,
      per this file's own --lxn-primary-* comments) as the RESTING color,
@@ -116,6 +124,10 @@
   --color-action-primary-press:    var(--lxn-primary-900);
   --color-action-primary-disabled: var(--lxn-neutral-200);
 
+  /* Secondary (teal) action — ButtonMain `secondary`. Hover darkens. */
+  --color-action-secondary:        var(--lxn-accent-teal);
+  --color-action-secondary-hover:  var(--lxn-accent-deep-teal);
+
   /* Icon-button hover tint (e.g. modal close button) — promoted 2026-08-10
      from a value appraisal-offer/appraisal-customer had each hand-copied
      identically as a local `--d-hover-blue` token. No existing token in the
@@ -123,6 +135,9 @@
      #EFFCFF), so this keeps the already-shipped color exactly rather than
      shifting it to an approximate neighbor. */
   --color-hover-accent-bg: #D9F0F7;
+  /* Icon/text colour paired with --color-hover-accent-bg (e.g. CloseButton
+     hover). */
+  --color-hover-accent-fg: var(--lxn-accent-muted-teal);
 
   /* ---------- Status / Tags ----------
      Pair: background + readable foreground for each status chip. */
