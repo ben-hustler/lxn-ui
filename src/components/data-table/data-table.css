@@ -661,9 +661,15 @@ thead .lxn-data-table-summary-label-cell {
   cursor: pointer;
   transition: background var(--motion-quick) var(--ease-standard);
 }
-.lxn-data-table--expandable:hover,
-.lxn-data-table--expandable:hover .lxn-data-table-table thead {
-  background: var(--color-hover-accent-bg);
+/* Hover-capable pointers only (2026-10-07): a touch browser keeps `:hover`
+   on whatever was last tapped, so after a tap the tint would stick around
+   (e.g. on the card that just collapsed back under the finger). Same guard
+   on every hover rule in this file. */
+@media (hover: hover) and (pointer: fine) {
+  .lxn-data-table--expandable:hover,
+  .lxn-data-table--expandable:hover .lxn-data-table-table thead {
+    background: var(--color-hover-accent-bg);
+  }
 }
 
 /* Unsorted columns' triangles (2026-09-28, "Option I") — present but greyed
@@ -671,9 +677,11 @@ thead .lxn-data-table-summary-label-cell {
 .lxn-data-table-sort-icon.is-inactive {
   color: var(--color-fg-disabled);
 }
-.lxn-data-table-sort-btn:hover .lxn-data-table-sort-icon.is-inactive,
-.lxn-data-table-row-header-sort-btn:hover .lxn-data-table-sort-icon.is-inactive {
-  color: var(--color-fg-secondary);
+@media (hover: hover) and (pointer: fine) {
+  .lxn-data-table-sort-btn:hover .lxn-data-table-sort-icon.is-inactive,
+  .lxn-data-table-row-header-sort-btn:hover .lxn-data-table-sort-icon.is-inactive {
+    color: var(--color-fg-secondary);
+  }
 }
 
 /* A summary value with a secondary line under it (`secondaryCells`, e.g. a
@@ -762,8 +770,10 @@ thead .lxn-data-table-summary-label-cell {
    started on, not a neutral-ladder darken-by-one-step the way this used to
    work: that read as "row-specific" shading rather than the shared
    interactive-hover cue the rest of lxn-ui already trained people on. */
-.lxn-data-table-row--interactive:hover > * {
-  background: var(--color-hover-accent-bg);
+@media (hover: hover) and (pointer: fine) {
+  .lxn-data-table-row--interactive:hover > * {
+    background: var(--color-hover-accent-bg);
+  }
 }
 
 /* A leaf-clickable row (onLeafClick) gets the same whole-row hover darkening
@@ -775,8 +785,10 @@ thead .lxn-data-table-summary-label-cell {
    Higher specificity (three classes/pseudo-class) beats `.lxn-b2`/`.lxn-l3`'s
    own `color: var(--color-fg-primary)`/`--color-fg-secondary` on the same
    `<th>` without `!important`. */
-.lxn-data-table-row--leaf-clickable:hover .lxn-data-table-row-header-cell {
-  color: var(--color-fg-accent);
+@media (hover: hover) and (pointer: fine) {
+  .lxn-data-table-row--leaf-clickable:hover .lxn-data-table-row-header-cell {
+    color: var(--color-fg-accent);
+  }
 }
 
 .lxn-data-table-cell {
