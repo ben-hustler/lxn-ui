@@ -60,6 +60,12 @@ export interface DataTableRow {
    * ever renders one label; deeper dimensions (e.g. a trim under a year, or
    * a VIN under a trim) belong in `children`, not folded into the label. */
   rowLabel: ReactNode;
+  /** Opt-in numeric sort key for the row-label column (2026-10-07). When
+   * every row in a sibling list carries one, that list sorts by it the way
+   * a measure column does — `desc` (down arrow) is biggest first — instead
+   * of by label text. E.g. model-year rows set it to the year so "down"
+   * reads newest → oldest while text levels around them stay A→Z. */
+  rowLabelSortValue?: number;
   /** One entry per column key declared across `columnGroups`. */
   cells: Record<string, DataTableCell>;
   /** Rows revealed one level down when this row is expanded — same shape,
@@ -193,17 +199,22 @@ const labelCollator = new Intl.Collator('en-US', { numeric: true, sensitivity: '
  * "biggest first" on a measure column. `asc` is Z→A. A non-string
  * `ReactNode` label has no text to compare, so a list containing one falls
  * back to the caller's order (`desc`) or its reverse (`asc`) — still a
- * visible change on re-toggle, so the arrow never flips over nothing. */
+ * visible change on re-toggle, so the arrow never flips over nothing.
+ * A sibling list whose rows all carry `rowLabelSortValue` sorts by that
+ * number instead, biggest first on `desc` (2026-10-07). */
 function sortTree(list: DataTableRow[], sortColumnKey: string | null, sortDirection: SortDirection): DataTableRow[] {
   const dir = sortDirection === 'asc' ? 1 : -1;
   const allStringLabels = list.every((r) => typeof r.rowLabel === 'string');
+  const allLabelSortValues = list.every((r) => typeof r.rowLabelSortValue === 'number');
   const sorted = sortColumnKey
     ? [...list].sort((a, b) => ((a.cells[sortColumnKey]?.sortValue ?? 0) - (b.cells[sortColumnKey]?.sortValue ?? 0)) * dir)
-    : allStringLabels
-      ? [...list].sort((a, b) => labelCollator.compare(a.rowLabel as string, b.rowLabel as string) * -dir)
-      : sortDirection === 'asc'
-        ? [...list].reverse()
-        : list;
+    : allLabelSortValues
+      ? [...list].sort((a, b) => ((a.rowLabelSortValue as number) - (b.rowLabelSortValue as number)) * dir)
+      : allStringLabels
+        ? [...list].sort((a, b) => labelCollator.compare(a.rowLabel as string, b.rowLabel as string) * -dir)
+        : sortDirection === 'asc'
+          ? [...list].reverse()
+          : list;
   return sorted.map((row) => (row.children && row.children.length > 0 ? { ...row, children: sortTree(row.children, sortColumnKey, sortDirection) } : row));
 }
 

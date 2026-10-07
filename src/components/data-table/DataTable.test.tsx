@@ -362,6 +362,27 @@ describe('<DataTable>', () => {
     expect(labelsAfter[2]).toContain('Location 9');
   });
 
+  it('sorts a sibling list by `rowLabelSortValue` (biggest first on "descending") when every row carries one, leaving text levels A→Z', () => {
+    const year = (key: string, y: number): DataTableRow => ({ ...row(key, String(y), 1, 0, 0), rowLabelSortValue: y });
+    const rows = [
+      row('b', 'Camry', 1, 0, 0, [year('b-2021', 2021), year('b-2024', 2024)]),
+      row('a', 'Avalon', 2, 0, 0, [year('a-2019', 2019), year('a-2023', 2023), year('a-2020', 2020)]),
+    ];
+    render(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} />);
+    fireEvent.click(screen.getByText('Avalon'));
+
+    const labels = () => Array.from(document.querySelectorAll('.lxn-data-table-row')).map((r) => r.textContent ?? '');
+    const before = labels();
+    expect(before[0]).toContain('Avalon');
+    expect(before.slice(1, 4).map((l) => l.match(/20\d\d/)?.[0])).toEqual(['2023', '2020', '2019']);
+    expect(before[4]).toContain('Camry');
+
+    fireEvent.click(screen.getByText('Row'));
+    const after = labels();
+    expect(after[0]).toContain('Camry');
+    expect(after.slice(2, 5).map((l) => l.match(/20\d\d/)?.[0])).toEqual(['2019', '2020', '2023']);
+  });
+
   it('starts from `defaultSort` when given', () => {
     const rows = [row('r1', 'A', 1, 0, 0), row('r2', 'B', 30, 0, 0), row('r3', 'C', 2, 0, 0)];
     render(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} defaultSort={{ columnKey: 'units', direction: 'desc' }} />);
