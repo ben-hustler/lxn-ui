@@ -492,6 +492,106 @@ thead .lxn-data-table-row-header-cell.lxn-data-table-summary-cell {
   pointer-events: none;
 }
 
+/* Collapsed with a summary row (2026-10-07, "Wrap by group" — DataTable.tsx's
+   SummaryCard): label column left at the table's own row-label width, then
+   the column groups as equal-width blocks that wrap whole. SummaryCard
+   decides when the label moves on top (`--stacked`) and how many groups go
+   on each line (`--lxn-data-table-card-per-line`) from measured widths. */
+.lxn-data-table-card {
+  /* One KPI's track: the widest KPI's measured width, padding included.
+     The fallback only covers the render before measurement lands. */
+  --lxn-data-table-card-kpi-min: var(--lxn-data-table-card-kpi-width, 120px);
+  display: grid;
+  grid-template-columns: var(--lxn-data-table-card-label-width) minmax(0, 1fr);
+  align-items: center;
+  padding: var(--space-2) var(--space-2) var(--space-2) 0;
+}
+.lxn-data-table-card--stacked {
+  grid-template-columns: minmax(0, 1fr);
+}
+.lxn-data-table-card-label {
+  min-width: 0;
+  padding: var(--space-3);
+}
+.lxn-data-table-card--stacked .lxn-data-table-card-label {
+  padding-bottom: var(--space-1);
+}
+.lxn-data-table-card-label .lxn-data-table-summary-label {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font: var(--font-weight-bold) var(--font-size-h6) / var(--line-height-tight) var(--font-family-sans);
+  color: var(--color-fg-primary);
+}
+
+/* Scrolls sideways only once the card is narrower than a single group. The
+   inner box is at least the visible width but grows with an overflowing
+   line, so each line's hairline spans the full scrollable width too. */
+.lxn-data-table-card-lines {
+  min-width: 0;
+  overflow-x: auto;
+}
+.lxn-data-table-card-lines-inner {
+  display: grid;
+  width: max-content;
+  min-width: 100%;
+}
+/* One line of groups: `per-line` equal tracks, each at least one group's
+   natural width (widest KPI × largest group's KPI count). A short last line
+   leaves its unused tracks empty, so its groups keep the same width and
+   line up under the ones above. Full-width hairline between lines. */
+.lxn-data-table-card-line {
+  display: grid;
+  grid-template-columns: repeat(
+    var(--lxn-data-table-card-per-line),
+    minmax(calc(var(--lxn-data-table-card-kpi-min) * var(--lxn-data-table-card-group-size)), 1fr)
+  );
+}
+.lxn-data-table-card-line + .lxn-data-table-card-line {
+  border-top: 0.5px solid var(--color-border-strong);
+}
+.lxn-data-table-card-group {
+  display: grid;
+  /* One equal track per KPI, sized off the largest group, so a wrapped
+     group's KPIs line up under the group above's. */
+  grid-template-columns: repeat(var(--lxn-data-table-card-group-size), minmax(var(--lxn-data-table-card-kpi-min), 1fr));
+}
+.lxn-data-table-card-group + .lxn-data-table-card-group {
+  border-left: 0.5px solid var(--color-border-strong);
+}
+/* One KPI: label over value (over secondary), right-aligned like the
+   table's measure columns. The content box is a non-stretched flex item
+   with nowrap text, so it's always its natural width — what SummaryCard
+   measures. */
+.lxn-data-table-card-kpi {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+  padding: var(--space-3);
+}
+.lxn-data-table-card-kpi-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-1);
+  flex: none;
+  white-space: nowrap;
+}
+.lxn-data-table-card-kpi-label {
+  color: var(--color-fg-secondary);
+}
+.lxn-data-table-card-kpi-value {
+  font: var(--font-weight-bold) var(--font-size-h3) / var(--line-height-tight) var(--font-family-sans);
+  color: var(--color-fg-primary);
+}
+.lxn-data-table-card-kpi-value.lxn-data-table-summary-cell--won {
+  color: var(--color-data-won);
+}
+.lxn-data-table-card-kpi-value.lxn-data-table-summary-cell--lost {
+  color: var(--color-data-lost);
+}
+
 /* The summary label cell (2026-09-28, "Option I"): one cell spanning both
    header rows, collapsed and expanded, holding the summary label with (once
    expanded) the row-label column's sort button beneath it. In the flow, so a

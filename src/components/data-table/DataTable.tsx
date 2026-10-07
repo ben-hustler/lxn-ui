@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { ChevronDownIcon } from '../icons/icons';
 import { Tooltip } from '../tooltip/Tooltip';
 import './data-table.css';
@@ -280,6 +280,146 @@ function dividerClassName(weight: DividerWeight, isBottomEdge: boolean): string 
   return classes.join(' ');
 }
 
+/** One summary value — the value, with its secondary line (and tooltip)
+ * under it when `secondaryCells` has one. Shared by the table's summary row
+ * and the collapsed card. */
+function SummaryValue({ summaryRow, columnKey }: { summaryRow: DataTableSummaryRow; columnKey: string }) {
+  const secondary = summaryRow.secondaryCells?.[columnKey];
+  if (!secondary) return <>{summaryRow.cells[columnKey]}</>;
+  return (
+    <span className="lxn-data-table-summary-value">
+      {summaryRow.cells[columnKey]}
+      {secondary.tooltip ? (
+        <Tooltip text={secondary.tooltip} className="lxn-data-table-summary-secondary">
+          {secondary.display}
+        </Tooltip>
+      ) : (
+        <span className="lxn-data-table-summary-secondary">{secondary.display}</span>
+      )}
+    </span>
+  );
+}
+
+/** The collapsed state with a summary row (2026-10-07, "Wrap by group" from
+ * the appraisal-internals prototypes): the summary label, then each column
+ * group as one block of label-over-value KPIs. When the card is too narrow
+ * for every group on one line, whole groups wrap to the next line — and
+ * every group is the SAME width, wrapped or not, so a lone group on a
+ * later line lines up under the first column instead of stretching across
+ * (`[][] / []`, not `[][] / [__]`). Expanding goes back to the full table,
+ * which doesn't wrap (it scrolls).
+ *
+ * Narrowing order: first the label moves on top (once the groups no longer
+ * all fit beside it), then groups wrap onto more lines, and only once a
+ * single group no longer fits does the KPI area scroll sideways — a group
+ * never squashes. Every step depends on the KPIs' natural widths, which CSS
+ * can't compare against the card's (a container query can't read a custom
+ * property), so the layout is computed here: the widest single KPI
+ * (measured off its shrink-wrapped content) sets every KPI track, × the
+ * largest group's KPI count sets every group's width. Each line is its own
+ * row, so the hairline between lines spans the full card. */
+function SummaryCard({
+  summaryRow,
+  columnGroups,
+  labelWidth,
+}: {
+  summaryRow: DataTableSummaryRow;
+  columnGroups: DataTableColumnGroup[];
+  labelWidth: number;
+}) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const groupCount = columnGroups.length;
+  const groupSize = Math.max(1, ...columnGroups.map((g) => g.columns.length));
+  const [kpiWidth, setKpiWidth] = useState<number | null>(null);
+  const [layout, setLayout] = useState({ stacked: false, perLine: groupCount });
+
+  useLayoutEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+    const update = () => {
+      const kpis = Array.from(card.querySelectorAll<HTMLElement>('.lxn-data-table-card-kpi'));
+      let widest = 0;
+      for (const kpi of kpis) {
+        const contentWidth = kpi.firstElementChild?.getBoundingClientRect().width ?? 0;
+        if (contentWidth === 0) continue;
+        const style = getComputedStyle(kpi);
+        widest = Math.max(widest, contentWidth + (parseFloat(style.paddingLeft) || 0) + (parseFloat(style.paddingRight) || 0));
+      }
+      // No layout engine (jsdom) — keep the one-line defaults.
+      if (widest === 0) return;
+      const kpiW = Math.ceil(widest);
+      const groupW = kpiW * groupSize;
+      const cardStyle = getComputedStyle(card);
+      const inner = card.clientWidth - (parseFloat(cardStyle.paddingLeft) || 0) - (parseFloat(cardStyle.paddingRight) || 0);
+      const stacked = inner < labelWidth + groupCount * groupW;
+      const area = stacked ? inner : inner - labelWidth;
+      const perLine = Math.min(groupCount, Math.max(1, Math.floor(area / groupW)));
+      setKpiWidth(kpiW);
+      setLayout((prev) => (prev.stacked === stacked && prev.perLine === perLine ? prev : { stacked, perLine }));
+    };
+    update();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(update);
+    ro.observe(card);
+    return () => ro.disconnect();
+  }, [summaryRow, columnGroups, labelWidth, groupCount, groupSize]);
+
+  const lines: DataTableColumnGroup[][] = [];
+  for (let i = 0; i < groupCount; i += layout.perLine) lines.push(columnGroups.slice(i, i + layout.perLine));
+
+  const style = {
+    '--lxn-data-table-card-label-width': `${labelWidth}px`,
+    '--lxn-data-table-card-group-size': groupSize,
+    '--lxn-data-table-card-per-line': layout.perLine,
+    ...(kpiWidth != null ? { '--lxn-data-table-card-kpi-width': `${kpiWidth}px` } : {}),
+  } as CSSProperties;
+
+  return (
+    <div ref={cardRef} className={`lxn-data-table-card${layout.stacked ? ' lxn-data-table-card--stacked' : ''}`} style={style}>
+      <div className="lxn-data-table-card-label">
+        {summaryRow.label !== '' && summaryRow.label != null ? <span className="lxn-data-table-summary-label">{summaryRow.label}</span> : null}
+      </div>
+      <div className="lxn-data-table-card-lines">
+        <div className="lxn-data-table-card-lines-inner">
+          {lines.map((line, li) => (
+            <div key={li} className="lxn-data-table-card-line">
+              {line.map((group, i) => (
+                <div key={group.columns[0]?.key ?? i} className="lxn-data-table-card-group">
+                  {group.columns.map((column) => {
+                    const tone = summaryRow.tones?.[column.key] ?? 'default';
+                    return (
+                      <div key={column.key} className="lxn-data-table-card-kpi">
+                        <span className="lxn-data-table-card-kpi-content">
+                          <span className="lxn-data-table-card-kpi-label lxn-l4">{column.label}</span>
+                          <span
+                            className={[
+                              'lxn-data-table-card-kpi-value',
+                              tone !== 'default' ? `lxn-data-table-summary-cell--${tone}` : '',
+                              'lxn-num',
+                            ]
+                              .filter(Boolean)
+                              .join(' ')}
+                          >
+                            <SummaryValue summaryRow={summaryRow} columnKey={column.key} />
+                          </span>
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+              {/* A short last line closes its final group with an empty
+                * placeholder in the next track — its left divider is drawn
+                * the same way as the line above's, so the two line up. */}
+              {line.length < layout.perLine ? <div className="lxn-data-table-card-group" aria-hidden="true" /> : null}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** `sortColumnKey === null` means "sorted by the row-label column's own
  * (caller-supplied) drilldown order" — the default — rather than "no sort
  * indicator anywhere". Exactly one arrow is ever visible: on the row-label
@@ -423,9 +563,13 @@ export function DataTable({
   // the column labels + KPI row — see data-table.css. Every group divider is
   // the light (minor) weight while collapsed; the heavier first one only
   // returns with the full table.
+  // With a summary row, collapsed renders SummaryCard (groups wrap) instead
+  // of the table; without one it's still the table's header-only band.
+  const showCard = !isExpanded && Boolean(summaryRow);
   const classes = [
     'lxn-data-table',
     !isExpanded ? 'lxn-data-table--collapsed' : '',
+    showCard ? 'lxn-data-table--card' : '',
     canExpand ? 'lxn-data-table--expandable' : '',
     className || '',
   ]
@@ -468,6 +612,9 @@ export function DataTable({
 
   return (
     <div className={classes} onClick={canExpand ? () => onExpandedChange!(true) : undefined}>
+      {showCard ? (
+        <SummaryCard summaryRow={summaryRow!} columnGroups={columnGroups} labelWidth={effectiveRowLabelColumnWidth} />
+      ) : (
       <div
         className="lxn-data-table-scroll"
         style={{ maxHeight: maxBodyHeight }}
@@ -552,7 +699,6 @@ export function DataTable({
                  * above spans down into this row. */}
                 {columns.map((column) => {
                   const tone = summaryRow.tones?.[column.key] ?? 'default';
-                  const secondary = summaryRow.secondaryCells?.[column.key];
                   return (
                     <td
                       key={column.key}
@@ -566,20 +712,7 @@ export function DataTable({
                         .filter(Boolean)
                         .join(' ')}
                     >
-                      {secondary ? (
-                        <span className="lxn-data-table-summary-value">
-                          {summaryRow.cells[column.key]}
-                          {secondary.tooltip ? (
-                            <Tooltip text={secondary.tooltip} className="lxn-data-table-summary-secondary">
-                              {secondary.display}
-                            </Tooltip>
-                          ) : (
-                            <span className="lxn-data-table-summary-secondary">{secondary.display}</span>
-                          )}
-                        </span>
-                      ) : (
-                        summaryRow.cells[column.key]
-                      )}
+                      <SummaryValue summaryRow={summaryRow} columnKey={column.key} />
                     </td>
                   );
                 })}
@@ -702,6 +835,7 @@ export function DataTable({
          * mechanics alone don't make it disappear, they just stop moving. */}
         <div className="lxn-data-table-bottom-shadow" style={{ opacity: showBottomShadow ? 1 : 0 }} aria-hidden="true" />
       </div>
+      )}
       {/* Hidden clone of the row-label sort control, existing purely to be
        * MEASURED (see the `useLayoutEffect` above) — a sibling of the
        * scroll container, deliberately outside `<table>`/`<tr>` so it can

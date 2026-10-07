@@ -208,8 +208,10 @@ describe('<DataTable>', () => {
     expect(label.compareDocumentPosition(screen.getByText('Row')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
     rerender(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} summaryRow={summaryRow} expanded={false} />);
-    // Collapsed: the label alone in the same spanning cell — no sort header.
-    expect(screen.getByText('Brightwater Toyota').closest('th')?.className).toContain('lxn-data-table-summary-label-cell');
+    // Collapsed: the summary card — the label alone in its label column, no
+    // table, no sort header.
+    expect(screen.getByText('Brightwater Toyota').closest('.lxn-data-table-card-label')).toBeTruthy();
+    expect(document.querySelector('.lxn-data-table-table')).toBeNull();
     expect(screen.queryByText('Row')).toBeNull();
   });
 
@@ -568,12 +570,12 @@ describe('<DataTable>', () => {
   describe('expanded / onExpandedChange', () => {
     const summaryRow = { label: '', cells: { units: '5', dts: '48 Days', acv: '$15548' } };
 
-    it('renders only the header block (no body rows) while collapsed, and disables sorting', () => {
+    it('renders only the KPIs (no body rows, no sort controls) while collapsed', () => {
       const rows = [row('r1', 'A', 1, 2, 3)];
       render(<DataTable rowLabelHeader={['Row']} columnGroups={COLUMN_GROUPS} rows={rows} summaryRow={summaryRow} expanded={false} />);
       expect(screen.getByText('48 Days')).toBeTruthy();
       expect(screen.queryByText('A')).toBeNull();
-      expect((screen.getByText('Units').closest('button') as HTMLButtonElement).disabled).toBe(true);
+      expect(screen.getByText('Units').closest('button')).toBeNull();
       // No toggle without onExpandedChange — a header-only table with no way in.
       expect(screen.queryByRole('button', { name: 'Show rows' })).toBeNull();
     });
@@ -588,8 +590,6 @@ describe('<DataTable>', () => {
       expect(root.className).toContain('lxn-data-table--expandable');
       // No in-table toggle control — the consumer owns the persistent button.
       expect(screen.queryByRole('button', { name: /rows/ })).toBeNull();
-      // Collapsed: every group divider is the light weight.
-      expect((screen.getByText('Units').closest('th') as HTMLElement).className).toContain('lxn-data-table-divider-minor');
 
       fireEvent.click(screen.getByText('48 Days'));
       expect(onExpandedChange).toHaveBeenCalledTimes(1);
@@ -603,6 +603,30 @@ describe('<DataTable>', () => {
       fireEvent.click(screen.getByText('A'));
       fireEvent.click(screen.getByText('48 Days'));
       expect(onExpandedChange).toHaveBeenCalledTimes(1);
+    });
+
+    it('lays the collapsed KPIs out as one block per column group, with tones and secondary lines', () => {
+      const groups = [
+        { label: 'G1', columns: [{ key: 'units', label: 'Units' }, { key: 'dts', label: 'Days to Sell' }] },
+        { label: 'G2', columns: [{ key: 'acv', label: 'ACV' }] },
+      ];
+      const summary = {
+        label: 'X',
+        cells: { units: '5', dts: '48 Days', acv: '$15,548' },
+        tones: { dts: 'lost' as const },
+        secondaryCells: { acv: { display: '84.5%' } },
+      };
+      const { container } = render(<DataTable rowLabelHeader={['Row']} columnGroups={groups} rows={[]} summaryRow={summary} expanded={false} />);
+      const blocks = Array.from(container.querySelectorAll('.lxn-data-table-card-group'));
+      expect(blocks.map((b) => b.querySelectorAll('.lxn-data-table-card-kpi').length)).toEqual([2, 1]);
+      const card = container.querySelector('.lxn-data-table-card') as HTMLElement;
+      // Every group gets the largest group's width — 2 KPIs here.
+      expect(card.style.getPropertyValue('--lxn-data-table-card-group-size')).toBe('2');
+      // No layout engine here, so every group stays on one line.
+      expect(card.style.getPropertyValue('--lxn-data-table-card-per-line')).toBe('2');
+      expect(container.querySelectorAll('.lxn-data-table-card-line')).toHaveLength(1);
+      expect(screen.getByText('48 Days').className).toContain('lxn-data-table-summary-cell--lost');
+      expect(screen.getByText('84.5%').className).toContain('lxn-data-table-summary-secondary');
     });
 
     it('shows emptyState across the body only while expanded with no rows', () => {
