@@ -138,6 +138,10 @@
   /* Icon/text colour paired with --color-hover-accent-bg (e.g. CloseButton
      hover). */
   --color-hover-accent-fg: var(--lxn-accent-muted-teal);
+  /* Neutral row hover for menus (2026-10-13) — ButtonMain's split menu,
+     matching the vehicle webcomp's create menu. Grey, not the accent tint:
+     these rows are actions, not selectable options. */
+  --color-hover-neutral-bg: var(--lxn-neutral-50);
 
   /* ---------- Status / Tags ----------
      Pair: background + readable foreground for each status chip. */

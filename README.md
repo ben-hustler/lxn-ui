@@ -34,27 +34,51 @@ here.
 ```
 src/
   components/
-    focus-trap/      useFocusTrap
-    button-main/      ButtonMain — main CTA button (primary/secondary/tertiary/danger)
-    button-card/     ButtonCard — compact in-card row button (primary/danger only)
-    close-button/    CloseButton
-    confirm-popover/ ConfirmPopover
-    icons/           ListIcon, PencilIcon, TrashIcon, CheckIcon — Lucide,
-                      stroke-only, 1.7px default (matches the mockup's own
-                      Icon wrapper)
-    status-badge/    StatusBadge — icon or icon+label chip, all-caps/white-
-                      on-color; consumer supplies background (no built-in
-                      status vocabulary) and icon; wrap with Tooltip for a
-                      hover description, don't merge classes onto it
-    pulse-dots/      PulseDots — three-dot loading pulse (no built-in
-                      loading copy — pair it with your own text, e.g.
-                      "Generating preview…")
-    tooltip/         Tooltip + TooltipController
-  tokens/            tokens.css + fonts/
-  index.ts           Barrel file — the ONLY things exported from here are
-                      public API.
-sandbox/             Local dev harness — demos the full component set.
+    button-main/       ButtonMain — main CTA button (primary/secondary/tertiary/danger)
+    button-card/       ButtonCard — compact in-card row button (primary/danger only)
+    confirm-popover/   ConfirmPopover
+    single-select/     SingleSelect — typeahead select, search inside the trigger
+    multi-select/      MultiSelect — multi-value variant of the same combobox
+    date-range-picker/ DateRangePicker (+ formatDateRangeLabel, resolveRelativeRange)
+    data-table/        DataTable
+    kpi-tile/          KpiTile
+    filter-chip/       FilterChip
+    icons/             Lucide-style, stroke-only, 1.7px default — see index.ts
+                        for the full list
+    status-badge/      StatusBadge — icon or icon+label chip, all-caps/white-
+                        on-color; consumer supplies background (no built-in
+                        status vocabulary) and icon; wrap with Tooltip for a
+                        hover description, don't merge classes onto it
+    pulse-dots/        PulseDots — three-dot loading pulse (no built-in
+                        loading copy — pair it with your own text, e.g.
+                        "Generating preview…")
+    tooltip/           Tooltip + TooltipController
+    focus-trap/        useFocusTrap
+    touch-tap/         useTouchTap (internal, not exported)
+    select-trigger-chrome/ shared trigger box for the selects (internal)
+    close-button/      DEPRECATED — see below
+    search-select/     DEPRECATED — see below
+  tokens/              tokens.css + fonts/
+  index.ts             Barrel file — the ONLY things exported from here are
+                        public API. Deprecated exports sit in their own
+                        block at the bottom.
+sandbox/               Local dev harness — demos the full component set.
 ```
+
+## Deprecated — do not use in new work
+
+These are still exported so existing consumers keep compiling. Don't add new
+imports of them, and when you touch code that already uses one, move it off.
+
+| Component | Deprecated | Use instead |
+|---|---|---|
+| `CloseButton` | 2026-08-18 | A bare `CloseIcon` in a plain button inside the modal card (top-right, or a sticky header), styled locally — see each app's `*-close-icon-btn` |
+| `SearchSelect` (+ its `SearchSelect*` types) | 2026-09-03 | `SingleSelect` |
+
+When you deprecate something: add a JSDoc `/** @deprecated … */` (not a `//`
+comment, which tooling ignores) on the component *and* its exported types,
+move its exports into the deprecated block at the bottom of `index.ts`, add
+a row here, and add the sandbox's "Deprecated" badge.
 
 ## What this is for
 

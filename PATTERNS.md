@@ -6,6 +6,13 @@ UI and from mistakes agents have already made building this library. Nothing her
 is enforced by types or lint; use judgment, and add to this file when you spot a
 new one.
 
+## Deprecated components: don't use
+
+`CloseButton` and `SearchSelect` are deprecated (use a local `CloseIcon` button
+and `SingleSelect` instead). They're still exported, so their presence in
+`index.ts` doesn't mean they're current. The README's "Deprecated" table is
+the canonical list. Check it before reaching for a component.
+
 ## Patterns
 
 - **Borders are for controls, not containers.** Small interactive elements

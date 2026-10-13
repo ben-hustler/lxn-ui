@@ -4,6 +4,7 @@ import {
   CloseButton,
   useFocusTrap,
   ButtonMain,
+  type ButtonMainMenuItem,
   ButtonCard,
   ConfirmPopover,
   ListIcon,
@@ -540,12 +541,20 @@ function TokensIconsSection() {
 function ButtonMainSection() {
   const [loading, setLoading] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [lastSplitAction, setLastSplitAction] = useState<string | null>(null);
+
+  const splitMenu: ButtonMainMenuItem[] = [
+    { id: 'print', label: 'Print offer', icon: <PrintIcon size={16} />, onSelect: () => setLastSplitAction('Print offer') },
+    { id: 'edit', label: 'Edit before sending', icon: <PencilIcon size={16} />, onSelect: () => setLastSplitAction('Edit before sending') },
+    { id: 'schedule', label: 'Schedule send', icon: <CalendarIcon size={16} />, disabled: true, onSelect: () => {} },
+    { id: 'discard', label: 'Discard offer', icon: <TrashIcon size={16} />, danger: true, onSelect: () => setLastSplitAction('Discard offer') },
+  ];
 
   return (
     <Section
       id="comp-button-main"
       title="ButtonMain"
-      description="Main CTA button — primary/secondary/tertiary/danger, in large/small/xs/wide sizes. Any size/variant can also be a toggle via `pressed`."
+      description="Main CTA button — primary/secondary/tertiary/danger, in large/small/xs/wide sizes. Any size/variant can also be a toggle via `pressed`, or a split button via `menu`."
     >
       <DemoSurface>
         <Subsection title="Variants (large)">
@@ -586,6 +595,25 @@ function ButtonMainSection() {
               onClick={() => setFiltersOpen((v) => !v)}
             />
             <span className="lxn-l4">{filtersOpen ? 'Panel open' : 'Panel closed'}</span>
+          </div>
+        </Subsection>
+
+        <Subsection title="Split button (`menu` — main action + chevron dropdown of secondary actions)">
+          <div className="lxn-sandbox-stack">
+            <div className="lxn-sandbox-row">
+              <ButtonMain label="Send Offer" variant="primary" size="large" menu={splitMenu} onClick={() => setLastSplitAction('Send Offer')} />
+              <ButtonMain label="Send Offer" variant="secondary" size="large" menu={splitMenu} onClick={() => setLastSplitAction('Send Offer')} />
+              <ButtonMain label="Send Offer" variant="tertiary" size="large" menu={splitMenu} onClick={() => setLastSplitAction('Send Offer')} />
+            </div>
+            <div className="lxn-sandbox-row">
+              <ButtonMain label="Send Offer" variant="primary" size="small" menu={splitMenu} onClick={() => setLastSplitAction('Send Offer')} />
+              <ButtonMain label="Send Offer" variant="tertiary" size="small" menu={splitMenu} onClick={() => setLastSplitAction('Send Offer')} />
+              <ButtonMain label="Send" variant="primary" size="xs" menu={splitMenu} onClick={() => setLastSplitAction('Send')} />
+              <ButtonMain label="Send" variant="tertiary" size="xs" menu={splitMenu} onClick={() => setLastSplitAction('Send')} />
+              <ButtonMain label="Send Offer" variant="primary" size="small" menu={splitMenu} disabled />
+            </div>
+            <ButtonMain label="Send Offer" variant="primary" fullWidth menu={splitMenu} onClick={() => setLastSplitAction('Send Offer')} />
+            <span className="lxn-l4">Last action: {lastSplitAction ?? '—'}</span>
           </div>
         </Subsection>
 

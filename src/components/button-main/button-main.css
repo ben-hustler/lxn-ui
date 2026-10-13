@@ -147,3 +147,115 @@
   filter: brightness(0.92);
   box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
 }
+
+/* ---- Split button (2026-10-13) ---- */
+/* `menu` wraps the main button and a chevron segment in one inline-flex
+   group. `stretch` keeps both segments the same height without fixing one —
+   the chevron only sets horizontal padding, so it takes whatever height the
+   main button's own padding + font produce at that size. */
+.lxn-btn-main-split {
+  display: inline-flex;
+  align-items: stretch;
+}
+.lxn-btn-main-split--full-width {
+  display: flex;
+  width: 100%;
+}
+.lxn-btn-main-split--full-width > .lxn-btn-main--split-main {
+  flex: 1;
+}
+.lxn-btn-main--split-main {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.lxn-btn-main--split-toggle {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.lxn-btn-main--split-toggle-large,
+.lxn-btn-main--split-toggle-wide {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.lxn-btn-main--split-toggle-small {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+.lxn-btn-main--split-toggle-xs {
+  padding-left: 7px;
+  padding-right: 7px;
+}
+/* Divider between the two segments. Solid variants: a translucent white
+   hairline, so it reads on any brand color without a per-variant token.
+   Tertiary already has its own border — the chevron just overlaps the main
+   button's right border by 1px so the two share a single line. */
+.lxn-btn-main-split:not(.lxn-btn-main-split--tertiary) > .lxn-btn-main--split-toggle {
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.35);
+}
+.lxn-btn-main-split:not(.lxn-btn-main-split--tertiary) > .lxn-btn-main--split-toggle.lxn-btn-main--pressed {
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.35), inset 0 0 0 2px rgba(255, 255, 255, 0.4);
+}
+.lxn-btn-main-split--tertiary > .lxn-btn-main--split-toggle {
+  margin-left: -1px;
+}
+/* Keep the hovered/pressed segment's border on top of the shared line. */
+.lxn-btn-main-split--tertiary > .lxn-btn-main:hover,
+.lxn-btn-main-split--tertiary > .lxn-btn-main--pressed {
+  position: relative;
+}
+
+/* Dropdown — matches the vehicle webcomp's CreateSplitButton menu (the
+   first real split button, 2026-10-13): neutral grey hover rather than
+   SingleSelect's accent tint (these are actions, not selectable options),
+   with the rows inset by 4px and rounded so the hover reads as a pill
+   instead of a strip butting the panel edge. Control-sized, so it gets the
+   hairline border (PATTERNS.md). absolute, not fixed — see SingleSelect.tsx's
+   reposition() for the iOS reasoning. */
+.lxn-btn-main-menu {
+  touch-action: manipulation;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-1);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+  z-index: 1200;
+}
+.lxn-btn-main-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.lxn-btn-main-menu-item:hover:not(:disabled),
+.lxn-btn-main-menu-item:focus-visible {
+  background: var(--color-hover-neutral-bg);
+  outline: none;
+}
+.lxn-btn-main-menu-item:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.lxn-btn-main-menu-item-icon {
+  display: inline-flex;
+  color: var(--color-fg-secondary);
+}
+.lxn-btn-main-menu-item-label {
+  white-space: nowrap;
+}
+.lxn-btn-main-menu-item--danger .lxn-btn-main-menu-item-label,
+.lxn-btn-main-menu-item--danger .lxn-btn-main-menu-item-icon {
+  color: var(--color-negative);
+}

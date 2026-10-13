@@ -22,6 +22,7 @@ function snapToDevicePixel(px: number): number {
   return Math.round(px * dpr) / dpr;
 }
 
+/** @deprecated Use SingleSelect's types instead — see SearchSelect. */
 export interface SearchSelectOption {
   id: string;
   label: string;
@@ -30,12 +31,14 @@ export interface SearchSelectOption {
   icon?: ReactNode;
 }
 
+/** @deprecated Use SingleSelect's types instead — see SearchSelect. */
 export interface SearchSelectTriggerArgs {
   selected: SearchSelectOption | undefined;
   open: boolean;
   onClick: () => void;
 }
 
+/** @deprecated Use SingleSelect's types instead — see SearchSelect. */
 export interface SearchSelectProps {
   value: string;
   options: SearchSelectOption[];

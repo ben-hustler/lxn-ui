@@ -1,5 +1,8 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { ButtonMainSplit, type ButtonMainMenuItem } from './ButtonMainSplit';
 import './button-main.css';
+
+export type { ButtonMainMenuItem } from './ButtonMainSplit';
 
 type Variant = 'primary' | 'secondary' | 'tertiary' | 'danger';
 type Size = 'large' | 'small' | 'xs' | 'wide';
@@ -25,6 +28,13 @@ type BaseProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'disabled'> & {
    * `--pressed` visual (button-main.css) matching whichever variant is in use. First consumer:
    * Internal Comps' Filter button, reflecting whether its panel is currently open. */
   pressed?: boolean;
+  /** Turns this into a split button (2026-10-13): the button itself still runs `onClick` (the
+   * main action), and a chevron segment joined to its right edge opens a dropdown of these
+   * secondary actions. Same option-on-ButtonMain approach as `pressed` — works with any
+   * size/variant. Disabled/loading disables both segments. Omit or pass `[]` for a plain button. */
+  menu?: ButtonMainMenuItem[];
+  /** Accessible name for the chevron segment, which has no visible text. */
+  menuLabel?: string;
 };
 
 // Shape (text button vs. icon-only) is derived from whether `label` is
@@ -51,6 +61,8 @@ export function ButtonMain(props: ButtonMainProps) {
     icon,
     iconPosition = 'leading',
     pressed,
+    menu,
+    menuLabel = 'More options',
     className,
     type = 'button',
     ...rest
@@ -59,14 +71,17 @@ export function ButtonMain(props: ButtonMainProps) {
   const iconOnly = !label;
   const text = label ? (loading ? loadingLabel ?? label : label) : undefined;
 
+  const isSplit = !!menu && menu.length > 0;
+
   const classes = [
     'lxn-btn-main',
     `lxn-btn-main--${variant}`,
     `lxn-btn-main--${size}`,
     iconOnly ? 'lxn-btn-main--icon-only' : '',
-    fullWidth ? 'lxn-btn-main--full-width' : '',
+    fullWidth && !isSplit ? 'lxn-btn-main--full-width' : '',
+    isSplit ? 'lxn-btn-main--split-main' : '',
     pressed ? 'lxn-btn-main--pressed' : '',
-    className || '',
+    isSplit ? '' : className || '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -74,7 +89,7 @@ export function ButtonMain(props: ButtonMainProps) {
   const iconEl = icon ? <span className="lxn-btn-main-icon">{icon}</span> : null;
   const textEl = text ? <span className="lxn-btn-main-label">{text}</span> : null;
 
-  return (
+  const button = (
     <button
       type={type}
       className={classes}
@@ -98,5 +113,20 @@ export function ButtonMain(props: ButtonMainProps) {
         </>
       )}
     </button>
+  );
+
+  if (!isSplit) return button;
+  return (
+    <ButtonMainSplit
+      variant={variant}
+      size={size}
+      fullWidth={fullWidth}
+      disabled={disabled || loading}
+      menu={menu}
+      menuLabel={menuLabel}
+      className={className}
+    >
+      {button}
+    </ButtonMainSplit>
   );
 }
