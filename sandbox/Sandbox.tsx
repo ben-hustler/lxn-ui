@@ -237,6 +237,7 @@ function TokensColorsSection() {
           <ColorSwatch token="--color-bg-sunken" value="#F6F7F7" hint="Recessed / inset panel" />
           <ColorSwatch token="--color-bg-inverse" value="#191919" hint="Dark side panel" />
           <ColorSwatch token="--color-bg-overlay" value="rgba(17,19,21,.40)" hint="Modal scrim" />
+          <ColorSwatch token="--color-bg-overlay-strong" value="rgba(17,19,21,.65)" hint="Scrim for work closing discards" />
           <ColorSwatch token="--color-bg-accent-subtle" value="#EFFCFF" hint="Selected / active-filter fill" />
         </div>
       </Subsection>
