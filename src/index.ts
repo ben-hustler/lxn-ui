@@ -27,6 +27,7 @@ export {
   CheckCircleIcon,
   CalendarIcon,
   SlidersIcon,
+  ReturnToAppIcon,
 } from './components/icons/icons';
 export type { IconProps } from './components/icons/icons';
 export { StatusBadge } from './components/status-badge/StatusBadge';

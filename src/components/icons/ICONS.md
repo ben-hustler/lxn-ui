@@ -33,6 +33,7 @@ independently-drawn glyphs; those files are now gone, migrated below.
 | `CalendarIcon`     | Lucide `calendar`                              | ISC          | `DateRangePicker`'s date-display trigger glyph. |
 | `LoaderIcon`       | Lucide `loader-circle`                         | ISC          | `SelectTriggerChrome`'s spinner, shown in the chevron slot while `loading` is true (a field's own option list is being refetched). Static glyph — the spin comes from that component's own CSS animation. |
 | `SlidersIcon`      | Bootstrap Icons `sliders`                      | MIT          | Internal Comps' Filter button glyph (2026-09-08) — explicit ask for this exact glyph (three rows, each a line + offset round handle); neither Lucide's `sliders-vertical` (a different, vertical-bars pictograph) nor Material has a real match. Kept at its native 16x16 viewBox rather than resized to this file's usual 24x24. First Bootstrap Icons glyph in this set. |
+| `ReturnToAppIcon`  | Google Material Symbols Outlined `exit_to_app` (weight 400, 24px) | Apache-2.0 | "Return to the app" — a box with an arrow entering it from the left. Explicit ask 2026-10-14 for the vehicle component's create-mode "Return" button (Appraisal Webcomps Figma, node 2331:793). Material **Symbols**, not the older Material Icons set, so it keeps that set's native `0 -960 960 960` viewBox, as `SlidersIcon` keeps its 16x16 one. Verified against `google/material-design-icons` `symbols/web/exit_to_app/materialsymbolsoutlined/exit_to_app_24px.svg`. |
 
 ## Verifying a glyph
 

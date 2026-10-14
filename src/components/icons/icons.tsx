@@ -315,6 +315,21 @@ export function SlidersIcon(props: SVGProps<SVGSVGElement> & { size?: number }) 
   );
 }
 
+/** "Return to the app" glyph — Google Material Symbols Outlined
+   `exit_to_app` (weight 400, 24px), verbatim: a box with an arrow entering
+   it from the left. Material Symbols draws on a 960-unit grid with its origin
+   at the bottom-left, so the native `0 -960 960 960` viewBox is kept, as
+   SlidersIcon keeps its own. First use: the vehicle component's create-mode
+   "Save and: Return" button (Appraisal Webcomps Figma, node 2331:793). */
+export function ReturnToAppIcon(props: SVGProps<SVGSVGElement> & { size?: number }) {
+  const { size = 24, ...rest } = props;
+  return (
+    <svg width={size} height={size} viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true" {...rest}>
+      <path d="M200-120q-33 0-56.5-23.5T120-200v-160h80v160h560v-560H200v160h-80v-160q0-33 23.5-56.5T200-840h560q33 0 56.5 23.5T840-760v560q0 33-23.5 56.5T760-120H200Zm220-160-56-58 102-102H120v-80h346L364-622l56-58 200 200-200 200Z" />
+    </svg>
+  );
+}
+
 /** Loading spinner glyph — Lucide's `loader-circle` glyph verbatim (a single
    ~270° arc, not a full ring), so a caller's own CSS rotation reads as
    continuous spinning rather than a static "C". No motion of its own — see

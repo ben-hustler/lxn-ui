@@ -39,6 +39,7 @@ import {
   type IconProps,
   KpiTile,
   SlidersIcon,
+  ReturnToAppIcon,
   FilterChip,
   DataTable,
   type DataTableColumnGroup,
@@ -510,6 +511,7 @@ const ICONS: { Icon: (props: IconProps) => ReactNode; name: string; source: stri
   { Icon: PrintIcon, name: 'PrintIcon', source: 'Material local_printshop (filled)' },
   { Icon: CheckCircleIcon, name: 'CheckCircleIcon', source: 'Material Rounded check_circle' },
   { Icon: CalendarIcon, name: 'CalendarIcon', source: 'Lucide calendar' },
+  { Icon: ReturnToAppIcon, name: 'ReturnToAppIcon', source: 'Material Symbols exit_to_app (outlined)' },
 ];
 
 function TokensIconsSection() {
