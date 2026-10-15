@@ -8,8 +8,8 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from 'react';
-import { createPortal } from 'react-dom';
 import { CheckIcon } from '../icons/icons';
+import { placeAbsolute, showInTopLayer, TOP_LAYER_CLASS } from '../top-layer/topLayer';
 import { SelectTriggerChrome } from '../select-trigger-chrome/SelectTriggerChrome';
 import './single-select.css';
 
@@ -18,11 +18,6 @@ import './single-select.css';
 const EDGE_MARGIN = 8;
 const ANCHOR_GAP = 6;
 const MIN_PANEL_WIDTH = 240;
-
-function snapToDevicePixel(px: number): number {
-  const dpr = window.devicePixelRatio || 1;
-  return Math.round(px * dpr) / dpr;
-}
 
 export interface SingleSelectOption {
   id: string;
@@ -245,9 +240,10 @@ export function SingleSelect({
     const trigger = triggerRef.current;
     const panel = panelRef.current;
     if (!trigger || !panel) return;
+    showInTopLayer(panel);
 
-    // `position: absolute` against the panel's own containing block (body,
-    // or the enclosing <dialog>), NOT `position: fixed` — on iOS Safari a
+    // In the top layer (topLayer.ts). `position: absolute` in document
+    // coordinates, NOT `position: fixed` — on iOS Safari a
     // fixed panel is pinned to the layout viewport, so (a) once the keyboard
     // opens and the visual viewport pans, the panel drifts off the trigger,
     // and (b) during a touch/momentum scroll the page moves on the
@@ -268,20 +264,8 @@ export function SingleSelect({
       // the panel jumping around (2026-09-25). Below-only is predictable.
       const top = rect.bottom + ANCHOR_GAP;
 
-      // Viewport coords -> the containing block's own coords. A static
-      // offsetParent (the usual plain <body>) means the initial containing
-      // block, i.e. the document origin.
-      const container = panel.offsetParent as HTMLElement | null;
-      let originX = -window.scrollX;
-      let originY = -window.scrollY;
-      if (container && getComputedStyle(container).position !== 'static') {
-        const cRect = container.getBoundingClientRect();
-        originX = cRect.left + container.clientLeft - container.scrollLeft;
-        originY = cRect.top + container.clientTop - container.scrollTop;
-      }
-
       panel.style.width = `${width}px`;
-      panel.style.transform = `translate3d(${snapToDevicePixel(left - originX)}px, ${snapToDevicePixel(top - originY)}px, 0)`;
+      placeAbsolute(panel, left, top);
     };
 
     reposition();
@@ -452,8 +436,6 @@ export function SingleSelect({
     />
   );
 
-  const portalTarget = open ? (triggerRef.current?.closest('dialog') ?? document.body) : null;
-
   return (
     <div
       ref={triggerRef}
@@ -464,55 +446,52 @@ export function SingleSelect({
       }}
     >
       {trigger}
-      {open &&
-        portalTarget &&
-        createPortal(
-          <div
-            ref={panelRef}
-            className={['lxn-single-select-panel', size === 'compact' ? 'lxn-single-select-panel--compact' : '']
-              .filter(Boolean)
-              .join(' ')}
-          >
-            <div id={listboxId} className="lxn-single-select-list" role="listbox">
-              {isLoading ? (
-                <div className="lxn-l4 lxn-single-select-empty">Searching…</div>
-              ) : options.length === 0 ? (
-                <div className="lxn-l4 lxn-single-select-empty">{emptyLabel}</div>
-              ) : (
-                options.map((o, index) => {
-                  const isSelected = o.id === value;
-                  const isHighlighted = highlightedIndex !== null && index === highlightedIndex;
-                  return (
-                    <div
-                      key={o.id}
-                      ref={(el) => {
-                        optionRefs.current[index] = el;
-                      }}
-                      id={optionId(o.id)}
-                      role="option"
-                      tabIndex={0}
-                      aria-selected={isSelected}
-                      className={['lxn-single-select-option', isHighlighted ? 'is-highlighted' : ''].filter(Boolean).join(' ')}
-                      onMouseDown={(e) => e.preventDefault()}
-                      onMouseEnter={() => setHighlightedIndex(null)}
-                      onClick={() => selectOption(o.id)}
-                      onKeyDown={(e) => handleOptionKeyDown(e, o.id)}
-                    >
-                      <span className="lxn-single-select-option-check" aria-hidden="true">
-                        {isSelected && <CheckIcon size={11} />}
-                      </span>
-                      <span className="lxn-single-select-option-text">
-                        <span className="lxn-l1 lxn-single-select-option-label">{o.label}</span>
-                        {o.subheader && <span className="lxn-l4 lxn-single-select-option-subheader">{o.subheader}</span>}
-                      </span>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>,
-          portalTarget,
-        )}
+      {open && (
+        <div
+          ref={panelRef}
+          className={['lxn-single-select-panel', TOP_LAYER_CLASS, size === 'compact' ? 'lxn-single-select-panel--compact' : '']
+            .filter(Boolean)
+            .join(' ')}
+        >
+          <div id={listboxId} className="lxn-single-select-list" role="listbox">
+            {isLoading ? (
+              <div className="lxn-l4 lxn-single-select-empty">Searching…</div>
+            ) : options.length === 0 ? (
+              <div className="lxn-l4 lxn-single-select-empty">{emptyLabel}</div>
+            ) : (
+              options.map((o, index) => {
+                const isSelected = o.id === value;
+                const isHighlighted = highlightedIndex !== null && index === highlightedIndex;
+                return (
+                  <div
+                    key={o.id}
+                    ref={(el) => {
+                      optionRefs.current[index] = el;
+                    }}
+                    id={optionId(o.id)}
+                    role="option"
+                    tabIndex={0}
+                    aria-selected={isSelected}
+                    className={['lxn-single-select-option', isHighlighted ? 'is-highlighted' : ''].filter(Boolean).join(' ')}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onMouseEnter={() => setHighlightedIndex(null)}
+                    onClick={() => selectOption(o.id)}
+                    onKeyDown={(e) => handleOptionKeyDown(e, o.id)}
+                  >
+                    <span className="lxn-single-select-option-check" aria-hidden="true">
+                      {isSelected && <CheckIcon size={11} />}
+                    </span>
+                    <span className="lxn-single-select-option-text">
+                      <span className="lxn-l1 lxn-single-select-option-label">{o.label}</span>
+                      {o.subheader && <span className="lxn-l4 lxn-single-select-option-subheader">{o.subheader}</span>}
+                    </span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

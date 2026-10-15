@@ -211,13 +211,15 @@
    SingleSelect's accent tint (these are actions, not selectable options),
    with the rows inset by 4px and rounded so the hover reads as a pill
    instead of a strip butting the panel edge. Control-sized, so it gets the
-   hairline border (PATTERNS.md). absolute, not fixed — see SingleSelect.tsx's
-   reposition() for the iOS reasoning. */
+   hairline border (PATTERNS.md).
+   In the top layer (topLayer.ts): fixed to the viewport, positioned by
+   transform from 0,0. z-index only matters for the no-Popover fallback. */
 .lxn-btn-main-menu {
   touch-action: manipulation;
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
+  color: var(--color-fg-primary);
   display: flex;
   flex-direction: column;
   padding: var(--space-1);

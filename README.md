@@ -40,6 +40,7 @@ src/
     single-select/     SingleSelect — typeahead select, search inside the trigger
     multi-select/      MultiSelect — multi-value variant of the same combobox
     date-range-picker/ DateRangePicker (+ formatDateRangeLabel, resolveRelativeRange)
+    top-layer/         internal: floating panels in the browser's top layer
     data-table/        DataTable
     kpi-tile/          KpiTile
     filter-chip/       FilterChip

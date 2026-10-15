@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
-import { createPortal } from 'react-dom';
 import { ButtonMain } from '../button-main/ButtonMain';
+import { showInTopLayer, snapToDevicePixel, TOP_LAYER_CLASS } from '../top-layer/topLayer';
 import './confirm-popover.css';
 
 // Keeps the popover this far from the viewport edge when it slides, and how
@@ -16,20 +16,6 @@ const ARROW_HALF_WIDTH = 8;
 // kept visually consistent across lxn-ui's two floating-bubble patterns.
 const ENTER_MS = 160;
 const EXIT_MS = 120;
-
-// Same technique as Tooltip's own snapToDevicePixel (tooltip-core.ts) —
-// Math.round() alone snaps to whole CSS pixels, but a whole CSS pixel isn't
-// a whole DEVICE pixel once devicePixelRatio != 1 (125%/150% Windows
-// scaling is the common case), so the compositor anti-aliases the popover
-// at a fractional physical pixel, reading as blur. Snap to the nearest
-// device pixel instead so translate3d lands on a pixel boundary the GPU
-// can actually composite crisply. (2026-08-11 — this component's own
-// position math was rounding to whole CSS pixels only, unlike Tooltip's;
-// reported as "the popover is blurry.")
-function snapToDevicePixel(px: number): number {
-  const dpr = window.devicePixelRatio || 1;
-  return Math.round(px * dpr) / dpr;
-}
 
 interface ConfirmPopoverProps {
   open: boolean;
@@ -104,6 +90,7 @@ export function ConfirmPopover({
     const outer = outerRef.current;
     const inner = innerRef.current;
     if (!anchor || !outer || !inner) return;
+    showInTopLayer(outer);
 
     const reposition = () => {
       const rect = anchor.getBoundingClientRect();
@@ -186,10 +173,9 @@ export function ConfirmPopover({
 
   if (!rendered) return null;
 
-  const portalTarget = anchorRef.current?.closest('dialog') ?? document.body;
-
-  return createPortal(
-    <div ref={outerRef} className="lxn-confirm-popover" role="alertdialog">
+  // In the top layer (topLayer.ts), rendered where the consumer puts it.
+  return (
+    <div ref={outerRef} className={`lxn-confirm-popover ${TOP_LAYER_CLASS}`} role="alertdialog">
       <div ref={innerRef} className="lxn-confirm-popover-inner">
         <div className="lxn-confirm-popover-arrow" />
         <div className="lxn-confirm-popover-body">
@@ -197,10 +183,15 @@ export function ConfirmPopover({
         </div>
         <div className="lxn-confirm-popover-actions">
           <ButtonMain size="small" variant="tertiary" label={cancelLabel} fullWidth onClick={onClose} />
-          <ButtonMain size="small" variant={destructive ? 'danger' : 'primary'} label={confirmLabel} fullWidth onClick={onConfirm} />
+          <ButtonMain
+            size="small"
+            variant={destructive ? 'danger' : 'primary'}
+            label={confirmLabel}
+            fullWidth
+            onClick={onConfirm}
+          />
         </div>
       </div>
-    </div>,
-    portalTarget,
+    </div>
   );
 }

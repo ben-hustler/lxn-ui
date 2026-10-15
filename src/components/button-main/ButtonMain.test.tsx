@@ -61,11 +61,51 @@ describe('<ButtonMain menu>', () => {
 
   it('opens from ArrowDown with focus on the first item, and arrows skip disabled items', () => {
     renderSplit();
-    fireEvent.keyDown(screen.getByRole('button', { name: 'More options' }), { key: 'ArrowDown' });
+    fireEvent.keyDown(screen.getByRole('button', { name: 'More options' }), {
+      key: 'ArrowDown',
+    });
     const first = screen.getByRole('menuitem', { name: 'Save as copy' });
     expect(document.activeElement).toBe(first);
     fireEvent.keyDown(first, { key: 'ArrowDown' });
     expect(document.activeElement).toBe(screen.getByRole('menuitem', { name: 'Discard' }));
+  });
+
+  it('renders the menu in place, not portalled, so it inherits the scoped tokens around it', () => {
+    renderSplit();
+    const toggle = screen.getByRole('button', { name: 'More options' });
+    fireEvent.click(toggle);
+    expect(toggle.closest('.lxn-btn-main-split')!.contains(screen.getByRole('menu'))).toBe(true);
+  });
+
+  it('opens below, and flips above when there is no room below', () => {
+    const rect = (top: number) =>
+      vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({
+        top,
+        bottom: top + 36,
+        left: 400,
+        right: 500,
+        width: 100,
+        height: 36,
+        x: 400,
+        y: top,
+        toJSON: () => ({}),
+      } as DOMRect);
+    const height = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(120);
+    window.innerHeight = 800;
+
+    renderSplit();
+    const toggle = screen.getByRole('button', { name: 'More options' });
+    let spy = rect(100);
+    fireEvent.click(toggle);
+    expect(screen.getByRole('menu').style.transform).toContain(', 142px,');
+    fireEvent.click(toggle);
+    spy.mockRestore();
+
+    spy = rect(740);
+    fireEvent.click(toggle);
+    expect(screen.getByRole('menu').style.transform).toContain(', 614px,');
+    spy.mockRestore();
+    height.mockRestore();
   });
 
   it('disables both segments while loading', () => {

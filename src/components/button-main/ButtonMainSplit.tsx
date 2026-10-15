@@ -1,7 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
 import { ChevronDownIcon } from '../icons/icons';
 import { useTouchTap } from '../touch-tap/useTouchTap';
+import { showInTopLayer, snapToDevicePixel, TOP_LAYER_CLASS } from '../top-layer/topLayer';
 
 export interface ButtonMainMenuItem {
   id: string;
@@ -19,11 +19,6 @@ const MIN_PANEL_WIDTH = 220;
 
 const CHEVRON_SIZE = { large: 18, wide: 18, small: 16, xs: 14 } as const;
 
-function snapToDevicePixel(px: number): number {
-  const dpr = window.devicePixelRatio || 1;
-  return Math.round(px * dpr) / dpr;
-}
-
 interface ButtonMainSplitProps {
   variant: string;
   size: keyof typeof CHEVRON_SIZE;
@@ -39,6 +34,7 @@ interface ButtonMainSplitProps {
 // The split half of ButtonMain's `menu` option — kept out of ButtonMain.tsx so
 // the plain button stays a hook-free render. Wraps the main button and adds a
 // chevron segment + a role="menu" dropdown.
+// The dropdown goes in the top layer (topLayer.ts), `position: fixed`.
 export function ButtonMainSplit({
   variant,
   size,
@@ -76,7 +72,7 @@ export function ButtonMainSplit({
   useEffect(() => {
     if (!open) return;
     function isInside(target: Node) {
-      return !!(wrapperRef.current?.contains(target) || panelRef.current?.contains(target));
+      return !!wrapperRef.current?.contains(target);
     }
     function onDocPointerDown(e: MouseEvent) {
       if (!isInside(e.target as Node)) setOpen(false);
@@ -106,28 +102,28 @@ export function ButtonMainSplit({
     const panel = panelRef.current;
     if (!wrapper || !panel) return;
 
-    // Same document-coordinate anchoring as SingleSelect's reposition() —
-    // `position: absolute`, always below, see that component for the iOS
-    // reasoning. Right-aligned to the split button's own right edge, so the
-    // menu hangs under the chevron that opened it.
+    showInTopLayer(panel);
+
+    // Viewport coordinates: the top layer (and the fallback) is `position:
+    // fixed`. Right-aligned to the split button's own right edge, so the menu
+    // hangs under the chevron that opened it. Opens below; flips above when
+    // there isn't room below and there's more above — a button in a pop-up's
+    // footer sits near the bottom of the screen. (PATTERNS.md's "always open
+    // below" is about panels with an input and the iOS keyboard; this menu has
+    // no input.)
     const reposition = () => {
       const rect = wrapper.getBoundingClientRect();
       const width = Math.max(rect.width, MIN_PANEL_WIDTH);
       const maxLeft = Math.max(EDGE_MARGIN, window.innerWidth - EDGE_MARGIN - width);
       const left = Math.min(Math.max(rect.right - width, EDGE_MARGIN), maxLeft);
-      const top = rect.bottom + ANCHOR_GAP;
-
-      const container = panel.offsetParent as HTMLElement | null;
-      let originX = -window.scrollX;
-      let originY = -window.scrollY;
-      if (container && getComputedStyle(container).position !== 'static') {
-        const cRect = container.getBoundingClientRect();
-        originX = cRect.left + container.clientLeft - container.scrollLeft;
-        originY = cRect.top + container.clientTop - container.scrollTop;
-      }
 
       panel.style.minWidth = `${width}px`;
-      panel.style.transform = `translate3d(${snapToDevicePixel(left - originX)}px, ${snapToDevicePixel(top - originY)}px, 0)`;
+      const height = panel.offsetHeight;
+      const below = window.innerHeight - EDGE_MARGIN - (rect.bottom + ANCHOR_GAP);
+      const above = rect.top - ANCHOR_GAP - EDGE_MARGIN;
+      const flip = height > below && above > below;
+      const top = flip ? rect.top - ANCHOR_GAP - height : rect.bottom + ANCHOR_GAP;
+      panel.style.transform = `translate3d(${snapToDevicePixel(left)}px, ${snapToDevicePixel(top)}px, 0)`;
     };
 
     reposition();
@@ -211,8 +207,6 @@ export function ButtonMainSplit({
     .filter(Boolean)
     .join(' ');
 
-  const portalTarget = open ? (wrapperRef.current?.closest('dialog') ?? document.body) : null;
-
   return (
     <div ref={wrapperRef} className={wrapperClasses}>
       {children}
@@ -230,33 +224,36 @@ export function ButtonMainSplit({
       >
         <ChevronDownIcon size={CHEVRON_SIZE[size]} stroke={2.2} />
       </button>
-      {open &&
-        portalTarget &&
-        createPortal(
-          <div ref={panelRef} id={menuId} className="lxn-btn-main-menu" role="menu" aria-label={menuLabel}>
-            {menu.map((item, index) => (
-              <button
-                key={item.id}
-                ref={(el) => {
-                  itemRefs.current[index] = el;
-                }}
-                type="button"
-                role="menuitem"
-                tabIndex={-1}
-                disabled={item.disabled}
-                className={['lxn-btn-main-menu-item', item.danger ? 'lxn-btn-main-menu-item--danger' : '']
-                  .filter(Boolean)
-                  .join(' ')}
-                onKeyDown={(e) => handleItemKeyDown(e, index)}
-                {...tap.bind(() => select(item))}
-              >
-                {item.icon && <span className="lxn-btn-main-menu-item-icon">{item.icon}</span>}
-                <span className="lxn-b2 lxn-btn-main-menu-item-label">{item.label}</span>
-              </button>
-            ))}
-          </div>,
-          portalTarget,
-        )}
+      {open && (
+        <div
+          ref={panelRef}
+          id={menuId}
+          className={`lxn-btn-main-menu ${TOP_LAYER_CLASS}`}
+          role="menu"
+          aria-label={menuLabel}
+        >
+          {menu.map((item, index) => (
+            <button
+              key={item.id}
+              ref={(el) => {
+                itemRefs.current[index] = el;
+              }}
+              type="button"
+              role="menuitem"
+              tabIndex={-1}
+              disabled={item.disabled}
+              className={['lxn-btn-main-menu-item', item.danger ? 'lxn-btn-main-menu-item--danger' : '']
+                .filter(Boolean)
+                .join(' ')}
+              onKeyDown={(e) => handleItemKeyDown(e, index)}
+              {...tap.bind(() => select(item))}
+            >
+              {item.icon && <span className="lxn-btn-main-menu-item-icon">{item.icon}</span>}
+              <span className="lxn-b2 lxn-btn-main-menu-item-label">{item.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

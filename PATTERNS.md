@@ -40,6 +40,16 @@ the canonical list. Check it before reaching for a component.
   inside a tap handler raises the keyboard; one called from a rAF doesn't. Pick
   deliberately, and skip "keep focus in the input" refocusing on touch.
 
+- **Floating panels: top layer, not a `<body>` portal.** (2026-10-15.) A
+  portal to `<body>` loses CSS variables a consumer scopes to its own root,
+  and its z-index has to beat every host's modal. Render the panel in place,
+  add `TOP_LAYER_CLASS` and call `showInTopLayer()` from the layout effect
+  (src/components/top-layer/topLayer.ts): it keeps inherited tokens and sits
+  above every z-index, clip and transform. Panels with an input still follow
+  the iOS rule above — `placeAbsolute()` keeps them in document coordinates.
+  A menu with no input (ButtonMainSplit) may be fixed and flip above its
+  trigger when there's no room below.
+
 - **Lists people tap through quickly: use `useTouchTap`, not `onClick`.** On
   iOS, a fast second tap on a neighbouring row gets its compatibility click
   sent to the *previous* row (confirmed with an on-device event log;

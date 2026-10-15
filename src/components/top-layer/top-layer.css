@@ -1,0 +1,14 @@
+/* Undo the UA's [popover] defaults (centred by inset/margin, Canvas colours,
+   its own border, padding and overflow) for panels shown in the top layer —
+   see topLayer.ts. Zero specificity, so each panel's own rules win. */
+:where(.lxn-top-layer[popover]) {
+  inset: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  color: inherit;
+  background: transparent;
+}

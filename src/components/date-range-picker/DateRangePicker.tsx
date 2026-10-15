@@ -10,9 +10,9 @@ import {
   type PointerEvent as ReactPointerEvent,
   type RefObject,
 } from 'react';
-import { createPortal } from 'react-dom';
 import { ChevronDownIcon, CheckIcon, BackArrowIcon, CalendarIcon } from '../icons/icons';
 import { useTouchTap } from '../touch-tap/useTouchTap';
+import { placeAbsolute, showInTopLayer, TOP_LAYER_CLASS } from '../top-layer/topLayer';
 import './date-range-picker.css';
 
 // Position math copied from SearchSelect.tsx (see that component's own
@@ -22,37 +22,20 @@ const ANCHOR_GAP = 6;
 const PRESET_MIN_PANEL_WIDTH = 200;
 const CALENDAR_MIN_PANEL_WIDTH = 260;
 
-function snapToDevicePixel(px: number): number {
-  const dpr = window.devicePixelRatio || 1;
-  return Math.round(px * dpr) / dpr;
-}
-
 function positionPanel(trigger: HTMLElement, panel: HTMLElement, minWidth: number) {
   const rect = trigger.getBoundingClientRect();
   const width = Math.max(rect.width, minWidth);
   const maxLeft = Math.max(EDGE_MARGIN, window.innerWidth - EDGE_MARGIN - width);
   const left = Math.min(Math.max(rect.left, EDGE_MARGIN), maxLeft);
 
-  // Always below, and `position: absolute` against the containing block
-  // (body or the enclosing <dialog>) rather than `position: fixed` — see
+  // Always below, in the top layer (topLayer.ts), `position: absolute` in
+  // document coordinates rather than `position: fixed` — see
   // SingleSelect.tsx's own reposition() for the iOS keyboard/scroll-rate
   // reasoning (2026-09-25).
   const top = rect.bottom + ANCHOR_GAP;
 
-  // Viewport coords -> the containing block's own coords. A static
-  // offsetParent (the usual plain <body>) means the initial containing
-  // block, i.e. the document origin.
-  const container = panel.offsetParent as HTMLElement | null;
-  let originX = -window.scrollX;
-  let originY = -window.scrollY;
-  if (container && getComputedStyle(container).position !== 'static') {
-    const cRect = container.getBoundingClientRect();
-    originX = cRect.left + container.clientLeft - container.scrollLeft;
-    originY = cRect.top + container.clientTop - container.scrollTop;
-  }
-
   panel.style.width = `${width}px`;
-  panel.style.transform = `translate3d(${snapToDevicePixel(left - originX)}px, ${snapToDevicePixel(top - originY)}px, 0)`;
+  placeAbsolute(panel, left, top);
 }
 
 // Shared by both the preset and the calendar panel below — same anchor/flip
@@ -71,6 +54,7 @@ function useFloatingPanel(
     const trigger = triggerRef.current;
     const panel = panelRef.current;
     if (!trigger || !panel) return;
+    showInTopLayer(panel);
 
     const reposition = () => positionPanel(trigger, panel, minWidth);
     reposition();
@@ -870,8 +854,6 @@ export function DateRangePicker({
   const fromPlaceholder = committedRange ? formatBoundDate(committedRange.from) : 'From';
   const toPlaceholder = committedRange ? formatBoundDate(committedRange.to) : 'To';
 
-  const portalTarget = openPanel ? (rootRef.current?.closest('dialog') ?? document.body) : null;
-
   return (
     <div ref={rootRef} className={['lxn-date-range', typingDates ? 'lxn-date-range--typing' : '', className].filter(Boolean).join(' ')}
       onClick={(e) => e.stopPropagation()}
@@ -961,126 +943,119 @@ export function DateRangePicker({
         </div>
       </div>
 
-      {/* Both portals below render into document.body (see portalTarget),
-          outside .lxn-root's own subtree — .lxn-root's font-family doesn't
-          reach them via inheritance, so every text node in here needs its
-          own explicit .lxn-l1/.lxn-l4 class (same as MultiSelect/SearchSelect's
-          own panels) or it silently falls back to the browser's default
-          serif font. A bare, class-less <span> here was exactly that bug. */}
-      {openPanel === 'preset' &&
-        portalTarget &&
-        createPortal(
-          <div ref={presetPanelRef} className="lxn-date-range-preset-panel">
-            <div id={presetListboxId} className="lxn-date-range-preset-list" role="listbox">
-              <div
-                role="option"
-                aria-selected={isCustomActive}
-                className="lxn-date-range-preset-option"
-                onClick={selectCustomEntry}
-                onMouseEnter={() => setHighlightedIndex(null)}
-              >
-                <span className="lxn-date-range-preset-check">{isCustomActive && <CheckIcon size={13} />}</span>
-                <span className="lxn-l1">{customLabel}</span>
-              </div>
-              <div className="lxn-date-range-preset-divider" />
-              {filteredPresets.length === 0 ? (
-                <div className="lxn-l4 lxn-date-range-preset-empty">No matches</div>
-              ) : (
-                filteredPresets.map((p, index) => {
-                  const isSelected = value.kind === 'relative' && value.relativeTimeString === p;
-                  const isHighlighted = highlightedIndex !== null && index === highlightedIndex;
-                  return (
-                    <div
-                      key={p}
-                      ref={(el) => {
-                        presetOptionRefs.current[index] = el;
-                      }}
-                      id={presetOptionId(index)}
-                      role="option"
-                      aria-selected={isSelected}
-                      className={['lxn-date-range-preset-option', isHighlighted ? 'is-highlighted' : ''].filter(Boolean).join(' ')}
-                      onClick={() => selectPreset(p)}
-                      onMouseEnter={() => setHighlightedIndex(null)}
-                    >
-                      <span className="lxn-date-range-preset-check">{isSelected && <CheckIcon size={13} />}</span>
-                      <span className="lxn-l1">{p}</span>
-                    </div>
-                  );
-                })
-              )}
+      {/* Both panels below go in the top layer (topLayer.ts). Keep giving
+          every text node its own explicit .lxn-l1/.lxn-l4 class (same as
+          MultiSelect/SearchSelect's own panels): a consumer's container may
+          not set a font, and a bare, class-less <span> here once fell back
+          to the browser's default serif font when these were portalled. */}
+      {openPanel === 'preset' && (
+        <div ref={presetPanelRef} className={`lxn-date-range-preset-panel ${TOP_LAYER_CLASS}`}>
+          <div id={presetListboxId} className="lxn-date-range-preset-list" role="listbox">
+            <div
+              role="option"
+              aria-selected={isCustomActive}
+              className="lxn-date-range-preset-option"
+              onClick={selectCustomEntry}
+              onMouseEnter={() => setHighlightedIndex(null)}
+            >
+              <span className="lxn-date-range-preset-check">{isCustomActive && <CheckIcon size={13} />}</span>
+              <span className="lxn-l1">{customLabel}</span>
             </div>
-          </div>,
-          portalTarget,
-        )}
+            <div className="lxn-date-range-preset-divider" />
+            {filteredPresets.length === 0 ? (
+              <div className="lxn-l4 lxn-date-range-preset-empty">No matches</div>
+            ) : (
+              filteredPresets.map((p, index) => {
+                const isSelected = value.kind === 'relative' && value.relativeTimeString === p;
+                const isHighlighted = highlightedIndex !== null && index === highlightedIndex;
+                return (
+                  <div
+                    key={p}
+                    ref={(el) => {
+                      presetOptionRefs.current[index] = el;
+                    }}
+                    id={presetOptionId(index)}
+                    role="option"
+                    aria-selected={isSelected}
+                    className={['lxn-date-range-preset-option', isHighlighted ? 'is-highlighted' : ''].filter(Boolean).join(' ')}
+                    onClick={() => selectPreset(p)}
+                    onMouseEnter={() => setHighlightedIndex(null)}
+                  >
+                    <span className="lxn-date-range-preset-check">{isSelected && <CheckIcon size={13} />}</span>
+                    <span className="lxn-l1">{p}</span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
 
-      {openPanel === 'calendar' &&
-        portalTarget &&
-        createPortal(
-          <div ref={calendarPanelRef} className="lxn-date-range-calendar-panel" role="dialog" aria-label="Choose date range">
-            <div className="lxn-date-range-calendar-inner">
-              <div className="lxn-date-range-calendar-header">
-                <button
-                  type="button"
-                  className="lxn-date-range-calendar-nav"
-                  aria-label="Previous month"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => shiftMonth(-1)}
-                >
-                  <BackArrowIcon size={16} />
-                </button>
-                <span className="lxn-l1">{monthLabel}</span>
-                <button
-                  type="button"
-                  className="lxn-date-range-calendar-nav"
-                  aria-label="Next month"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={() => shiftMonth(1)}
-                >
-                  <BackArrowIcon size={16} className="lxn-date-range-calendar-nav-icon--next" />
-                </button>
-              </div>
-              <div className="lxn-date-range-calendar-weekdays">
-                {WEEKDAYS.map((d) => (
-                  <span key={d} className="lxn-l4">
-                    {d}
-                  </span>
-                ))}
-              </div>
-              <div className="lxn-date-range-calendar-grid" onMouseLeave={() => pendingStart !== null && setHoverDate(null)}>
-                {cells.map((cell) => {
-                  const isStart = activeFrom !== null && cell.iso === activeFrom;
-                  const isEnd = activeTo !== null && cell.iso === activeTo;
-                  const inRange = activeFrom !== null && activeTo !== null && cell.iso >= activeFrom && cell.iso <= activeTo;
-                  const isToday = cell.iso === todayIso;
-                  return (
-                    <button
-                      key={cell.iso}
-                      type="button"
-                      data-date={cell.iso}
-                      className={[
-                        'lxn-l1',
-                        'lxn-date-range-calendar-day',
-                        !cell.inMonth ? 'is-muted' : '',
-                        inRange ? 'is-in-range' : '',
-                        isStart ? 'is-range-start' : '',
-                        isEnd ? 'is-range-end' : '',
-                        isToday ? 'is-today' : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                      onMouseDown={(e) => e.preventDefault()}
-                      {...dayTap.bind(() => handleDayClick(cell.iso))}
-                      onMouseEnter={() => pendingStart !== null && setHoverDate(cell.iso)}
-                    >
-                      {cell.day}
-                    </button>
-                  );
-                })}
-              </div>
+      {openPanel === 'calendar' && (
+        <div ref={calendarPanelRef} className={`lxn-date-range-calendar-panel ${TOP_LAYER_CLASS}`} role="dialog" aria-label="Choose date range">
+          <div className="lxn-date-range-calendar-inner">
+            <div className="lxn-date-range-calendar-header">
+              <button
+                type="button"
+                className="lxn-date-range-calendar-nav"
+                aria-label="Previous month"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => shiftMonth(-1)}
+              >
+                <BackArrowIcon size={16} />
+              </button>
+              <span className="lxn-l1">{monthLabel}</span>
+              <button
+                type="button"
+                className="lxn-date-range-calendar-nav"
+                aria-label="Next month"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => shiftMonth(1)}
+              >
+                <BackArrowIcon size={16} className="lxn-date-range-calendar-nav-icon--next" />
+              </button>
             </div>
-          </div>,
-          portalTarget,
-        )}
+            <div className="lxn-date-range-calendar-weekdays">
+              {WEEKDAYS.map((d) => (
+                <span key={d} className="lxn-l4">
+                  {d}
+                </span>
+              ))}
+            </div>
+            <div className="lxn-date-range-calendar-grid" onMouseLeave={() => pendingStart !== null && setHoverDate(null)}>
+              {cells.map((cell) => {
+                const isStart = activeFrom !== null && cell.iso === activeFrom;
+                const isEnd = activeTo !== null && cell.iso === activeTo;
+                const inRange = activeFrom !== null && activeTo !== null && cell.iso >= activeFrom && cell.iso <= activeTo;
+                const isToday = cell.iso === todayIso;
+                return (
+                  <button
+                    key={cell.iso}
+                    type="button"
+                    data-date={cell.iso}
+                    className={[
+                      'lxn-l1',
+                      'lxn-date-range-calendar-day',
+                      !cell.inMonth ? 'is-muted' : '',
+                      inRange ? 'is-in-range' : '',
+                      isStart ? 'is-range-start' : '',
+                      isEnd ? 'is-range-end' : '',
+                      isToday ? 'is-today' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                    onMouseDown={(e) => e.preventDefault()}
+                    {...dayTap.bind(() => handleDayClick(cell.iso))}
+                    onMouseEnter={() => pendingStart !== null && setHoverDate(cell.iso)}
+                  >
+                    {cell.day}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

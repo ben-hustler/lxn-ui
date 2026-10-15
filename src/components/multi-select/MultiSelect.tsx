@@ -8,8 +8,8 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from 'react';
-import { createPortal } from 'react-dom';
 import { CheckIcon } from '../icons/icons';
+import { placeAbsolute, showInTopLayer, TOP_LAYER_CLASS } from '../top-layer/topLayer';
 import { useTouchTap } from '../touch-tap/useTouchTap';
 import { SelectTriggerChrome } from '../select-trigger-chrome/SelectTriggerChrome';
 import './multi-select.css';
@@ -20,11 +20,6 @@ import './multi-select.css';
 const EDGE_MARGIN = 8;
 const ANCHOR_GAP = 6;
 const MIN_PANEL_WIDTH = 240;
-
-function snapToDevicePixel(px: number): number {
-  const dpr = window.devicePixelRatio || 1;
-  return Math.round(px * dpr) / dpr;
-}
 
 export interface MultiSelectOption {
   id: string;
@@ -297,9 +292,10 @@ export function MultiSelect({
     const trigger = triggerRef.current;
     const panel = panelRef.current;
     if (!trigger || !panel) return;
+    showInTopLayer(panel);
 
-    // `position: absolute` against the containing block (body or the
-    // enclosing <dialog>), not `position: fixed`, and always below — see
+    // In the top layer (topLayer.ts). `position: absolute` in document
+    // coordinates, not `position: fixed`, and always below — see
     // SingleSelect.tsx's own reposition() for the iOS keyboard/scroll-rate
     // reasoning (2026-09-25).
     const reposition = () => {
@@ -309,20 +305,8 @@ export function MultiSelect({
       const left = Math.min(Math.max(rect.left, EDGE_MARGIN), maxLeft);
       const top = rect.bottom + ANCHOR_GAP;
 
-      // Viewport coords -> the containing block's own coords. A static
-      // offsetParent (the usual plain <body>) means the initial containing
-      // block, i.e. the document origin.
-      const container = panel.offsetParent as HTMLElement | null;
-      let originX = -window.scrollX;
-      let originY = -window.scrollY;
-      if (container && getComputedStyle(container).position !== 'static') {
-        const cRect = container.getBoundingClientRect();
-        originX = cRect.left + container.clientLeft - container.scrollLeft;
-        originY = cRect.top + container.clientTop - container.scrollTop;
-      }
-
       panel.style.width = `${width}px`;
-      panel.style.transform = `translate3d(${snapToDevicePixel(left - originX)}px, ${snapToDevicePixel(top - originY)}px, 0)`;
+      placeAbsolute(panel, left, top);
     };
 
     reposition();
@@ -557,8 +541,6 @@ export function MultiSelect({
     />
   );
 
-  const portalTarget = open ? (triggerRef.current?.closest('dialog') ?? document.body) : null;
-
   return (
     <div
       ref={triggerRef}
@@ -569,63 +551,60 @@ export function MultiSelect({
       }}
     >
       {trigger}
-      {open &&
-        portalTarget &&
-        createPortal(
-          <div
-            ref={panelRef}
-            className={['lxn-multi-select-panel', size === 'compact' ? 'lxn-multi-select-panel--compact' : '']
-              .filter(Boolean)
-              .join(' ')}
-          >
-            <div id={listboxId} className="lxn-multi-select-list" role="listbox" aria-multiselectable="true">
-              {isLoading ? (
-                <div className="lxn-l4 lxn-multi-select-empty">Searching…</div>
-              ) : options.length === 0 ? (
-                <div className="lxn-l4 lxn-multi-select-empty">{emptyLabel}</div>
-              ) : (
-                options.map((o, index) => {
-                  const isSelected = selectedSet.has(o.id);
-                  const isHighlighted = highlightedIndex !== null && index === highlightedIndex;
-                  return (
-                    <div
-                      key={o.id}
-                      ref={(el) => {
-                        optionRefs.current[index] = el;
-                      }}
-                      id={optionId(o.id)}
-                      role="option"
-                      tabIndex={0}
-                      aria-selected={isSelected}
-                      className={['lxn-multi-select-option', isHighlighted ? 'is-highlighted' : ''].filter(Boolean).join(' ')}
-                      // Mousedown is what the browser uses to shift focus to
-                      // a clicked focusable element, ahead of the click event
-                      // itself — prevent that so the search input never
-                      // blurs (and its caret keeps flashing) while picking
-                      // options. toggleOption's own explicit refocus below
-                      // is the belt to this suspenders.
-                      onMouseDown={(e) => e.preventDefault()}
-                      // The mouse taking over the highlight, in the flesh —
-                      // see the highlightedIndex state comment above.
-                      onMouseEnter={() => setHighlightedIndex(null)}
-                      {...optionTap.bind(() => toggleOption(o.id))}
-                      onKeyDown={(e) => handleOptionKeyDown(e, o.id)}
-                    >
-                      <span className="lxn-multi-select-option-checkbox" aria-hidden="true">
-                        {isSelected && <CheckIcon size={11} />}
-                      </span>
-                      <span className="lxn-multi-select-option-text">
-                        <span className="lxn-l1 lxn-multi-select-option-label">{o.label}</span>
-                        {o.subheader && <span className="lxn-l4 lxn-multi-select-option-subheader">{o.subheader}</span>}
-                      </span>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>,
-          portalTarget,
-        )}
+      {open && (
+        <div
+          ref={panelRef}
+          className={['lxn-multi-select-panel', TOP_LAYER_CLASS, size === 'compact' ? 'lxn-multi-select-panel--compact' : '']
+            .filter(Boolean)
+            .join(' ')}
+        >
+          <div id={listboxId} className="lxn-multi-select-list" role="listbox" aria-multiselectable="true">
+            {isLoading ? (
+              <div className="lxn-l4 lxn-multi-select-empty">Searching…</div>
+            ) : options.length === 0 ? (
+              <div className="lxn-l4 lxn-multi-select-empty">{emptyLabel}</div>
+            ) : (
+              options.map((o, index) => {
+                const isSelected = selectedSet.has(o.id);
+                const isHighlighted = highlightedIndex !== null && index === highlightedIndex;
+                return (
+                  <div
+                    key={o.id}
+                    ref={(el) => {
+                      optionRefs.current[index] = el;
+                    }}
+                    id={optionId(o.id)}
+                    role="option"
+                    tabIndex={0}
+                    aria-selected={isSelected}
+                    className={['lxn-multi-select-option', isHighlighted ? 'is-highlighted' : ''].filter(Boolean).join(' ')}
+                    // Mousedown is what the browser uses to shift focus to
+                    // a clicked focusable element, ahead of the click event
+                    // itself — prevent that so the search input never
+                    // blurs (and its caret keeps flashing) while picking
+                    // options. toggleOption's own explicit refocus below
+                    // is the belt to this suspenders.
+                    onMouseDown={(e) => e.preventDefault()}
+                    // The mouse taking over the highlight, in the flesh —
+                    // see the highlightedIndex state comment above.
+                    onMouseEnter={() => setHighlightedIndex(null)}
+                    {...optionTap.bind(() => toggleOption(o.id))}
+                    onKeyDown={(e) => handleOptionKeyDown(e, o.id)}
+                  >
+                    <span className="lxn-multi-select-option-checkbox" aria-hidden="true">
+                      {isSelected && <CheckIcon size={11} />}
+                    </span>
+                    <span className="lxn-multi-select-option-text">
+                      <span className="lxn-l1 lxn-multi-select-option-label">{o.label}</span>
+                      {o.subheader && <span className="lxn-l4 lxn-multi-select-option-subheader">{o.subheader}</span>}
+                    </span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
