@@ -48,22 +48,12 @@
   pointer-events: none;
 }
 
-/* No transition and no reserved space at rest — `width: 0` + `overflow:
-   hidden` collapses this to nothing (not just invisible) when idle, so the
-   chip doesn't carry a permanent empty gap for a glyph that isn't showing.
-   On hover/focus it snaps straight to full width, growing the chip and
-   pushing the label over instantly — decision was "expand the size and bump
-   the text," not animate a reveal into space that was already there. */
+/* Always visible on removable chips (2026-10-21) — previously collapsed to
+   `width: 0` at rest and revealed on hover/focus, which hid the fact that
+   the chip was removable at all. */
 .lxn-filter-chip-x {
   display: inline-flex;
   align-items: center;
-  width: 0;
-  margin-left: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-.lxn-filter-chip--removable:hover .lxn-filter-chip-x,
-.lxn-filter-chip--removable:focus-visible .lxn-filter-chip-x {
-  width: auto;
   margin-left: 4px;
+  pointer-events: none;
 }

@@ -5,10 +5,10 @@ export interface FilterChipProps {
   label: string;
   /** Omit for a locked chip (e.g. Internal Comps' Make/Lookback — fixed
    * vehicle context or never-empty, respectively): renders as a plain,
-   * non-interactive `<span>` with no hover `×`, same convention as
+   * non-interactive `<span>` with no `×`, same convention as
    * inventory-dashboard's own `ActiveFilterChip` ("Omit for protected
    * filters — they render without an ×"). When given, the WHOLE chip is the
-   * click target (not just the `×`) — the `×` glyph is a hover/focus-visible
+   * click target (not just the `×`) — the always-visible `×` glyph is an
    * affordance, not a separate hit target. Expected to update optimistically
    * (remove the value from state immediately, correct afterward only if the
    * underlying save fails) rather than this component waiting on anything —
