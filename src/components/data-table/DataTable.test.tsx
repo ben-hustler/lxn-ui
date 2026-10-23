@@ -193,19 +193,20 @@ describe('<DataTable>', () => {
     expect(label.textContent).toContain('A very long row label');
   });
 
-  it('renders a pinned summary row below the column headers when supplied, its label shown in both states (sort header beneath it once expanded)', () => {
+  it('renders a pinned summary row below the column headers when supplied, its label shown in both states (sort header in the column-labels row once expanded)', () => {
     const rows = [row('r1', 'A', 1, 2, 3)];
     const summaryRow = { label: 'Brightwater Toyota', cells: { units: '5', dts: '34 Days', acv: '$16,900' } };
     const { rerender } = render(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} summaryRow={summaryRow} />);
     expect(screen.getByText('34 Days')).toBeTruthy();
     expect(screen.getByText('$16,900')).toBeTruthy();
-    // Expanded: label and the row-label sort header share one spanning cell,
-    // label first.
+    // Expanded: the row-label sort header sits in the column-labels row, the
+    // summary label in the values row beneath it.
     const label = screen.getByText('Brightwater Toyota');
     const cell = label.closest('th') as HTMLElement;
     expect(cell.className).toContain('lxn-data-table-summary-label-cell');
-    expect(cell.querySelector('.lxn-data-table-row-header-sort-btn')?.textContent).toContain('Row');
-    expect(label.compareDocumentPosition(screen.getByText('Row')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(cell.closest('tr')?.textContent).toContain('34 Days');
+    const sortRow = screen.getByText('Row').closest('tr') as HTMLElement;
+    expect(sortRow.className).toContain('lxn-data-table-header-row--labels');
 
     rerender(<DataTable rowLabelHeader={["Row"]} columnGroups={COLUMN_GROUPS} rows={rows} summaryRow={summaryRow} expanded={false} />);
     // Collapsed: the summary card — the label alone in its label column, no

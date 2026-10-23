@@ -123,6 +123,10 @@ export interface DataTableProps {
    * own drilldown-building logic already knows precisely (which levels it
    * kept vs. skipped), not hand-typed prose duplicating that decision. */
   rowLabelHeader: string[];
+  /** Shown before the row-label header (2026-10-23) — e.g. `'By'` reads
+   * "By Location". Display only: the "Sort by …" tooltip still uses the
+   * bare header. */
+  rowLabelHeaderPrefix?: string;
   /** Fixed width (px) of the row-identity column — an explicit override,
    * not a starting point for auto-sizing. Leave it unset (the default,
    * 2026-09-21) and DataTable measures the header's row-label SORT CONTROL
@@ -377,6 +381,9 @@ function SummaryCard({
   return (
     <div ref={cardRef} className={`lxn-data-table-card${layout.stacked ? ' lxn-data-table-card--stacked' : ''}`} style={style}>
       <div className="lxn-data-table-card-label">
+        <span className="lxn-data-table-card-label-spacer lxn-l3" aria-hidden="true">
+          {' '}
+        </span>
         {summaryRow.label !== '' && summaryRow.label != null ? <span className="lxn-data-table-summary-label">{summaryRow.label}</span> : null}
       </div>
       <div className="lxn-data-table-card-lines">
@@ -426,6 +433,7 @@ function SummaryCard({
  * column while `null`, or on whichever measure column was last clicked. */
 export function DataTable({
   rowLabelHeader,
+  rowLabelHeaderPrefix,
   rowLabelColumnWidth,
   columnGroups,
   rows,
@@ -441,6 +449,7 @@ export function DataTable({
   const isExpanded = expanded ?? true;
   const canExpand = !isExpanded && Boolean(onExpandedChange);
   const rowLabelHeaderText = rowLabelHeader.join(' → ');
+  const rowLabelHeaderDisplay = rowLabelHeaderPrefix ? `${rowLabelHeaderPrefix} ${rowLabelHeaderText}` : rowLabelHeaderText;
   const rowLabelMeasureRef = useRef<HTMLSpanElement>(null);
   const rowLabelRowsMeasureRef = useRef<HTMLDivElement>(null);
   const [measuredRowLabelWidth, setMeasuredRowLabelWidth] = useState<number | null>(null);
@@ -480,7 +489,7 @@ export function DataTable({
       widest = Math.max(widest, clone.getBoundingClientRect().width);
     }
     setMeasuredRowLabelWidth(Math.ceil(widest));
-  }, [rowLabelHeaderText, rows, rowLabelColumnWidth]);
+  }, [rowLabelHeaderDisplay, rows, rowLabelColumnWidth]);
 
   // Last-resort fallback for the one render before measurement lands (or an
   // environment with no real layout engine at all) — not a default meant to
@@ -602,7 +611,7 @@ export function DataTable({
       onClick={() => handleSort(null)}
       disabled={!isExpanded}
     >
-      <span className="lxn-data-table-row-header-sort-label">{rowLabelHeaderText}</span>
+      <span className="lxn-data-table-row-header-sort-label">{rowLabelHeaderDisplay}</span>
       {/* Always mounted, at a fixed slot immediately right of the label —
        * only its visibility/greying changes, so activating a sort never
        * shifts anything else in the row (2026-09-17 CLS fix). */}
@@ -644,20 +653,15 @@ export function DataTable({
              * header block; see `.lxn-data-table-header-row--tall`. */}
             <tr className={summaryRow ? 'lxn-data-table-header-row--labels' : 'lxn-data-table-header-row--tall'}>
               {summaryRow ? (
-                // With a summary row (2026-09-28, "Option I"): one cell
-                // spanning both header rows in both states — the summary
-                // label, with the sortable column header beneath it once
-                // expanded. In the flow, so a wrapping label grows the band.
+                // With a summary row: the sortable row-label header sits in
+                // this row, in line with the column labels (2026-10-23 —
+                // was stacked under the summary label), and the summary
+                // label gets its own cell in the values row below.
                 <th
-                  className={`lxn-data-table-row-header-cell lxn-data-table-summary-label-cell ${dividerClassName('none', isExpanded)}`}
-                  aria-sort={isExpanded ? rowLabelAriaSort : undefined}
+                  className={`lxn-data-table-row-header-cell lxn-data-table-row-header-cell--labels ${dividerClassName('none', false)}`}
+                  aria-sort={rowLabelAriaSort}
                 >
-                  <span className="lxn-data-table-summary-label-stack">
-                    {summaryRow.label !== '' && summaryRow.label != null ? (
-                      <span className="lxn-data-table-summary-label">{summaryRow.label}</span>
-                    ) : null}
-                    {isExpanded ? rowLabelSortButton : null}
-                  </span>
+                  {rowLabelSortButton}
                 </th>
               ) : (
                 <th className={`lxn-data-table-row-header-cell ${dividerClassName('none', isExpanded)}`} aria-sort={rowLabelAriaSort}>
@@ -695,8 +699,11 @@ export function DataTable({
             </tr>
             {summaryRow && (
               <tr>
-                {/* No row-label cell — the summary label cell in the row
-                 * above spans down into this row. */}
+                <th className={`lxn-data-table-row-header-cell lxn-data-table-summary-label-cell ${dividerClassName('none', isExpanded)}`}>
+                  {summaryRow.label !== '' && summaryRow.label != null ? (
+                    <span className="lxn-data-table-summary-label">{summaryRow.label}</span>
+                  ) : null}
+                </th>
                 {columns.map((column) => {
                   const tone = summaryRow.tones?.[column.key] ?? 'default';
                   return (
@@ -864,7 +871,7 @@ export function DataTable({
         ref={rowLabelMeasureRef}
         className="lxn-data-table-row-header-sort-btn lxn-data-table-row-header-sort-btn--measure lxn-l3"
         aria-hidden="true"
-        data-label={rowLabelHeaderText}
+        data-label={rowLabelHeaderDisplay}
       >
         <SortTriangle visible={false} ascending={false} className="lxn-data-table-sort-icon--measure" />
       </span>
