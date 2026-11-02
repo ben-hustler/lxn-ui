@@ -24,6 +24,9 @@ export interface SingleSelectOption {
   label: string;
   /** Informational only — never a filter. */
   subheader?: string;
+  /** Small trailing glyph(s) right after the label (e.g. a status icon).
+   * Decorative — put any meaning a screen reader needs in `label`/`subheader`. */
+  adornment?: ReactNode;
 }
 
 export interface SingleSelectTriggerArgs {
@@ -485,6 +488,11 @@ export function SingleSelect({
                       <span className="lxn-l1 lxn-single-select-option-label">{o.label}</span>
                       {o.subheader && <span className="lxn-l4 lxn-single-select-option-subheader">{o.subheader}</span>}
                     </span>
+                    {o.adornment && (
+                      <span className="lxn-single-select-option-adornment" aria-hidden="true">
+                        {o.adornment}
+                      </span>
+                    )}
                   </div>
                 );
               })

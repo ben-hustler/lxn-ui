@@ -218,6 +218,13 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Optional trailing status glyph(s), right after the label. */
+.lxn-single-select-option-adornment {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
 .lxn-single-select-empty {
   padding: 12px;
 }

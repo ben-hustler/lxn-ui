@@ -24,6 +24,7 @@ import {
   CloseIcon,
   PrintIcon,
   CheckCircleIcon,
+  SellIcon,
   CalendarIcon,
   StatusBadge,
   PulseDots,
@@ -511,6 +512,7 @@ const ICONS: { Icon: (props: IconProps) => ReactNode; name: string; source: stri
   { Icon: CloseIcon, name: 'CloseIcon', source: 'Material close (filled)' },
   { Icon: PrintIcon, name: 'PrintIcon', source: 'Material local_printshop (filled)' },
   { Icon: CheckCircleIcon, name: 'CheckCircleIcon', source: 'Material Rounded check_circle' },
+  { Icon: SellIcon, name: 'SellIcon', source: 'Material sell (filled)' },
   { Icon: CalendarIcon, name: 'CalendarIcon', source: 'Lucide calendar' },
   { Icon: ReturnToAppIcon, name: 'ReturnToAppIcon', source: 'Material Symbols exit_to_app (outlined)' },
 ];

@@ -25,6 +25,7 @@ export {
   AutoFixHighIcon,
   PrintIcon,
   CheckCircleIcon,
+  SellIcon,
   CalendarIcon,
   SlidersIcon,
   ReturnToAppIcon,
