@@ -355,3 +355,66 @@ export function LoaderIcon(props: IconProps) {
     </Icon>
   );
 }
+
+/** Email / Send glyph — Google Material Icons' filled `mail` glyph, verbatim
+   (path from @material-design-icons/svg filled/mail.svg). Filled with
+   currentColor. First use: appraisal-offer's Send button and the
+   individual-sections modal's email action (carried over from the Lit offer
+   sheet, which used the same Material glyph). */
+export function MailIcon(props: SVGProps<SVGSVGElement> & { size?: number }) {
+  const { size = 24, ...rest } = props;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...rest}>
+      <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z" />
+    </svg>
+  );
+}
+
+/** "More" (horizontal ellipsis) glyph — Google Material Icons' filled
+   `more_horiz` glyph, verbatim. First use: appraisal-offer's Preview card,
+   opening the individual-sections modal. */
+export function MoreHorizIcon(props: SVGProps<SVGSVGElement> & { size?: number }) {
+  const { size = 24, ...rest } = props;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...rest}>
+      <path d="M6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm12 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+    </svg>
+  );
+}
+
+/** Left arrow (shaft + head) — Lucide's `arrow-left` glyph, verbatim. Not
+   BackArrowIcon, which is a bare chevron: Figma's "Return to appraisal" link
+   shows a full arrow. First use: appraisal-offer's Offer card. */
+export function ArrowLeftIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="m12 19-7-7 7-7" />
+      <path d="M19 12H5" />
+    </Icon>
+  );
+}
+
+/** Locked glyph — Lucide's `lock` glyph, verbatim. First use:
+   appraisal-offer's locked-Customize notice (replaces the Lit offer sheet's
+   hand-drawn 13px lock). */
+export function LockIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </Icon>
+  );
+}
+
+/** Drag handle (2x3 dots) — Google Material Icons' filled `drag_indicator`
+   glyph, verbatim. Filled Material rather than Lucide's stroke
+   `grip-vertical` because Lucide's r=1 stroked dots vanish at the 14–16px
+   this is used at. First use: appraisal-offer's Layout section rows. */
+export function DragHandleIcon(props: SVGProps<SVGSVGElement> & { size?: number }) {
+  const { size = 24, ...rest } = props;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...rest}>
+      <path d="M11 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm-2-8c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+    </svg>
+  );
+}
