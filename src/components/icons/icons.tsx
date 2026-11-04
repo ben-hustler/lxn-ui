@@ -418,3 +418,15 @@ export function DragHandleIcon(props: SVGProps<SVGSVGElement> & { size?: number 
     </svg>
   );
 }
+
+/** Vertical double arrow — Google Material Icons' filled `height` glyph,
+   verbatim. First use: appraisal-offer's amount scrubber (hold + drag
+   vertically to change the offer amount). */
+export function HeightIcon(props: SVGProps<SVGSVGElement> & { size?: number }) {
+  const { size = 24, ...rest } = props;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...rest}>
+      <path d="M13 6.99h3L12 3 8 6.99h3v10.02H8L12 21l4-3.99h-3z" />
+    </svg>
+  );
+}

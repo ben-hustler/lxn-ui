@@ -40,6 +40,7 @@ independently-drawn glyphs; those files are now gone, migrated below.
 | `ArrowLeftIcon`    | Lucide `arrow-left`                            | ISC        | Explicit ask 2026-11-03. appraisal-offer's "Return to appraisal" (Figma shows a full arrow; `BackArrowIcon` is a chevron). |
 | `LockIcon`         | Lucide `lock`                                  | ISC        | Explicit ask 2026-11-03. appraisal-offer's locked-Customize notice; replaces the Lit offer sheet's hand-drawn lock. |
 | `DragHandleIcon`   | Google Material Icons `drag_indicator` (filled) | Apache-2.0 | Explicit ask 2026-11-03. appraisal-offer's Layout rows. Filled Material over Lucide `grip-vertical`: Lucide's r=1 stroked dots are too faint at 14–16px. |
+| `HeightIcon`       | Google Material Icons `height` (filled)        | Apache-2.0 | Explicit ask 2026-11-04. appraisal-offer's amount scrubber (hold + drag vertically). |
 
 ## Verifying a glyph
 
