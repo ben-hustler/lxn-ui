@@ -310,12 +310,19 @@ export function SingleSelect({
     onSearch?.(q);
   }
 
-  // Every pick is a full close, not a toggle — there's only one slot, so
-  // clicking any row (already-selected or not) is necessarily the last
-  // action a user takes in this dropdown. The `open` -> false transition
-  // above handles clearing the query/search.
+  // Re-picking the already-selected row deselects it (onChange(null)) —
+  // same affordance as the clear-X, so it's gated on exactly the same
+  // conditions: `clearable`, and only on the default trigger (a
+  // renderTrigger caller, e.g. appraisal-users' Location breadcrumb, never
+  // gets the X either, so it keeps plain re-pick = no-op-reselect).
+  const canDeselect = clearable && !renderTrigger;
+
+  // Every pick is a full close — there's only one slot, so clicking any row
+  // (already-selected or not) is necessarily the last action a user takes
+  // in this dropdown. The `open` -> false transition above handles clearing
+  // the query/search.
   function selectOption(id: string) {
-    onChange(id);
+    onChange(canDeselect && id === value ? null : id);
     setOpen(false);
   }
 

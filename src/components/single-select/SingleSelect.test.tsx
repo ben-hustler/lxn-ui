@@ -117,14 +117,53 @@ describe('<SingleSelect> — picking', () => {
     expect(screen.queryByRole('option', { name: /Toyota/ })).toBeFalsy();
   });
 
-  it('clicking the ALREADY-selected option still closes the panel (no toggle-off — there is always exactly one slot)', () => {
+  it('clicking the ALREADY-selected option deselects it (onChange(null)) and closes the panel — same affordance as the clear-X', () => {
     const onChange = vi.fn();
     render(<SingleSelect value="toyota" options={OPTIONS} onChange={onChange} />);
     fireEvent.click(screen.getByRole('combobox'));
 
     fireEvent.click(screen.getByRole('option', { name: /Toyota/ }));
+    expect(onChange).toHaveBeenCalledWith(null);
+    expect(screen.queryByRole('listbox')).toBeFalsy();
+  });
+
+  it('Enter on the already-selected (highlighted) option deselects it too', () => {
+    const onChange = vi.fn();
+    render(<SingleSelect value="toyota" options={OPTIONS} onChange={onChange} />);
+    fireEvent.click(screen.getByRole('combobox'));
+
+    fireEvent.keyDown(screen.getByRole('textbox'), { key: 'Enter' });
+    expect(onChange).toHaveBeenCalledWith(null);
+  });
+
+  it('clearable={false}: re-clicking the selected option re-picks it instead of deselecting (nothing valid to clear back to)', () => {
+    const onChange = vi.fn();
+    render(<SingleSelect value="toyota" options={OPTIONS} onChange={onChange} clearable={false} />);
+    fireEvent.click(screen.getByRole('combobox'));
+
+    fireEvent.click(screen.getByRole('option', { name: /Toyota/ }));
     expect(onChange).toHaveBeenCalledWith('toyota');
     expect(screen.queryByRole('listbox')).toBeFalsy();
+  });
+
+  it('renderTrigger: re-clicking the selected option re-picks it instead of deselecting (custom triggers never get the clear-X either)', () => {
+    const onChange = vi.fn();
+    render(
+      <SingleSelect
+        value="toyota"
+        options={OPTIONS}
+        onChange={onChange}
+        renderTrigger={({ onClick }) => (
+          <button type="button" onClick={onClick} data-testid="custom-trigger">
+            open
+          </button>
+        )}
+      />,
+    );
+    fireEvent.click(screen.getByTestId('custom-trigger'));
+
+    fireEvent.click(screen.getByRole('option', { name: /Toyota/ }));
+    expect(onChange).toHaveBeenCalledWith('toyota');
   });
 
   it('picking from a live-filtered search clears the query for next time (the panel is closed anyway, so this only matters on reopen)', async () => {
