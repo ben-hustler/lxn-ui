@@ -681,3 +681,54 @@ describe('<MultiSelect> — ariaLabel', () => {
     expect(screen.getByRole('button', { name: 'Clear Colors' })).toBeTruthy();
   });
 });
+
+describe('MultiSelect searchable={false}', () => {
+  function Plain({ initialValue = [] as string[] }: { initialValue?: string[] }) {
+    const [value, setValue] = useState<string[]>(initialValue);
+    return <MultiSelect value={value} options={OPTIONS} onChange={setValue} searchable={false} />;
+  }
+
+  it('opens without a search input and keeps showing the selection', () => {
+    render(<Plain initialValue={['honda']} />);
+    fireEvent.click(screen.getByRole('combobox'));
+    expect(screen.getByRole('listbox')).toBeTruthy();
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(screen.getByRole('combobox').textContent).toContain('Honda');
+  });
+
+  it('drives the list from the trigger with arrows, Space and Enter', () => {
+    render(<Plain />);
+    const box = screen.getByRole('combobox');
+    fireEvent.keyDown(box, { key: 'ArrowDown' }); // opens, highlight on row 0
+    fireEvent.keyDown(box, { key: 'ArrowDown' }); // row 1
+    fireEvent.keyDown(box, { key: ' ' });
+    expect(screen.getByRole('option', { name: /Honda/ }).getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(box, { key: 'ArrowUp' });
+    fireEvent.keyDown(box, { key: 'Enter' });
+    expect(screen.getByRole('option', { name: /Toyota/ }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('listbox')).toBeTruthy(); // still open, like the searchable version
+  });
+});
+
+describe('MultiSelect summarizeAfter', () => {
+  const MANY: MultiSelectOption[] = ['a', 'b', 'c', 'd', 'e'].map((id) => ({ id, label: id.toUpperCase() }));
+
+  it('lists up to 3 picks, then shows "N selected"', () => {
+    const { rerender } = render(<MultiSelect value={['a', 'b', 'c']} options={MANY} onChange={vi.fn()} />);
+    expect(screen.getByRole('combobox').textContent).toContain('A, B, C');
+    rerender(<MultiSelect value={['a', 'b', 'c', 'd']} options={MANY} onChange={vi.fn()} />);
+    expect(screen.getByRole('combobox').textContent).toContain('4 selected');
+    expect(screen.getByRole('combobox').textContent).not.toContain('A, B');
+  });
+
+  it('uses the count in the open trailing list too', () => {
+    render(<MultiSelect value={['a', 'b', 'c', 'd']} options={MANY} onChange={vi.fn()} />);
+    fireEvent.click(screen.getByRole('combobox'));
+    expect(screen.getByRole('combobox').textContent).toContain('4 selected');
+  });
+
+  it('honours a custom threshold', () => {
+    render(<MultiSelect value={['a', 'b']} options={MANY} onChange={vi.fn()} summarizeAfter={1} />);
+    expect(screen.getByRole('combobox').textContent).toContain('2 selected');
+  });
+});

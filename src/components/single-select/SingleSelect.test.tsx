@@ -480,3 +480,28 @@ describe('<SingleSelect> — displayLabel', () => {
     expect(screen.getByRole('button', { name: 'Clear selection' })).toBeTruthy();
   });
 });
+
+describe('SingleSelect searchable={false}', () => {
+  function Plain({ initialValue = null as string | null }: { initialValue?: string | null }) {
+    const [value, setValue] = useState<string | null>(initialValue);
+    return <SingleSelect value={value} options={OPTIONS} onChange={setValue} searchable={false} />;
+  }
+
+  it('opens without a search input and keeps showing the value', () => {
+    render(<Plain initialValue="ford" />);
+    fireEvent.click(screen.getByRole('combobox'));
+    expect(screen.getByRole('listbox')).toBeTruthy();
+    expect(screen.queryByRole('textbox')).toBeNull();
+    expect(screen.getByRole('combobox').textContent).toContain('Ford');
+  });
+
+  it('picks with arrows + Enter from the trigger and closes', () => {
+    render(<Plain />);
+    const box = screen.getByRole('combobox');
+    fireEvent.keyDown(box, { key: 'ArrowDown' });
+    fireEvent.keyDown(box, { key: 'ArrowDown' });
+    fireEvent.keyDown(box, { key: 'Enter' });
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(box.textContent).toContain('Honda');
+  });
+});

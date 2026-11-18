@@ -69,6 +69,10 @@
 .lxn-multi-select-trigger-value--editing .lxn-multi-select-trigger-suffix {
   color: var(--color-fg-tertiary);
 }
+/* "4 selected" after the search input: a gap instead of the list's comma. */
+.lxn-multi-select-trigger-suffix--count {
+  margin-left: 0.3em;
+}
 /* Auto-grow-to-content trick: a hidden `::after` mirrors the input's own
    value (via `content: attr(data-value)`, same inherited font as the real
    input) and, being an ordinary inline box, sizes the wrapper to exactly

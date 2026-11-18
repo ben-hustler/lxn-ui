@@ -96,6 +96,15 @@ export interface MultiSelectProps {
    * two-value set rather than a raw font-size override. Only affects the
    * default trigger. */
   size?: 'default' | 'compact';
+  /** Whether the open trigger turns into a type-to-filter search input.
+   * Default true. False for a short fixed list where typing adds nothing:
+   * the trigger keeps showing the current selection while open, focus stays
+   * on the trigger itself, and the arrow keys / Enter / Space drive the list
+   * from there. `onSearch` is never called. */
+  searchable?: boolean;
+  /** Once more than this many options are picked, the trigger shows
+   * "N selected" instead of the comma-joined labels. Default 3. */
+  summarizeAfter?: number;
 }
 
 /** Generic multi-value searchable dropdown (lxn-ui, not app-specific) —
@@ -126,6 +135,8 @@ export function MultiSelect({
   justSaved = false,
   ariaLabel,
   size = 'default',
+  searchable = true,
+  summarizeAfter = 3,
 }: MultiSelectProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -278,9 +289,10 @@ export function MultiSelect({
     function onFocusIn(e: FocusEvent) {
       if (touchRef.current) return;
       const target = e.target as Node;
-      if (target === inputRef.current) return;
+      const home = focusHome();
+      if (!home || target === home) return;
       if (triggerRef.current?.contains(target) || panelRef.current?.contains(target)) {
-        inputRef.current?.focus();
+        home.focus();
       }
     }
     document.addEventListener('focusin', onFocusIn);
@@ -323,6 +335,13 @@ export function MultiSelect({
       window.removeEventListener('scroll', onScroll, true);
     };
   }, [open, options.length, isLoading]);
+
+  // Where focus lives while open: the search input, or (not searchable) the
+  // trigger box's own combobox element.
+  function focusHome(): HTMLElement | null {
+    if (searchable) return inputRef.current;
+    return triggerRef.current?.querySelector<HTMLElement>('[role="combobox"]') ?? null;
+  }
 
   function toggleOpen() {
     if (disabled || saving) return;
@@ -381,7 +400,7 @@ export function MultiSelect({
     // the first place; this is the guaranteed fallback (also what makes the
     // behavior assertable from a test, since jsdom doesn't fully replicate
     // real browser click-focus semantics). Skipped for touch — see touchRef.
-    if (!touchRef.current) inputRef.current?.focus();
+    if (!touchRef.current) focusHome()?.focus();
   }
 
   // Red X that takes over the chevron's own slot while open AND something
@@ -398,7 +417,7 @@ export function MultiSelect({
   function clearSelection(e: ReactMouseEvent) {
     e.stopPropagation();
     onChange([]);
-    if (!touchRef.current) inputRef.current?.focus();
+    if (!touchRef.current) focusHome()?.focus();
   }
 
   function handleOptionKeyDown(e: ReactKeyboardEvent<HTMLDivElement>, id: string) {
@@ -412,7 +431,7 @@ export function MultiSelect({
   // above keeps real focus pinned to the input the whole time the panel is
   // open, so this is the only element that will ever actually see these
   // keydowns in a real browser.
-  function handleInputKeyDown(e: ReactKeyboardEvent<HTMLInputElement>) {
+  function handleInputKeyDown(e: ReactKeyboardEvent<HTMLElement>) {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       // Resuming from null (the mouse cleared it) starts back at the top,
@@ -421,7 +440,7 @@ export function MultiSelect({
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setHighlightedIndex((i) => (i === null ? 0 : Math.max(i - 1, 0)));
-    } else if (e.key === 'Enter') {
+    } else if (e.key === 'Enter' || (!searchable && e.key === ' ')) {
       e.preventDefault();
       if (highlightedIndex === null) return;
       const option = options[highlightedIndex];
@@ -449,10 +468,19 @@ export function MultiSelect({
   // the trigger box's own overflow:hidden/text-overflow:ellipsis (CSS)
   // truncates it with "…" once it no longer fits, rather than switching to a
   // count once there's more than one. Used for the CLOSED display only.
-  const triggerLabel = selected.length === 0 ? placeholderLabel : selected.map((o) => o.label).join(', ');
+  // Past `summarizeAfter` picks, a count instead ("4 selected"), used in both
+  // the closed display and the open-state trailing list.
+  const summarized = selected.length > summarizeAfter;
+  const selectedText = summarized ? `${selected.length} selected` : selected.map((o) => o.label).join(', ');
+  const triggerLabel = selected.length === 0 ? placeholderLabel : selectedText;
 
   function handleTriggerKeyDown(e: ReactKeyboardEvent<HTMLDivElement>) {
     if (disabled || saving) return;
+    // Not searchable: there's no input, so the open list's keys land here.
+    if (open && !searchable && e.target === e.currentTarget) {
+      handleInputKeyDown(e);
+      return;
+    }
     if (!open && (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown')) {
       e.preventDefault();
       touchRef.current = false;
@@ -477,8 +505,8 @@ export function MultiSelect({
   // React unmounts the old <input> and mounts a brand new (unfocused) one —
   // 2nd+ picks never showed the bug because the tree shape was already
   // stable by then. A stable wrapper keeps the same DOM node throughout.
-  const existingList = open && selected.length > 0 ? selected.map((o) => o.label).join(', ') : '';
-  const valueArea = open ? (
+  const existingList = open && selected.length > 0 ? selectedText : '';
+  const valueArea = open && searchable ? (
     <span className="lxn-multi-select-trigger-value lxn-multi-select-trigger-value--editing">
       <span
         className={['lxn-l1', 'lxn-multi-select-trigger-growwrap', existingList ? '' : 'lxn-multi-select-trigger-growwrap--fill']
@@ -497,7 +525,11 @@ export function MultiSelect({
           onKeyDown={handleInputKeyDown}
         />
       </span>
-      {existingList && <span className="lxn-l1 lxn-multi-select-trigger-suffix">, {existingList}</span>}
+      {existingList && (
+        <span className={['lxn-l1', 'lxn-multi-select-trigger-suffix', summarized ? 'lxn-multi-select-trigger-suffix--count' : ''].filter(Boolean).join(' ')}>
+          {summarized ? existingList : `, ${existingList}`}
+        </span>
+      )}
     </span>
   ) : (
     <span

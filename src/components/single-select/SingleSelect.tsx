@@ -107,6 +107,12 @@ export interface SingleSelectProps {
    * two-value set rather than a raw font-size override. Only affects the
    * default trigger. */
   size?: 'default' | 'compact';
+  /** Whether the open trigger turns into a type-to-filter search input.
+   * Default true. False for a short fixed list where typing adds nothing:
+   * the trigger keeps showing the current value while open, focus stays on
+   * the trigger itself, and the arrow keys / Enter / Space drive the list
+   * from there. `onSearch` is never called. */
+  searchable?: boolean;
 }
 
 /** Generic single-value searchable dropdown (lxn-ui, not app-specific) — a
@@ -142,6 +148,7 @@ export function SingleSelect({
   ariaLabel,
   displayLabel,
   size = 'default',
+  searchable = true,
 }: SingleSelectProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -351,14 +358,14 @@ export function SingleSelect({
     onChange(null);
   }
 
-  function handleInputKeyDown(e: ReactKeyboardEvent<HTMLInputElement>) {
+  function handleInputKeyDown(e: ReactKeyboardEvent<HTMLElement>) {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setHighlightedIndex((i) => (i === null ? 0 : Math.min(i + 1, options.length - 1)));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setHighlightedIndex((i) => (i === null ? 0 : Math.max(i - 1, 0)));
-    } else if (e.key === 'Enter') {
+    } else if (e.key === 'Enter' || (!searchable && e.key === ' ')) {
       e.preventDefault();
       if (highlightedIndex === null) return;
       const option = options[highlightedIndex];
@@ -369,6 +376,11 @@ export function SingleSelect({
 
   function handleTriggerKeyDown(e: ReactKeyboardEvent<HTMLDivElement>) {
     if (disabled || saving) return;
+    // Not searchable: there's no input, so the open list's keys land here.
+    if (open && !searchable && e.target === e.currentTarget) {
+      handleInputKeyDown(e);
+      return;
+    }
     if (!open && (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown')) {
       e.preventDefault();
       touchRef.current = false;
@@ -390,7 +402,7 @@ export function SingleSelect({
   // the browser's own placeholder-vs-value swap. No MultiSelect-style
   // grow-to-content mirror is needed here: there's no trailing suffix to
   // push rightward, so the input can simply fill the box.
-  const valueArea = open ? (
+  const valueArea = open && searchable ? (
     <span className="lxn-single-select-trigger-value lxn-single-select-trigger-value--editing">
       <input
         ref={inputRef}

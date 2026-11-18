@@ -110,6 +110,10 @@ export interface DateRangePickerProps {
    * the Bubble reference style, same as MultiSelect's own `label` prop. */
   label?: string;
   className?: string;
+  /** Narrowest width (px) the preset box and the dates sit side by side at.
+   * Below it they wrap: the preset box on top, the dates underneath, each
+   * full width, instead of squeezing both until they truncate. Default 360. */
+  minWidth?: number;
 }
 
 const DEFAULT_PRESETS = [
@@ -430,6 +434,7 @@ export function DateRangePicker({
   customLabel = 'Custom range',
   label,
   className,
+  minWidth = 360,
 }: DateRangePickerProps) {
   const [openPanel, setOpenPanel] = useState<'preset' | 'calendar' | null>(null);
   const [query, setQuery] = useState('');
@@ -453,6 +458,18 @@ export function DateRangePicker({
   const [toText, setToText] = useState('');
 
   const rootRef = useRef<HTMLDivElement>(null);
+  // Whether the root is narrower than `minWidth` — measured (ResizeObserver),
+  // not a CSS container query, so the threshold can be a prop.
+  const [wrapped, setWrapped] = useState(false);
+  useLayoutEffect(() => {
+    const el = rootRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const check = () => setWrapped(el.getBoundingClientRect().width < minWidth);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [minWidth]);
   const presetTriggerRef = useRef<HTMLDivElement>(null);
   const presetPanelRef = useRef<HTMLDivElement>(null);
   const presetInputRef = useRef<HTMLInputElement>(null);
@@ -855,7 +872,7 @@ export function DateRangePicker({
   const toPlaceholder = committedRange ? formatBoundDate(committedRange.to) : 'To';
 
   return (
-    <div ref={rootRef} className={['lxn-date-range', typingDates ? 'lxn-date-range--typing' : '', className].filter(Boolean).join(' ')}
+    <div ref={rootRef} className={['lxn-date-range', typingDates ? 'lxn-date-range--typing' : '', wrapped ? 'lxn-date-range--wrapped' : '', className].filter(Boolean).join(' ')}
       onClick={(e) => e.stopPropagation()}
       onPointerDownCapture={handlePointerDownCapture}
     >

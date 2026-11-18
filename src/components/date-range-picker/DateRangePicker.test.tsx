@@ -616,3 +616,31 @@ describe('<DateRangePicker> — touch device entry point', () => {
     expect(document.activeElement).toBe(to);
   });
 });
+
+describe('DateRangePicker minWidth', () => {
+  let width = 500;
+  beforeEach(() => {
+    vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(() => ({ width } as DOMRect));
+  });
+  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+  const value = { kind: 'relative' as const, relativeTimeString: 'Last month' };
+
+  it('sits side by side at or above minWidth', () => {
+    width = 360;
+    const { container } = render(<DateRangePicker value={value} onChange={vi.fn()} />);
+    expect(container.querySelector('.lxn-date-range--wrapped')).toBeNull();
+  });
+
+  it('wraps below minWidth', () => {
+    width = 300;
+    const { container } = render(<DateRangePicker value={value} onChange={vi.fn()} />);
+    expect(container.querySelector('.lxn-date-range--wrapped')).toBeTruthy();
+  });
+
+  it('takes a custom minWidth', () => {
+    width = 300;
+    const { container } = render(<DateRangePicker value={value} onChange={vi.fn()} minWidth={200} />);
+    expect(container.querySelector('.lxn-date-range--wrapped')).toBeNull();
+  });
+});
