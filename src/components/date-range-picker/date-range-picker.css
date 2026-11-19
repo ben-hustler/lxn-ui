@@ -192,9 +192,9 @@
   background: var(--color-hover-accent-bg);
   border-color: var(--color-fg-accent);
 }
-/* Narrower than the `minWidth` prop (DateRangePicker.tsx's `wrapped`): the
-   two segments stack, preset on top, dates below, each full width. The
-   divider moves from the preset box's right edge to its bottom edge. */
+/* `wrap` prop (DateRangePicker.tsx): the two segments stack, preset on top,
+   dates below, each full width. The divider moves from the preset box's
+   right edge to its bottom edge. */
 .lxn-date-range--wrapped .lxn-date-range-row {
   flex-wrap: wrap;
 }
@@ -205,6 +205,11 @@
 }
 .lxn-date-range--wrapped .lxn-date-range-calendar-trigger {
   flex: 1 0 100%;
+  /* Its own full row now, so it gets a field's height rather than the thin
+     strip left by the side-by-side padding (2026-11-19). */
+  min-height: 40px;
+  padding: 8px 12px;
+  box-sizing: border-box;
 }
 
 /* Touch device, typing into from/to — the preset half is hidden entirely so

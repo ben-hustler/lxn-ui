@@ -710,24 +710,44 @@ describe('MultiSelect searchable={false}', () => {
   });
 });
 
-describe('MultiSelect summarizeAfter', () => {
+describe('MultiSelect "N selected"', () => {
   const MANY: MultiSelectOption[] = ['a', 'b', 'c', 'd', 'e'].map((id) => ({ id, label: id.toUpperCase() }));
+  afterEach(() => { vi.restoreAllMocks(); });
+  // jsdom has no layout: fake the room the value has (clientWidth) and the full list's width (the probe span).
+  const fakeLayout = (room: number, need: number) => {
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(room);
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({ width: need } as DOMRect);
+  };
 
-  it('lists up to 3 picks, then shows "N selected"', () => {
-    const { rerender } = render(<MultiSelect value={['a', 'b', 'c']} options={MANY} onChange={vi.fn()} />);
-    expect(screen.getByRole('combobox').textContent).toContain('A, B, C');
-    rerender(<MultiSelect value={['a', 'b', 'c', 'd']} options={MANY} onChange={vi.fn()} />);
-    expect(screen.getByRole('combobox').textContent).toContain('4 selected');
+  it('lists every pick while they fit', () => {
+    fakeLayout(300, 100);
+    render(<MultiSelect value={['a', 'b', 'c', 'd']} options={MANY} onChange={vi.fn()} />);
+    expect(screen.getByRole('combobox').textContent).toContain('A, B, C, D');
+  });
+
+  it('shows "N selected" once the list would overflow the box', () => {
+    fakeLayout(60, 100);
+    render(<MultiSelect value={['a', 'b']} options={MANY} onChange={vi.fn()} />);
+    expect(screen.getByRole('combobox').textContent).toContain('2 selected');
     expect(screen.getByRole('combobox').textContent).not.toContain('A, B');
   });
 
+  it('never summarizes a single pick', () => {
+    fakeLayout(10, 100);
+    render(<MultiSelect value={['a']} options={MANY} onChange={vi.fn()} />);
+    expect(screen.getByRole('combobox').textContent).toContain('A');
+    expect(screen.getByRole('combobox').textContent).not.toContain('selected');
+  });
+
   it('uses the count in the open trailing list too', () => {
+    fakeLayout(60, 100);
     render(<MultiSelect value={['a', 'b', 'c', 'd']} options={MANY} onChange={vi.fn()} />);
     fireEvent.click(screen.getByRole('combobox'));
     expect(screen.getByRole('combobox').textContent).toContain('4 selected');
   });
 
-  it('honours a custom threshold', () => {
+  it('honours an explicit summarizeAfter even when the list fits', () => {
+    fakeLayout(300, 100);
     render(<MultiSelect value={['a', 'b']} options={MANY} onChange={vi.fn()} summarizeAfter={1} />);
     expect(screen.getByRole('combobox').textContent).toContain('2 selected');
   });

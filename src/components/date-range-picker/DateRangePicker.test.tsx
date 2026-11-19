@@ -617,30 +617,16 @@ describe('<DateRangePicker> — touch device entry point', () => {
   });
 });
 
-describe('DateRangePicker minWidth', () => {
-  let width = 500;
-  beforeEach(() => {
-    vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(() => ({ width } as DOMRect));
-  });
-  afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+describe('DateRangePicker wrap', () => {
   const value = { kind: 'relative' as const, relativeTimeString: 'Last month' };
 
-  it('sits side by side at or above minWidth', () => {
-    width = 360;
-    const { container } = render(<DateRangePicker value={value} onChange={vi.fn()} />);
+  it('sits side by side by default, whatever its width', () => {
+    const { container } = render(<div style={{ width: 120 }}><DateRangePicker value={value} onChange={vi.fn()} /></div>);
     expect(container.querySelector('.lxn-date-range--wrapped')).toBeNull();
   });
 
-  it('wraps below minWidth', () => {
-    width = 300;
-    const { container } = render(<DateRangePicker value={value} onChange={vi.fn()} />);
+  it('stacks when wrap is set', () => {
+    const { container } = render(<DateRangePicker value={value} onChange={vi.fn()} wrap />);
     expect(container.querySelector('.lxn-date-range--wrapped')).toBeTruthy();
-  });
-
-  it('takes a custom minWidth', () => {
-    width = 300;
-    const { container } = render(<DateRangePicker value={value} onChange={vi.fn()} minWidth={200} />);
-    expect(container.querySelector('.lxn-date-range--wrapped')).toBeNull();
   });
 });

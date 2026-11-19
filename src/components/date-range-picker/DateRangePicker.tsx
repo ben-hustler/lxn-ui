@@ -28,13 +28,33 @@ function positionPanel(trigger: HTMLElement, panel: HTMLElement, minWidth: numbe
   const maxLeft = Math.max(EDGE_MARGIN, window.innerWidth - EDGE_MARGIN - width);
   const left = Math.min(Math.max(rect.left, EDGE_MARGIN), maxLeft);
 
-  // Always below, in the top layer (topLayer.ts), `position: absolute` in
-  // document coordinates rather than `position: fixed` — see
-  // SingleSelect.tsx's own reposition() for the iOS keyboard/scroll-rate
-  // reasoning (2026-09-25).
-  const top = rect.bottom + ANCHOR_GAP;
-
+  // In the top layer (topLayer.ts), `position: absolute` in document
+  // coordinates rather than `position: fixed` — see SingleSelect.tsx's own
+  // reposition() for the iOS keyboard/scroll-rate reasoning (2026-09-25).
+  //
+  // Below when it fits, else above when that fits, else on whichever side has
+  // more room with its height capped there and the panel scrolling inside
+  // (2026-11-19). It used to be always below: in an app whose page doesn't
+  // scroll (scroll lives in inner panels), a picker near the bottom opened a
+  // calendar cut off by the window, and the wheel over it did nothing since
+  // the panel sits outside the scrolling container. Decided off
+  // window.innerHeight, which the iOS keyboard doesn't shrink, so typing
+  // into from/to doesn't make it jump sides.
   panel.style.width = `${width}px`;
+  panel.style.maxHeight = '';
+  panel.style.overflowY = '';
+  const natural = panel.offsetHeight;
+  const below = window.innerHeight - EDGE_MARGIN - rect.bottom - ANCHOR_GAP;
+  const above = rect.top - ANCHOR_GAP - EDGE_MARGIN;
+  let top: number;
+  if (natural <= below || below >= above) {
+    top = rect.bottom + ANCHOR_GAP;
+    if (natural > below) { panel.style.maxHeight = `${Math.max(below, 120)}px`; panel.style.overflowY = 'auto'; }
+  } else {
+    const h = Math.min(natural, above);
+    if (natural > above) { panel.style.maxHeight = `${above}px`; panel.style.overflowY = 'auto'; }
+    top = rect.top - ANCHOR_GAP - h;
+  }
   placeAbsolute(panel, left, top);
 }
 
@@ -110,10 +130,12 @@ export interface DateRangePickerProps {
    * the Bubble reference style, same as MultiSelect's own `label` prop. */
   label?: string;
   className?: string;
-  /** Narrowest width (px) the preset box and the dates sit side by side at.
-   * Below it they wrap: the preset box on top, the dates underneath, each
-   * full width, instead of squeezing both until they truncate. Default 360. */
-  minWidth?: number;
+  /** Stack the two parts: the preset box on top, the dates underneath, each
+   * full width. A deliberate choice by the caller, never automatic
+   * (2026-11-19): a picker sitting in a row of other fields has to keep their
+   * height, so it must not wrap just because it got narrow. Default false
+   * (side by side). Replaces 1.34.0's width-measured `minWidth`. */
+  wrap?: boolean;
 }
 
 const DEFAULT_PRESETS = [
@@ -434,7 +456,7 @@ export function DateRangePicker({
   customLabel = 'Custom range',
   label,
   className,
-  minWidth = 360,
+  wrap = false,
 }: DateRangePickerProps) {
   const [openPanel, setOpenPanel] = useState<'preset' | 'calendar' | null>(null);
   const [query, setQuery] = useState('');
@@ -458,18 +480,7 @@ export function DateRangePicker({
   const [toText, setToText] = useState('');
 
   const rootRef = useRef<HTMLDivElement>(null);
-  // Whether the root is narrower than `minWidth` — measured (ResizeObserver),
-  // not a CSS container query, so the threshold can be a prop.
-  const [wrapped, setWrapped] = useState(false);
-  useLayoutEffect(() => {
-    const el = rootRef.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    const check = () => setWrapped(el.getBoundingClientRect().width < minWidth);
-    check();
-    const ro = new ResizeObserver(check);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [minWidth]);
+  const wrapped = wrap;
   const presetTriggerRef = useRef<HTMLDivElement>(null);
   const presetPanelRef = useRef<HTMLDivElement>(null);
   const presetInputRef = useRef<HTMLInputElement>(null);

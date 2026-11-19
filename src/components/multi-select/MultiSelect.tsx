@@ -102,8 +102,10 @@ export interface MultiSelectProps {
    * on the trigger itself, and the arrow keys / Enter / Space drive the list
    * from there. `onSearch` is never called. */
   searchable?: boolean;
-  /** Once more than this many options are picked, the trigger shows
-   * "N selected" instead of the comma-joined labels. Default 3. */
+  /** The trigger shows "N selected" instead of the comma-joined labels once
+   * the labels no longer fit in the box (2026-11-19; was a fixed count of 3).
+   * A single pick never summarizes: it truncates with "…". Set this to also
+   * summarize past a fixed number of picks, fit or not. Default: none. */
   summarizeAfter?: number;
 }
 
@@ -136,7 +138,7 @@ export function MultiSelect({
   ariaLabel,
   size = 'default',
   searchable = true,
-  summarizeAfter = 3,
+  summarizeAfter,
 }: MultiSelectProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -468,10 +470,43 @@ export function MultiSelect({
   // the trigger box's own overflow:hidden/text-overflow:ellipsis (CSS)
   // truncates it with "…" once it no longer fits, rather than switching to a
   // count once there's more than one. Used for the CLOSED display only.
-  // Past `summarizeAfter` picks, a count instead ("4 selected"), used in both
-  // the closed display and the open-state trailing list.
-  const summarized = selected.length > summarizeAfter;
-  const selectedText = summarized ? `${selected.length} selected` : selected.map((o) => o.label).join(', ');
+  // Once that list wouldn't fit (or past `summarizeAfter` picks), a count
+  // instead ("4 selected"), used in both the closed display and the open-state
+  // trailing list. Fit is measured on the closed trigger: the full list's
+  // width (an off-screen copy in the value's own font) against the room the
+  // value group has, rechecked on resize. While open, the last answer stands.
+  const fullText = selected.map((o) => o.label).join(', ');
+  const closedValueRef = useRef<HTMLSpanElement>(null);
+  const [overflows, setOverflows] = useState(false);
+  useLayoutEffect(() => {
+    const v = closedValueRef.current;
+    const group = v?.parentElement;
+    if (!v || !group) return;
+    const check = () => {
+      if (selected.length < 2) { setOverflows(false); return; }
+      const probe = document.createElement('span');
+      const cs = getComputedStyle(v);
+      probe.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;left:-99999px;top:0;';
+      probe.style.font = cs.font;
+      probe.style.letterSpacing = cs.letterSpacing;
+      probe.textContent = fullText;
+      document.body.appendChild(probe);
+      const need = probe.getBoundingClientRect().width;
+      probe.remove();
+      // Room = the group's width minus anything else in it (annotations) and its gaps.
+      const others = Array.from(group.children).filter((c) => c !== v);
+      const gap = parseFloat(getComputedStyle(group).columnGap) || 0;
+      const room = group.clientWidth - others.reduce((n, c) => n + (c as HTMLElement).offsetWidth + gap, 0);
+      setOverflows(room > 0 && need > room + 0.5);
+    };
+    check();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(check);
+    ro.observe(group);
+    return () => ro.disconnect();
+  }, [fullText, open, selected.length]);
+  const summarized = selected.length > 1 && (overflows || (summarizeAfter != null && selected.length > summarizeAfter));
+  const selectedText = summarized ? `${selected.length} selected` : fullText;
   const triggerLabel = selected.length === 0 ? placeholderLabel : selectedText;
 
   function handleTriggerKeyDown(e: ReactKeyboardEvent<HTMLDivElement>) {
@@ -533,6 +568,7 @@ export function MultiSelect({
     </span>
   ) : (
     <span
+      ref={closedValueRef}
       className={['lxn-l1', 'lxn-multi-select-trigger-value', selected.length === 0 ? 'is-placeholder' : '']
         .filter(Boolean)
         .join(' ')}
