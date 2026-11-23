@@ -6,6 +6,7 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from 'react';
 import { CheckIcon } from '../icons/icons';
@@ -422,6 +423,74 @@ export function MultiSelect({
     if (!touchRef.current) focusHome()?.focus();
   }
 
+  // Drag-select (desktop mouse only, 2026-11-23): press on a row, drag over
+  // others, release. Every row between the anchor and the row under the
+  // pointer is set to the OPPOSITE of the anchor's starting state (start on
+  // an unchecked row -> paint checked, on a checked row -> paint unchecked),
+  // applied over a snapshot of `value` taken at press time, so dragging back
+  // toward the anchor shrinks the range and restores what was there. A range
+  // (not "rows touched") so a fast drag that skips rows still covers them.
+  // Nothing happens until the pointer actually enters a second row — a plain
+  // click still goes through toggleOption via `click` as before. Touch is
+  // excluded: there a drag is a scroll.
+  const dragRef = useRef<{ anchor: number; select: boolean; baseline: string[]; active: boolean } | null>(null);
+  // The click that follows a drag's release (on the anchor row, if released
+  // back there) must not toggle it a second time.
+  const suppressClickRef = useRef(false);
+  const valueRef = useRef(value);
+  valueRef.current = value;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+
+  function startDrag(e: ReactPointerEvent, index: number, id: string) {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    dragRef.current = { anchor: index, select: !selectedSet.has(id), baseline: value, active: false };
+  }
+
+  function paintTo(index: number, buttons: number) {
+    const drag = dragRef.current;
+    if (!drag) return;
+    // Released outside the window: no pointerup reached us.
+    if ((buttons & 1) === 0) {
+      dragRef.current = null;
+      return;
+    }
+    if (!drag.active && index === drag.anchor) return;
+    drag.active = true;
+    const [lo, hi] = drag.anchor <= index ? [drag.anchor, index] : [index, drag.anchor];
+    // Anchor first, then outward, so newly-picked labels read in drag order.
+    const rangeIds = options.slice(lo, hi + 1).map((o) => o.id);
+    if (drag.anchor > index) rangeIds.reverse();
+    const inRange = new Set(rangeIds);
+    const base = new Set(drag.baseline);
+    const next = drag.select
+      ? [...drag.baseline, ...rangeIds.filter((id) => !base.has(id))]
+      : drag.baseline.filter((id) => !inRange.has(id));
+    const cur = valueRef.current;
+    if (next.length !== cur.length || next.some((id, i) => id !== cur[i])) onChangeRef.current(next);
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    function onUp() {
+      const drag = dragRef.current;
+      dragRef.current = null;
+      if (!drag?.active) return;
+      suppressClickRef.current = true;
+      // The click (if any) lands in this same input-event sequence; clear the
+      // flag after it so a later real click isn't eaten.
+      setTimeout(() => {
+        suppressClickRef.current = false;
+      }, 0);
+      if (!touchRef.current) focusHome()?.focus();
+    }
+    document.addEventListener('pointerup', onUp);
+    return () => {
+      document.removeEventListener('pointerup', onUp);
+      dragRef.current = null;
+    };
+  }, [open]);
+
   function handleOptionKeyDown(e: ReactKeyboardEvent<HTMLDivElement>, id: string) {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -635,6 +704,13 @@ export function MultiSelect({
               options.map((o, index) => {
                 const isSelected = selectedSet.has(o.id);
                 const isHighlighted = highlightedIndex !== null && index === highlightedIndex;
+                const tapHandlers = optionTap.bind(() => {
+                  if (suppressClickRef.current) {
+                    suppressClickRef.current = false;
+                    return;
+                  }
+                  toggleOption(o.id);
+                });
                 return (
                   <div
                     key={o.id}
@@ -656,7 +732,12 @@ export function MultiSelect({
                     // The mouse taking over the highlight, in the flesh —
                     // see the highlightedIndex state comment above.
                     onMouseEnter={() => setHighlightedIndex(null)}
-                    {...optionTap.bind(() => toggleOption(o.id))}
+                    {...tapHandlers}
+                    onPointerDown={(e) => {
+                      tapHandlers.onPointerDown(e);
+                      startDrag(e, index, o.id);
+                    }}
+                    onPointerEnter={(e) => paintTo(index, e.buttons)}
                     onKeyDown={(e) => handleOptionKeyDown(e, o.id)}
                   >
                     <span className="lxn-multi-select-option-checkbox" aria-hidden="true">

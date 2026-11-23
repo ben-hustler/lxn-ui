@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, createEvent, fireEvent, render, screen } from '@testing-library/react';
 import { MultiSelect, type MultiSelectOption } from './MultiSelect';
 
 afterEach(() => cleanup());
@@ -750,5 +750,77 @@ describe('MultiSelect "N selected"', () => {
     fakeLayout(300, 100);
     render(<MultiSelect value={['a', 'b']} options={MANY} onChange={vi.fn()} summarizeAfter={1} />);
     expect(screen.getByRole('combobox').textContent).toContain('2 selected');
+  });
+});
+
+// jsdom has no PointerEvent — build one by hand so pointerType/button(s) exist.
+// React synthesizes onPointerEnter from pointerover, so that's what a test fires.
+function ptr(el: Element | Document, type: 'pointerDown' | 'pointerOver' | 'pointerUp', init: { pointerType?: string; buttons?: number } = {}) {
+  const ev = createEvent[type](el);
+  Object.defineProperties(ev, {
+    pointerType: { value: init.pointerType ?? 'mouse' },
+    button: { value: 0 },
+    buttons: { value: init.buttons ?? (type === 'pointerUp' ? 0 : 1) },
+  });
+  fireEvent(el, ev);
+}
+
+describe('<MultiSelect> — drag-select (mouse)', () => {
+  function openControlled(initialValue: string[] = []) {
+    const onChange = vi.fn();
+    function H() {
+      const [value, setValue] = useState<string[]>(initialValue);
+      return (
+        <MultiSelect
+          value={value}
+          options={OPTIONS}
+          onChange={(v) => {
+            onChange(v);
+            setValue(v);
+          }}
+        />
+      );
+    }
+    render(<H />);
+    fireEvent.click(screen.getByRole('combobox'));
+    return { onChange, rows: () => screen.getAllByRole('option') };
+  }
+
+  it('press on an unchecked row and drag across others checks the whole range; release does not re-toggle the anchor', () => {
+    const { onChange, rows } = openControlled();
+    ptr(rows()[0]!, 'pointerDown');
+    ptr(rows()[1]!, 'pointerOver');
+    ptr(rows()[2]!, 'pointerOver');
+    ptr(document, 'pointerUp');
+    fireEvent.click(rows()[0]!);
+    expect(onChange).toHaveBeenLastCalledWith(['toyota', 'honda', 'ford']);
+    expect(rows().map((r) => r.getAttribute('aria-selected'))).toEqual(['true', 'true', 'true']);
+  });
+
+  it('dragging from a checked row unchecks the range, and dragging back toward the anchor restores what was there', () => {
+    const { onChange, rows } = openControlled(['toyota', 'honda', 'ford']);
+    ptr(rows()[2]!, 'pointerDown');
+    ptr(rows()[1]!, 'pointerOver');
+    ptr(rows()[0]!, 'pointerOver');
+    expect(onChange).toHaveBeenLastCalledWith([]);
+    ptr(rows()[1]!, 'pointerOver');
+    expect(onChange).toHaveBeenLastCalledWith(['toyota']);
+    ptr(document, 'pointerUp');
+  });
+
+  it('a plain click (no drag into another row) still toggles once', () => {
+    const { onChange, rows } = openControlled();
+    ptr(rows()[1]!, 'pointerDown');
+    ptr(document, 'pointerUp');
+    fireEvent.click(rows()[1]!);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenLastCalledWith(['honda']);
+  });
+
+  it('touch never drag-selects (a touch drag is a scroll)', () => {
+    const { onChange, rows } = openControlled();
+    ptr(rows()[0]!, 'pointerDown', { pointerType: 'touch' });
+    ptr(rows()[1]!, 'pointerOver', { pointerType: 'touch' });
+    expect(onChange).not.toHaveBeenCalled();
   });
 });
