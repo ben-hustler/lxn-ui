@@ -1,0 +1,87 @@
+/* Relies on tokens.css. Default spot: right edge, vertically centred.
+   `--lxn-dock-push` (set by the consumer on an ancestor) moves the default
+   spot left, e.g. beside a side panel that pushes the page; it animates.
+   A moved dock ignores it. */
+.lxn-floating-dock {
+  --lxn-dock-inset: 24px;
+  position: fixed;
+  right: calc(var(--lxn-dock-inset) + var(--lxn-dock-push, 0px));
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 55;
+  width: 54px; /* 42px tab + 2x5px padding + 2x1px border; nearDefault() relies on the inset, not this */
+  box-sizing: border-box;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16), 0 2px 6px rgba(0, 0, 0, 0.1);
+  cursor: grab;
+  /* Without it touch claims the gesture for scrolling and pointermove stops. */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: right var(--motion-slow) var(--ease-emphasized), box-shadow var(--motion-base) var(--ease-standard);
+  animation: lxn-floating-dock-in 0.22s var(--ease-standard) both;
+}
+@media (max-width: 640px) {
+  .lxn-floating-dock { --lxn-dock-inset: 12px; }
+}
+@keyframes lxn-floating-dock-in {
+  from { opacity: 0; transform: translate(12px, -50%); }
+  to { opacity: 1; transform: translate(0, -50%); }
+}
+/* Moved: `left` against a self-relative translate keeps the dock fully on
+   screen at 0 and 1 on both axes, and re-solves on resize with no JS. */
+.lxn-floating-dock--moved {
+  right: auto;
+  left: calc(var(--lxn-dock-x, 1) * 100vw);
+  top: calc(var(--lxn-dock-y, 0.5) * 100vh);
+  transform: translate(calc(var(--lxn-dock-x, 1) * -100%), calc(var(--lxn-dock-y, 0.5) * -100%));
+  transition: box-shadow var(--motion-base) var(--ease-standard);
+  /* The entrance keyframes bake in translateY(-50%); re-running mid-drag would flicker. */
+  animation: none;
+}
+.lxn-floating-dock--dragging {
+  cursor: grabbing;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.22), 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+/* Letting go here snaps it home. */
+.lxn-floating-dock--snap {
+  box-shadow: 0 0 0 2px var(--lxn-primary-700), 0 14px 40px rgba(0, 0, 0, 0.22), 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+.lxn-floating-dock--dragging .lxn-floating-dock__tab { cursor: grabbing; }
+.lxn-floating-dock__grip {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 12px;
+  color: var(--color-fg-tertiary);
+  transition: color var(--motion-base) var(--ease-standard);
+}
+.lxn-floating-dock__grip svg { display: block; transform: rotate(90deg); }
+.lxn-floating-dock:hover .lxn-floating-dock__grip,
+.lxn-floating-dock--dragging .lxn-floating-dock__grip { color: var(--color-fg-secondary); }
+.lxn-floating-dock__tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-fg-secondary);
+  cursor: pointer;
+}
+.lxn-floating-dock__tab svg { flex: none; }
+.lxn-floating-dock__tab:hover { color: var(--color-fg-primary); background: var(--color-bg-sunken); }
+.lxn-floating-dock__tab--active,
+.lxn-floating-dock__tab--active:hover { color: var(--color-fg-on-primary); background: var(--color-action-primary); }
+@media (prefers-reduced-motion: reduce) {
+  .lxn-floating-dock { animation: none; transition: none; }
+}

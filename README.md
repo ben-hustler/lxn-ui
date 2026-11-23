@@ -44,6 +44,9 @@ src/
     data-table/        DataTable
     kpi-tile/          KpiTile
     filter-chip/       FilterChip
+    floating-dock/     FloatingDock — draggable vertical tab dock fixed to the
+                        right edge (from the inventory dashboard's DashDock);
+                        consumer sets --lxn-dock-push to shift its default spot
     icons/             Lucide-style, stroke-only, 1.7px default — see index.ts
                         for the full list
     status-badge/      StatusBadge — icon or icon+label chip, all-caps/white-

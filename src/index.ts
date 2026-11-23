@@ -47,6 +47,8 @@ export { DateRangePicker, formatDateRangeLabel, resolveRelativeRange } from './c
 export type { DateRangeValue, DateRangePickerProps } from './components/date-range-picker/DateRangePicker';
 export { KpiTile } from './components/kpi-tile/KpiTile';
 export type { KpiTileProps, KpiTileTone, KpiTileVariant } from './components/kpi-tile/KpiTile';
+export { FloatingDock } from './components/floating-dock/FloatingDock';
+export type { FloatingDockProps, FloatingDockTab, FloatingDockPosition } from './components/floating-dock/FloatingDock';
 export { FilterChip } from './components/filter-chip/FilterChip';
 export type { FilterChipProps } from './components/filter-chip/FilterChip';
 export { DataTable } from './components/data-table/DataTable';
