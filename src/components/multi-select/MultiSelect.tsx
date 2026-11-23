@@ -9,7 +9,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from 'react';
-import { CheckIcon } from '../icons/icons';
+import { CheckIcon, SearchIcon } from '../icons/icons';
 import { placeAbsolute, showInTopLayer, TOP_LAYER_CLASS } from '../top-layer/topLayer';
 import { useTouchTap } from '../touch-tap/useTouchTap';
 import { SelectTriggerChrome } from '../select-trigger-chrome/SelectTriggerChrome';
@@ -108,6 +108,10 @@ export interface MultiSelectProps {
    * A single pick never summarizes: it truncates with "…". Set this to also
    * summarize past a fixed number of picks, fit or not. Default: none. */
   summarizeAfter?: number;
+  /** Placeholder of the search box that sits at the top of the panel when a
+   * `renderTrigger` trigger is searchable (a custom trigger has no in-box
+   * input to type into). Default "Search…". */
+  searchPlaceholder?: string;
 }
 
 /** Generic multi-value searchable dropdown (lxn-ui, not app-specific) —
@@ -140,6 +144,7 @@ export function MultiSelect({
   size = 'default',
   searchable = true,
   summarizeAfter,
+  searchPlaceholder = 'Search…',
 }: MultiSelectProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -447,6 +452,49 @@ export function MultiSelect({
     dragRef.current = { anchor: index, select: !selectedSet.has(id), baseline: value, active: false };
   }
 
+  // Drag reaching the list's top / bottom edge (or past it) scrolls the list
+  // (2026-11-23), faster the further in / past, and keeps painting the row
+  // now under the pointer: rows scrolling under a still pointer get no
+  // pointerenter, so the loop paints them itself.
+  const listRef = useRef<HTMLDivElement>(null);
+  const paintToRef = useRef<(index: number, buttons: number) => void>(() => {});
+  useEffect(() => {
+    if (!open) return;
+    const EDGE = 28;
+    const MAX_STEP = 14;
+    let pointer: { x: number; y: number } | null = null;
+    let raf = 0;
+    const step = () => {
+      raf = 0;
+      const list = listRef.current;
+      const drag = dragRef.current;
+      if (!list || !drag || !pointer) return;
+      const r = list.getBoundingClientRect();
+      const into = pointer.y < r.top + EDGE ? pointer.y - (r.top + EDGE) : pointer.y > r.bottom - EDGE ? pointer.y - (r.bottom - EDGE) : 0;
+      if (!into) return;
+      const speed = Math.sign(into) * Math.min(MAX_STEP, Math.max(2, Math.abs(into) / 3));
+      const before = list.scrollTop;
+      list.scrollTop += speed;
+      // The row under the pointer, the pointer held inside the list's box.
+      const y = Math.min(Math.max(pointer.y, r.top + 2), r.bottom - 2);
+      const x = Math.min(Math.max(pointer.x, r.left + 2), r.right - 2);
+      const row = document.elementFromPoint(x, y)?.closest('.lxn-multi-select-option');
+      const index = row ? optionRefs.current.indexOf(row as HTMLDivElement) : -1;
+      if (index >= 0) paintToRef.current(index, 1);
+      if (list.scrollTop !== before) raf = requestAnimationFrame(step);
+    };
+    function onMove(e: PointerEvent) {
+      if (!dragRef.current || e.pointerType !== 'mouse') return;
+      pointer = { x: e.clientX, y: e.clientY };
+      if (!raf) raf = requestAnimationFrame(step);
+    }
+    document.addEventListener('pointermove', onMove);
+    return () => {
+      document.removeEventListener('pointermove', onMove);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [open]);
+
   function paintTo(index: number, buttons: number) {
     const drag = dragRef.current;
     if (!drag) return;
@@ -469,6 +517,7 @@ export function MultiSelect({
     const cur = valueRef.current;
     if (next.length !== cur.length || next.some((id, i) => id !== cur[i])) onChangeRef.current(next);
   }
+  paintToRef.current = paintTo;
 
   useEffect(() => {
     if (!open) return;
@@ -695,7 +744,25 @@ export function MultiSelect({
             .filter(Boolean)
             .join(' ')}
         >
-          <div id={listboxId} className="lxn-multi-select-list" role="listbox" aria-multiselectable="true">
+          {renderTrigger && searchable && (
+            // A custom trigger has no in-box input, so search sits atop the list.
+            <div className="lxn-multi-select-panel-search">
+              <SearchIcon size={14} />
+              <input
+                ref={inputRef}
+                type="text"
+                className="lxn-l1 lxn-multi-select-panel-search-input"
+                value={query}
+                placeholder={searchPlaceholder}
+                aria-label={searchPlaceholder}
+                aria-controls={listboxId}
+                aria-activedescendant={activeDescendant}
+                onChange={(e) => handleQueryChange(e.target.value)}
+                onKeyDown={handleInputKeyDown}
+              />
+            </div>
+          )}
+          <div ref={listRef} id={listboxId} className="lxn-multi-select-list" role="listbox" aria-multiselectable="true">
             {isLoading ? (
               <div className="lxn-l4 lxn-multi-select-empty">Searching…</div>
             ) : options.length === 0 ? (

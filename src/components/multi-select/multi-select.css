@@ -258,6 +258,27 @@
   max-height: 240px;
   overflow-y: auto;
 }
+/* Search box atop the list, for a searchable renderTrigger (no in-box input). */
+.lxn-multi-select-panel-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  height: 40px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  color: var(--color-fg-tertiary);
+}
+.lxn-multi-select-panel-search svg { flex: none; }
+.lxn-multi-select-panel-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0;
+  color: var(--color-fg-primary);
+}
+.lxn-multi-select-panel-search-input::placeholder { color: var(--color-fg-tertiary); }
 .lxn-multi-select-option {
   display: flex;
   align-items: center;

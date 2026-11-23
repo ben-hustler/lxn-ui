@@ -824,3 +824,23 @@ describe('<MultiSelect> — drag-select (mouse)', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 });
+
+describe('<MultiSelect> renderTrigger + searchable', () => {
+  const opts: MultiSelectOption[] = [{ id: 'a', label: 'Alpha' }, { id: 'b', label: 'Beta' }];
+  const trigger = ({ onClick }: { onClick: () => void }) => <button type="button" onClick={onClick}>Fields</button>;
+
+  it('puts a search box atop the panel and reports typing', () => {
+    const onSearch = vi.fn();
+    render(<MultiSelect value={[]} options={opts} onChange={() => {}} onSearch={onSearch} renderTrigger={trigger} searchPlaceholder="Search fields" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Fields' }));
+    const box = screen.getByRole('textbox', { name: 'Search fields' });
+    fireEvent.change(box, { target: { value: 'al' } });
+    expect(onSearch).toHaveBeenCalledWith('al');
+  });
+
+  it('has no panel search box when not searchable', () => {
+    render(<MultiSelect value={[]} options={opts} onChange={() => {}} searchable={false} renderTrigger={trigger} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Fields' }));
+    expect(screen.queryByRole('textbox')).toBeNull();
+  });
+});
