@@ -35,6 +35,17 @@ export {
   LockIcon,
   DragHandleIcon,
   HeightIcon,
+  LoaderIcon,
+  LayoutDashIcon,
+  BarChartIcon,
+  UserIcon,
+  PinIcon,
+  GlobeIcon,
+  PencilSharpIcon,
+  HeartIcon,
+  GridViewIcon,
+  OpenCircleIcon,
+  CarIcon,
 } from './components/icons/icons';
 export type { IconProps } from './components/icons/icons';
 export { StatusBadge } from './components/status-badge/StatusBadge';

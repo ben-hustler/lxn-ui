@@ -37,7 +37,6 @@ import {
   DateRangePicker,
   type DateRangeValue,
   formatDateRangeLabel,
-  type IconProps,
   KpiTile,
   SlidersIcon,
   ReturnToAppIcon,
@@ -46,6 +45,29 @@ import {
   type DataTableColumnGroup,
   type DataTableRow,
   type DataTableSummaryRow,
+  ChevronsDownIcon,
+  MailIcon,
+  MoreHorizIcon,
+  ArrowLeftIcon,
+  LockIcon,
+  DragHandleIcon,
+  HeightIcon,
+  AutoFixHighIcon,
+  LayoutDashIcon,
+  BarChartIcon,
+  UserIcon,
+  PinIcon,
+  GlobeIcon,
+  PencilSharpIcon,
+  HeartIcon,
+  GridViewIcon,
+  OpenCircleIcon,
+  CarIcon,
+  FloatingDock,
+  type FloatingDockPosition,
+  TooltipController,
+  resolveRelativeRange,
+  LoaderIcon,
 } from '../src/index';
 import './sandbox.css';
 
@@ -128,6 +150,7 @@ const NAV_GROUPS = [
       ['comp-kpi-tile', 'KpiTile'],
       ['comp-data-table', 'DataTable'],
       ['comp-tooltip', 'Tooltip'],
+      ['comp-floating-dock', 'FloatingDock'],
     ],
   },
 ] as const;
@@ -494,7 +517,7 @@ function TokensMotionSection() {
    Tokens — Icons
    ============================================================ */
 
-const ICONS: { Icon: (props: IconProps) => ReactNode; name: string; source: string }[] = [
+const ICONS: { Icon: (props: { size?: number }) => ReactNode; name: string; source: string }[] = [
   { Icon: ListIcon, name: 'ListIcon', source: 'Lucide list' },
   { Icon: PencilIcon, name: 'PencilIcon', source: 'Lucide edit (classic, pre-rename)' },
   { Icon: TrashIcon, name: 'TrashIcon', source: 'Lucide trash' },
@@ -515,6 +538,27 @@ const ICONS: { Icon: (props: IconProps) => ReactNode; name: string; source: stri
   { Icon: SellIcon, name: 'SellIcon', source: 'Material sell (filled)' },
   { Icon: CalendarIcon, name: 'CalendarIcon', source: 'Lucide calendar' },
   { Icon: ReturnToAppIcon, name: 'ReturnToAppIcon', source: 'Material Symbols exit_to_app (outlined)' },
+  { Icon: ChevronsDownIcon, name: 'ChevronsDownIcon', source: 'Material keyboard_double_arrow_down (filled)' },
+  { Icon: SlidersIcon, name: 'SlidersIcon', source: 'Bootstrap Icons sliders' },
+  { Icon: MailIcon, name: 'MailIcon', source: 'Material mail (filled)' },
+  { Icon: MoreHorizIcon, name: 'MoreHorizIcon', source: 'Material more_horiz (filled)' },
+  { Icon: ArrowLeftIcon, name: 'ArrowLeftIcon', source: 'Lucide arrow-left' },
+  { Icon: LockIcon, name: 'LockIcon', source: 'Lucide lock' },
+  { Icon: DragHandleIcon, name: 'DragHandleIcon', source: 'Material drag_indicator (filled)' },
+  { Icon: LoaderIcon, name: 'LoaderIcon', source: 'Lucide loader-circle' },
+  { Icon: HeightIcon, name: 'HeightIcon', source: 'Material height (filled)' },
+  { Icon: AutoFixHighIcon, name: 'AutoFixHighIcon', source: 'Material auto_fix_high (filled)' },
+  { Icon: LayoutDashIcon, name: 'LayoutDashIcon', source: 'Lucide panels-top-left' },
+  { Icon: BarChartIcon, name: 'BarChartIcon', source: 'inventory design handoff (not a public set)' },
+  { Icon: UserIcon, name: 'UserIcon', source: 'Lucide user' },
+  { Icon: PinIcon, name: 'PinIcon', source: 'inventory design handoff (not a public set)' },
+  { Icon: GlobeIcon, name: 'GlobeIcon', source: 'Material public (filled)' },
+  { Icon: PencilSharpIcon, name: 'PencilSharpIcon', source: 'Ionicons pencil-sharp' },
+  { Icon: HeartIcon, name: 'HeartIcon', source: 'Lucide heart (classic)' },
+  { Icon: (p) => <HeartIcon {...p} filled />, name: 'HeartIcon filled', source: 'Lucide heart (classic), filled prop' },
+  { Icon: GridViewIcon, name: 'GridViewIcon', source: 'Lucide layout-grid' },
+  { Icon: OpenCircleIcon, name: 'OpenCircleIcon', source: 'Material Rounded radio_button_unchecked' },
+  { Icon: CarIcon, name: 'CarIcon', source: 'Ionicons car-sport' },
 ];
 
 function TokensIconsSection() {
@@ -522,7 +566,7 @@ function TokensIconsSection() {
     <Section
       id="tokens-icons"
       title="Icons"
-      description="Every icon lxn-ui exports — a verbatim copy of a real, published glyph (Lucide/ISC or Material/Apache-2.0), never hand-drawn. Full provenance table: src/components/icons/ICONS.md."
+      description="Every icon lxn-ui exports — a verbatim copy of a real, published glyph (Lucide, Material, Bootstrap Icons, Ionicons), except PinIcon and BarChartIcon, which are inventory's own design. Full provenance table: src/components/icons/ICONS.md."
     >
       <div className="lxn-swatch-grid">
         {ICONS.map(({ Icon, name, source }) => (
@@ -1279,6 +1323,12 @@ function DateRangePickerSection() {
             Current value: <code className="lxn-mono">{JSON.stringify(lookback)}</code> → formatDateRangeLabel:{' '}
             <strong className="lxn-l1">{formatDateRangeLabel(lookback)}</strong>
           </p>
+          {lookback.kind === 'relative' && (
+            <p className="lxn-l4" style={{ marginTop: 4 }}>
+              resolveRelativeRange("{lookback.relativeTimeString}") →{' '}
+              <code className="lxn-mono">{JSON.stringify(resolveRelativeRange(lookback.relativeTimeString))}</code>
+            </p>
+          )}
         </Subsection>
 
         <Subsection title="No label prop — a caller that renders its own field label outside">
@@ -1525,6 +1575,24 @@ const EDGE_CASES = [
   ['bottom-right', undefined, undefined, undefined, '8px'],
 ] as const;
 
+function ControllerTooltipDemo() {
+  const controller = useRef<TooltipController | null>(null);
+  useEffect(() => () => controller.current?.destroy(), []);
+  const show = (el: HTMLElement) => (controller.current ??= new TooltipController()).show(el, 'Shown by TooltipController.show(anchor, text)');
+  return (
+    <button
+      type="button"
+      className="lxn-l2"
+      onMouseEnter={(e) => show(e.currentTarget)}
+      onFocus={(e) => show(e.currentTarget)}
+      onMouseLeave={() => controller.current?.hide()}
+      onBlur={() => controller.current?.hide()}
+    >
+      Hover or focus me
+    </button>
+  );
+}
+
 function TooltipSection() {
   return (
     <Section
@@ -1547,6 +1615,10 @@ function TooltipSection() {
               </span>
             </Tooltip>
           </div>
+        </Subsection>
+
+        <Subsection title="TooltipController — no wrapper element (for layouts a wrapping <span> would break)">
+          <ControllerTooltipDemo />
         </Subsection>
       </DemoSurface>
 
@@ -1572,6 +1644,46 @@ function TooltipSection() {
           </Tooltip>
         </div>
       ))}
+    </Section>
+  );
+}
+
+/* ============================================================
+   Components — FloatingDock
+   ============================================================ */
+
+function FloatingDockSection() {
+  const [shown, setShown] = useState(false);
+  const [tab, setTab] = useState('dashboard');
+  const [position, setPosition] = useState<FloatingDockPosition | null>(null);
+  return (
+    <Section
+      id="comp-floating-dock"
+      title="FloatingDock"
+      description="Vertical tab dock fixed to the viewport's right edge (lifted from the inventory dashboard's DashDock). Drag it anywhere; a click under 4px of movement switches tab; drop near its default spot to snap home; double-click the grip to reset. Position is reported on drag end only."
+    >
+      <DemoSurface>
+        <div className="lxn-sandbox-row">
+          <ButtonMain label={shown ? 'Hide dock' : 'Show dock'} variant="secondary" size="small" onClick={() => setShown((v) => !v)} />
+          <span className="lxn-l4">
+            Active tab: <code className="lxn-mono">{tab}</code> · position: <code className="lxn-mono">{JSON.stringify(position)}</code>
+          </span>
+        </div>
+      </DemoSurface>
+      {shown && (
+        <FloatingDock
+          aria-label="Sandbox views"
+          activeTab={tab}
+          onChange={setTab}
+          position={position}
+          onPositionChange={setPosition}
+          tabs={[
+            { id: 'dashboard', label: 'Dashboard', tooltip: 'Charts and list', icon: <LayoutDashIcon size={20} stroke={1.8} /> },
+            { id: 'charts', label: 'Charts', tooltip: 'Charts only', icon: <BarChartIcon size={20} stroke={1.8} /> },
+            { id: 'list', label: 'List', tooltip: 'List only', icon: <ListIcon size={20} stroke={1.8} /> },
+          ]}
+        />
+      )}
     </Section>
   );
 }
@@ -1608,6 +1720,7 @@ export function Sandbox() {
         <KpiTileSection />
         <DataTableSection />
         <TooltipSection />
+        <FloatingDockSection />
       </div>
     </div>
   );

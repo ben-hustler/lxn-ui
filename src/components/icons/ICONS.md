@@ -41,6 +41,16 @@ independently-drawn glyphs; those files are now gone, migrated below.
 | `LockIcon`         | Lucide `lock`                                  | ISC        | Explicit ask 2026-11-03. appraisal-offer's locked-Customize notice; replaces the Lit offer sheet's hand-drawn lock. |
 | `DragHandleIcon`   | Google Material Icons `drag_indicator` (filled) | Apache-2.0 | Explicit ask 2026-11-03. appraisal-offer's Layout rows. Filled Material over Lucide `grip-vertical`: Lucide's r=1 stroked dots are too faint at 14–16px. |
 | `HeightIcon`       | Google Material Icons `height` (filled)        | Apache-2.0 | Explicit ask 2026-11-04. appraisal-offer's amount scrubber (hold + drag vertically). |
+| `LayoutDashIcon`   | Lucide `panels-top-left`                       | ISC        | Explicit ask 2026-11-24. Dashboard tab of the FloatingDock; same glyph inventory-dashboard's dock uses. |
+| `BarChartIcon`     | inventory-dashboard design handoff (`icons.jsx` `_P.barChart`) | n/a | Explicit ask 2026-11-24. Charts tab of the FloatingDock, matching inventory's dock. **Exception to the "real published icon" rule above:** not from a public set (nearest Lucide, `chart-column-big`, is a different shape). |
+| `UserIcon`         | Lucide `user`                                  | ISC        | Explicit ask 2026-11-24. Personal-scope view chips; same glyph inventory-dashboard uses. |
+| `PinIcon`          | inventory-dashboard design handoff (`icons.jsx` `_P.pin`) | n/a | Explicit ask 2026-11-24. Location/area-scope view chips, matching inventory. **Exception to the "real published icon" rule** (Lucide `map-pin` is a different outline). |
+| `GlobeIcon`        | Google Material Icons `public` (filled)        | Apache-2.0 | Explicit ask 2026-11-24. Organization-scope view chips; same glyph inventory-dashboard uses. |
+| `PencilSharpIcon`  | Ionicons `pencil-sharp`                        | MIT        | Explicit ask 2026-11-24. Edit-view pencil on view chips; same glyph inventory-dashboard uses. Native 512 viewBox kept. First Ionicons glyph in this set. |
+| `HeartIcon`        | Lucide `heart` (classic path)                  | ISC        | Explicit ask 2026-11-24. Default-view toggle; `filled` = on. Same glyph inventory-dashboard uses. |
+| `GridViewIcon`     | Lucide `layout-grid`                           | ISC        | Explicit ask 2026-11-24. Grid side of a list/grid toggle; same glyph inventory-dashboard uses. |
+| `OpenCircleIcon`   | Google Material Icons Rounded `radio_button_unchecked` | Apache-2.0 | Explicit ask 2026-11-24. Incomplete step, the empty partner of `CheckCircleIcon`. Path verified against `google/material-design-icons` `src/toggle/radio_button_unchecked/materialiconsround/24px.svg`. |
+| `CarIcon`          | Ionicons `car-sport` (filled)                  | MIT        | Explicit ask 2026-11-24. Vehicle placeholder where there's no photo. Path verified against `ionic-team/ionicons` `src/svg/car-sport.svg`. Native 512 viewBox kept. |
 
 ## Verifying a glyph
 

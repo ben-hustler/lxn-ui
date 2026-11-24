@@ -430,3 +430,113 @@ export function HeightIcon(props: SVGProps<SVGSVGElement> & { size?: number }) {
     </svg>
   );
 }
+
+/** Dashboard tab (dock) — Lucide's `panels-top-left`: a framed panel with a top bar and a left column.
+   Same glyph inventory-dashboard's dock uses (its LayoutDashIcon). */
+export function LayoutDashIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M3 9h18M9 21V9" />
+    </Icon>
+  );
+}
+
+/** Charts tab (dock) — inventory-dashboard's design-handoff `barChart` glyph (its BarChartIcon): an L axis with
+   three bars. Not from a public set; see ICONS.md. */
+export function BarChartIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M3 3v18h18" />
+      <rect x="7" y="11" width="3" height="6" rx="0.5" />
+      <rect x="12.5" y="7" width="3" height="10" rx="0.5" />
+      <rect x="18" y="13" width="3" height="4" rx="0.5" />
+    </Icon>
+  );
+}
+
+/** Personal scope (view chips) — Lucide's `user` glyph. Same glyph inventory-dashboard's view chips use. */
+export function UserIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </Icon>
+  );
+}
+
+/** Location / area scope (view chips) — inventory-dashboard's design-handoff `pin` glyph (its PinIcon). Not from a
+   public set (Lucide's `map-pin` is a different outline); see ICONS.md. */
+export function PinIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 21s-7-6.4-7-11a7 7 0 0 1 14 0c0 4.6-7 11-7 11z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </Icon>
+  );
+}
+
+/** Organization scope (view chips) — Google Material Icons `public` (filled). Same glyph inventory-dashboard uses. */
+export function GlobeIcon(props: SVGProps<SVGSVGElement> & { size?: number }) {
+  const { size = 24, ...rest } = props;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...rest}>
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+    </svg>
+  );
+}
+
+/** Edit a saved view (view chip pencil) — Ionicons `pencil-sharp` (filled, 512 viewBox). Same glyph inventory-dashboard uses. */
+export function PencilSharpIcon(props: SVGProps<SVGSVGElement> & { size?: number }) {
+  const { size = 24, ...rest } = props;
+  return (
+    <svg width={size} height={size} viewBox="0 0 512 512" fill="currentColor" aria-hidden="true" {...rest}>
+      <path d="M362.7 19.32L314.34 67.7l129.94 129.95 48.38-48.37a16 16 0 000-22.63L385.33 19.32a16 16 0 00-22.63 0zM291.72 90.32L19.32 362.7 0 512l149.29-19.33 272.4-272.39-129.97-129.96z" />
+    </svg>
+  );
+}
+
+/** Default view toggle — Lucide's classic `heart` glyph; `filled` fills it (on) instead of stroking it (off).
+   Same glyph and states inventory-dashboard's view editor uses. */
+export function HeartIcon({ filled = false, ...props }: IconProps & { filled?: boolean }) {
+  return (
+    <Icon {...props} {...(filled ? { fill: 'currentColor', stroke: 0 } : {})}>
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </Icon>
+  );
+}
+
+/** Grid view (list/grid toggle) — Lucide's `layout-grid` glyph. Same glyph inventory-dashboard's toggle uses. */
+export function GridViewIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+    </Icon>
+  );
+}
+
+/** Open / not-done status circle — Google Material Icons Rounded `radio_button_unchecked`, verbatim. The empty
+   partner of `CheckCircleIcon` (same 10-unit radius). Filled with currentColor, so the caller sets the color. */
+export function OpenCircleIcon(props: SVGProps<SVGSVGElement> & { size?: number }) {
+  const { size = 24, ...rest } = props;
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...rest}>
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" />
+    </svg>
+  );
+}
+
+/** Vehicle placeholder (no photo) — Ionicons `car-sport` (filled, 512 viewBox), verbatim. Filled with currentColor,
+   so the caller sets the color. */
+export function CarIcon(props: SVGProps<SVGSVGElement> & { size?: number }) {
+  const { size = 24, ...rest } = props;
+  return (
+    <svg width={size} height={size} viewBox="0 0 512 512" fill="currentColor" aria-hidden="true" {...rest}>
+      <path d="M494.26,276.22c-3.6-40.41-9.53-48.28-11.77-51.24-5.15-6.84-13.39-11.31-22.11-16l0,0a3.6,3.6,0,0,1-.91-5.68A15.93,15.93,0,0,0,464,190.77,16.27,16.27,0,0,0,447.65,176h-15.6a17,17,0,0,0-2,.13,8.5,8.5,0,0,0-1.41-.47l0,0c-9.24-19.53-21.89-46.27-48.11-59.32C341.64,97,270,96,256,96s-85.64,1-124.48,20.31c-26.22,13.05-38.87,39.79-48.11,59.32l-.08.16a6.52,6.52,0,0,0-1.35.34,17,17,0,0,0-2-.13H64.35A16.27,16.27,0,0,0,48,190.77a15.93,15.93,0,0,0,4.59,12.47,3.6,3.6,0,0,1-.91,5.68l0,0c-8.72,4.72-17,9.19-22.11,16-2.24,3-8.16,10.83-11.77,51.24-2,22.74-2.3,46.28-.73,61.44,3.29,31.5,9.46,50.54,9.72,51.33a16,16,0,0,0,13.2,10.87h0V400a16,16,0,0,0,16,16h56a16,16,0,0,0,16-16h0c8.61,0,14.6-1.54,20.95-3.18a158.83,158.83,0,0,1,28-4.91C207.45,389,237.79,388,256,388c17.84,0,49.52,1,80.08,3.91a159.16,159.16,0,0,1,28.11,4.93c6.08,1.56,11.85,3,19.84,3.15h0a16,16,0,0,0,16,16h56a16,16,0,0,0,16-16v-.12h0A16,16,0,0,0,485.27,389c.26-.79,6.43-19.83,9.72-51.33C496.56,322.5,496.28,299,494.26,276.22ZM112.33,189.31c8-17,17.15-36.24,33.44-44.35,23.54-11.72,72.33-17,110.23-17s86.69,5.24,110.23,17c16.29,8.11,25.4,27.36,33.44,44.35l1,2.17a8,8,0,0,1-7.44,11.42C360,202,290,199.12,256,199.12s-104,2.95-137.28,3.85a8,8,0,0,1-7.44-11.42C111.63,190.81,112,190.06,112.33,189.31Zm11.93,79.63A427.17,427.17,0,0,1,72.42,272c-10.6,0-21.53-3-23.56-12.44-1.39-6.35-1.24-9.92-.49-13.51C49,243,50,240.78,55,240c13-2,20.27.51,41.55,6.78,14.11,4.15,24.29,9.68,30.09,14.06C129.55,263,128,268.64,124.26,268.94Zm221.38,82c-13.16,1.5-39.48.95-89.34.95s-76.17.55-89.33-.95c-13.58-1.51-30.89-14.35-19.07-25.79,7.87-7.54,26.23-13.18,50.68-16.35S233.38,304,256.2,304s32.12,1,57.62,4.81,44.77,9.52,50.68,16.35C375.28,337.4,359.21,349.35,345.64,351Zm117.5-91.39c-2,9.48-13,12.44-23.56,12.44a455.91,455.91,0,0,1-52.84-3.06c-3.06-.29-4.48-5.66-1.38-8.1,5.71-4.49,16-9.91,30.09-14.06,21.28-6.27,33.55-8.78,44.09-6.69,2.57.51,3.93,3.27,4.09,5A40.64,40.64,0,0,1,463.14,259.56Z" />
+    </svg>
+  );
+}
+
